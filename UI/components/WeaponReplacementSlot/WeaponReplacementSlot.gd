@@ -15,7 +15,7 @@ func set_data(data: Dictionary) -> void:
 	name = "WeaponSlot%d" % (slot_index + 1)
 	set_meta("slot_index", slot_index)
 	set_meta("action_label", action_label)
-	custom_minimum_size.y = float(data.get("height", 96.0))
+	custom_minimum_size.y = float(data.get("height", 76.0))
 	slot_label.text = str(data.get("slot_label", ""))
 	name_label.text = str(data.get("name", ""))
 	meta_label.text = str(data.get("meta", ""))
@@ -56,5 +56,17 @@ func _resolve_nodes() -> void:
 	name_label = get_node("Margin/Content/Row/Text/WeaponName") as Label
 	meta_label = get_node("Margin/Content/Row/Text/WeaponMeta") as Label
 	action_label = get_node("Margin/Content/Row/Action") as Label
-	comparison = get_node("Margin/Content/Comparison") as HFlowContainer
+	comparison = get_node("Margin/Content/Row/Comparison") as HFlowContainer
 	warning_label = get_node("Margin/Content/Warning") as Label
+
+
+func set_selected(selected: bool, accent: Color) -> void:
+	set_accent(accent)
+	action_label.text = "✓" if selected else "○"
+	for state in ["normal", "hover", "pressed", "focus"]:
+		var style := get_theme_stylebox(state).duplicate() as StyleBoxFlat
+		style.bg_color = Color(0.055, 0.065, 0.072, 0.96) if state == "normal" else Color(0.08, 0.095, 0.105, 0.98)
+		if selected:
+			style.bg_color = Color(0.08, 0.14, 0.16, 0.98)
+			style.border_color = accent
+		add_theme_stylebox_override(state, style)

@@ -5,6 +5,7 @@ signal weapon_list_changed()
 signal player_health_changed(current_hp: int, max_hp: int)
 signal player_damage_received(feedback: Dictionary)
 signal player_gold_changed(value: int)
+signal modification_points_changed(value: int)
 signal gold_supply_changed()
 signal gold_supply_reset()
 
@@ -158,6 +159,42 @@ var weapon_progress_this_battle := false
 var testing_keep_hp_above_zero := false
 var is_interacting : bool = false
 
+# Run-local service currency is separate from gold and supply progress.
+var modification_points: int = 0:
+	set(value):
+		var next_value := maxi(value, 0)
+		if modification_points == next_value:
+			return
+		modification_points = next_value
+		modification_points_changed.emit(modification_points)
+var _last_modification_rest_level: int = -1
+
+func get_modification_upgrade_cost(item_type: StringName) -> int:
+	var economy: EconomyConfig = GlobalVariables.economy_data if GlobalVariables.economy_data else EconomyConfig.new()
+	return maxi(economy.module_upgrade_modification_cost if item_type == &"module" else economy.weapon_upgrade_modification_cost, 1)
+
+func grant_rest_modification_points() -> int:
+	if not PhaseManager.is_rest_phase() or PhaseManager.current_level <= _last_modification_rest_level:
+		return 0
+	_last_modification_rest_level = PhaseManager.current_level
+	var economy: EconomyConfig = GlobalVariables.economy_data if GlobalVariables.economy_data else EconomyConfig.new()
+	var amount := maxi(economy.modification_points_per_rest, 0)
+	modification_points += amount
+	return amount
+
+func spend_modification_points(amount: int) -> bool:
+	if not PhaseManager.can_configure_loadout() or amount <= 0 or modification_points < amount:
+		return false
+	modification_points -= amount
+	return true
+
+func export_modification_state() -> Dictionary:
+	return {"balance": modification_points, "last_rest_level": _last_modification_rest_level}
+
+func import_modification_state(payload: Dictionary) -> void:
+	modification_points = maxi(int(payload.get("balance", 0)), 0)
+	_last_modification_rest_level = maxi(int(payload.get("last_rest_level", -1)), -1)
+
 # Run-local supply data is separate from the legacy spendable balance.
 var gold_supply_enabled := false
 var gold_supply_progress: int = 0
@@ -170,6 +207,12 @@ var gold_supply_rewards = preload("res://World/rewards/gold_supply_reward_servic
 
 func get_pending_gold_supplies() -> Array[Dictionary]:
 	return _pending_gold_supplies.duplicate(true)
+
+func get_pending_gold_supply_count() -> int:
+	return _pending_gold_supplies.size()
+
+func get_next_pending_gold_supply_sequence() -> int:
+	return int(_pending_gold_supplies[0].sequence) if not _pending_gold_supplies.is_empty() else 0
 
 func get_claimed_gold_supplies() -> Array[Dictionary]:
 	return _claimed_gold_supplies.duplicate(true)
@@ -389,6 +432,8 @@ func reset_runtime_state() -> void:
 	grab_radius_mutifactor = 1.0
 	total_grab_radius = 50.0
 	_reset_gold_supply_state(true)
+	modification_points = 0
+	_last_modification_rest_level = -1
 	# Supply runs start at zero; the legacy 10-gold gift is not supply income.
 	player_gold = 0 if gold_supply_enabled else _get_default_player_gold()
 	round_coin_collected = 0

@@ -1,6 +1,8 @@
 extends Control
 class_name ModuleManagementView
 
+const LIST_INPUT_GUARD := preload("res://UI/scripts/management/list_layout_input_guard.gd")
+
 const RARITY_UTIL := preload("res://data/LootRarity.gd")
 const WAREHOUSE_DRAG_CONTROLS := preload("res://UI/scripts/management/warehouse_drag_controls.gd")
 const MODULE_MANAGEMENT_CARD_FACTORY := preload("res://UI/scripts/management/module_management_card_factory.gd")
@@ -119,11 +121,15 @@ func get_selected_module() -> Module:
 	return selected_module
 
 func select_module(module_instance: Module, _module_slots: Node = null) -> void:
+	var switching_tab := active_tab != &"module"
 	active_tab = &"module"
 	selected_module = module_instance
 	selected_equipped_module = null
 	selected_equipped_module_weapon = null
-	refresh_all()
+	if switching_tab:
+		refresh_all()
+	else:
+		_refresh_selection()
 
 func apply_slot_selection(_module_slots: Node) -> void:
 	pass
@@ -259,6 +265,7 @@ func _refresh_columns() -> void:
 		_refresh_weapon_columns()
 	else:
 		_refresh_module_columns()
+	LIST_INPUT_GUARD.settle([_left_list, _right_list])
 
 func _refresh_weapon_columns() -> void:
 	_left_title.text = LocalizationManager.tr_key("ui.weapon.warehouse.equipped", "Equipped Weapons")
@@ -376,19 +383,27 @@ func _can_drag_module_install_on_weapon(module_instance: Module, weapon: Weapon)
 	_ensure_drag_coordinator()
 	return _drag_coordinator.can_drag_module_install_on_weapon(module_instance, weapon) if _drag_coordinator != null else false
 
+func _refresh_selection() -> void:
+	_ensure_card_factory()
+	_card_factory.refresh_selection(_left_list)
+	_card_factory.refresh_selection(_right_list)
+	refresh_detail()
+	refresh_action()
+	_sync_owner_selection()
+
 func _on_weapon_pressed(weapon: Weapon, location: String) -> void:
 	if location == "stored":
 		selected_stored_weapon = weapon
 	else:
 		selected_equipped_weapon = weapon
-	refresh_all()
+	_refresh_selection()
 
 func _on_temporary_module_pressed(module_instance: Module) -> void:
 	selected_module = module_instance
 	selected_equipped_module = null
 	selected_equipped_module_weapon = null
 	_sync_owner_selection()
-	refresh_all()
+	_refresh_selection()
 
 func _on_module_socket_pressed(weapon: Weapon, existing: Module) -> void:
 	if selected_module != null and is_instance_valid(selected_module):
@@ -406,7 +421,7 @@ func _on_module_socket_pressed(weapon: Weapon, existing: Module) -> void:
 		selected_equipped_module = existing
 		selected_equipped_module_weapon = weapon
 		_sync_owner_selection()
-		refresh_all()
+		_refresh_selection()
 
 func _build_module_socket_callback(weapon: Weapon, existing: Module) -> Callable:
 	return _on_module_socket_pressed.bind(weapon, existing)
@@ -497,6 +512,7 @@ func _clear_container(parent: Node) -> void:
 	if parent == null:
 		return
 	for child in parent.get_children():
+		parent.remove_child(child)
 		child.queue_free()
 
 func _show_message(message: String, duration: float = 1.4) -> void:

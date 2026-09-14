@@ -10,6 +10,86 @@ const FALLBACK_WEAPONS := [
 var _busy := false
 var _battle_owner: WeakRef
 var _battle_pause_token := 0
+var _module_scenes: Dictionary = {}
+var _module_prototypes: Dictionary = {}
+var _persisted_records: Dictionary = {}
+var _module_paths := PackedStringArray()
+var _catalog_cached := false
+
+func _get_module_paths() -> PackedStringArray:
+	if not _catalog_cached:
+		_module_paths = MODULE_CATALOG.get_all_scene_paths()
+		_catalog_cached = true
+	return _module_paths
+
+func _get_unlocked_module_paths() -> PackedStringArray:
+	var paths := PackedStringArray()
+	for path in _get_module_paths():
+		if MODULE_CATALOG.is_scene_unlocked(path):
+			paths.append(path)
+	return paths
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		for module in _module_prototypes.values():
+			if is_instance_valid(module):
+				module.free()
+
+func _module_prototype(path: String) -> Module:
+	if not _module_prototypes.has(path):
+		var scene := load(path) as PackedScene
+		_module_scenes[path] = scene
+		_module_prototypes[path] = scene.instantiate() as Module if scene else null
+	return _module_prototypes[path] as Module
+
+func prewarm_catalog() -> void:
+	DataHandler.prepare_deferred_runtime_data()
+	var budget_start := Time.get_ticks_usec()
+	for path in _get_module_paths():
+		_module_prototype(path)
+		if Time.get_ticks_usec() - budget_start >= 2000:
+			await PlayerData.get_tree().process_frame
+			budget_start = Time.get_ticks_usec()
+	for id in DataHandler.get_weapon_ids():
+		var definition := DataHandler.read_weapon_data(id) as WeaponDefinition
+		if definition != null:
+			# Retain the PackedScene in WeaponDefinition before runtime candidate
+			# filtering accesses its lazy scene property.
+			var scene := definition.scene
+			if scene == null and not definition.is_hidden:
+				push_warning("Supply catalog cannot load weapon: %s" % id)
+		await PlayerData.get_tree().process_frame
+
+# Preparation does not apply rewards or acquire a combat pause. Candidates become
+# claimable only after the detached snapshot has been persisted successfully.
+func prepare_in_background(sequence: int, still_current: Callable) -> Dictionary:
+	if _busy or not PlayerData.gold_supply_enabled or not still_current.is_valid() or not bool(still_current.call()):
+		return {"ok": false, "status": "unavailable"}
+	var record := _record(sequence)
+	if record.is_empty():
+		return {"ok": false, "status": "missing"}
+	if is_same(_persisted_records.get(sequence), record):
+		return {"ok": true, "record": record}
+	_busy = true
+	if not record.has("options"):
+		var options: Array[Dictionary] = await _build_options_incremental(still_current)
+		if not still_current.is_valid() or not bool(still_current.call()) or not is_same(_record(sequence), record):
+			_busy = false
+			return {"ok": false, "status": "cancelled"}
+		record["options"] = options
+		record["status"] = "ready"
+	if not SaveManager.begin_reward_transaction():
+		_busy = false
+		return {"ok": false, "status": "save_busy"}
+	var saved: Dictionary = await SaveManager.commit_prepared_reward_async(&"gold_supply_prepared")
+	if str(saved.get("error_code", "")) != "cleared":
+		SaveManager.abort_reward_transaction()
+	_busy = false
+	if not bool(saved.get("ok", false)) or not is_same(_record(sequence), record):
+		return {"ok": false, "status": "save_failed"}
+	_persisted_records.clear()
+	_persisted_records[sequence] = record
+	return {"ok": true, "record": record}
 
 func begin_battle_claim(owner: Node, token: int) -> bool:
 	if _battle_owner != null or not PhaseManager.owns_pause(owner, token):
@@ -112,45 +192,81 @@ func _build_options() -> Array[Dictionary]:
 	var expansion: Array[Dictionary] = []
 	var cores: Array[Dictionary] = []
 	for weapon in PlayerData.player_weapon_list:
-		if not is_instance_valid(weapon):
-			continue
-		var id := DataHandler.get_weapon_id_from_instance(weapon)
-		if int(weapon.level) < int(weapon.max_level):
-			_append_unique(progress, {"kind": "weapon_upgrade", "id": id, "from": int(weapon.level), "to": int(weapon.level) + 1, "key": "upgrade:" + id})
-		var definition := DataHandler.read_weapon_data(id) as WeaponDefinition
-		if definition and int(weapon.fuse) < Weapon.MAX_FUSE_LEVEL:
-			var core := _core(definition)
-			if not InventoryData.get_fusion_branch_usages_for_core(core.tags).is_empty():
-				_append_unique(progress, core)
-	for path in MODULE_CATALOG.get_unlocked_scene_paths():
-		var scene := load(path) as PackedScene
-		var module := scene.instantiate() as Module if scene else null
-		if module == null:
-			continue
-		var owned := InventoryData.find_owned_module_by_scene_path(path)
-		if owned:
-			if int(owned.module_level) < Module.MAX_LEVEL:
-				_append_unique(progress, {"kind": "module_upgrade", "path": path, "from": int(owned.module_level), "to": int(owned.module_level) + 1, "level": 1, "key": "module:" + path})
-		else:
-			var option := {"kind": "module", "path": path, "level": 1, "key": "module:" + path}
-			if InventoryData.can_assign_module_to_any_equipped_weapon(module, true):
-				_append_unique(progress, option)
-			else:
-				_append_unique(expansion, option)
-		module.free()
+		_collect_weapon_progress(weapon, progress)
+	for path in _get_unlocked_module_paths():
+		_collect_module_option(path, progress, expansion)
 	for id in DataHandler.get_weapon_ids():
-		var definition := DataHandler.read_weapon_data(id) as WeaponDefinition
-		if definition == null or definition.is_hidden or definition.scene == null:
-			continue
-		if definition.has_valid_core_tag_count() and definition.get_unknown_core_tags().is_empty():
-			_append_unique(cores, _core(definition))
-		if _owned_weapon(id):
-			if definition.has_valid_core_tag_count() and definition.get_unknown_core_tags().is_empty():
-				var duplicate := _core(definition)
-				duplicate["duplicate"] = true
-				_append_unique(expansion, duplicate)
+		_collect_weapon_option(id, expansion, cores)
+	return _select_options(progress, expansion, cores)
+
+func _build_options_incremental(still_current: Callable) -> Array[Dictionary]:
+	var progress: Array[Dictionary] = []
+	var expansion: Array[Dictionary] = []
+	var cores: Array[Dictionary] = []
+	var budget_start := Time.get_ticks_usec()
+	for weapon in PlayerData.player_weapon_list.duplicate():
+		_collect_weapon_progress(weapon, progress)
+		await PlayerData.get_tree().process_frame
+		if not still_current.is_valid() or not bool(still_current.call()):
+			return []
+	for path in _get_unlocked_module_paths():
+		_collect_module_option(path, progress, expansion)
+		if Time.get_ticks_usec() - budget_start >= 2000:
+			await PlayerData.get_tree().process_frame
+			budget_start = Time.get_ticks_usec()
+			if not still_current.is_valid() or not bool(still_current.call()):
+				return []
+	for id in DataHandler.get_weapon_ids():
+		_collect_weapon_option(id, expansion, cores)
+		if Time.get_ticks_usec() - budget_start >= 2000:
+			await PlayerData.get_tree().process_frame
+			budget_start = Time.get_ticks_usec()
+			if not still_current.is_valid() or not bool(still_current.call()):
+				return []
+	return _select_options(progress, expansion, cores)
+
+func _collect_weapon_progress(weapon: Weapon, progress: Array[Dictionary]) -> void:
+	if not is_instance_valid(weapon):
+		return
+	var id := DataHandler.get_weapon_id_from_instance(weapon)
+	if int(weapon.level) < int(weapon.max_level):
+		_append_unique(progress, {"kind": "weapon_upgrade", "id": id, "from": int(weapon.level), "to": int(weapon.level) + 1, "key": "upgrade:" + id})
+	var definition := DataHandler.read_weapon_data(id) as WeaponDefinition
+	if definition and int(weapon.fuse) < Weapon.MAX_FUSE_LEVEL:
+		var core := _core(definition)
+		if not InventoryData.get_fusion_branch_usages_for_core(core.tags).is_empty():
+			_append_unique(progress, core)
+
+func _collect_module_option(path: String, progress: Array[Dictionary], expansion: Array[Dictionary]) -> void:
+	var module := _module_prototype(path)
+	if module == null:
+		return
+	var owned := InventoryData.find_owned_module_by_scene_path(path)
+	if owned:
+		if int(owned.module_level) < Module.MAX_LEVEL:
+			_append_unique(progress, {"kind": "module_upgrade", "path": path, "from": int(owned.module_level), "to": int(owned.module_level) + 1, "level": 1, "key": "module:" + path})
+	else:
+		var option := {"kind": "module", "path": path, "level": 1, "key": "module:" + path}
+		if InventoryData.can_assign_module_to_any_equipped_weapon(module, true):
+			_append_unique(progress, option)
 		else:
-			_append_unique(expansion, {"kind": "weapon", "id": id, "level": 1, "key": "weapon:" + id})
+			_append_unique(expansion, option)
+
+func _collect_weapon_option(id: String, expansion: Array[Dictionary], cores: Array[Dictionary]) -> void:
+	var definition := DataHandler.read_weapon_data(id) as WeaponDefinition
+	if definition == null or definition.is_hidden or definition.scene == null:
+		return
+	if definition.has_valid_core_tag_count() and definition.get_unknown_core_tags().is_empty():
+		_append_unique(cores, _core(definition))
+	if _owned_weapon(id):
+		if definition.has_valid_core_tag_count() and definition.get_unknown_core_tags().is_empty():
+			var duplicate := _core(definition)
+			duplicate["duplicate"] = true
+			_append_unique(expansion, duplicate)
+	else:
+		_append_unique(expansion, {"kind": "weapon", "id": id, "level": 1, "key": "weapon:" + id})
+
+func _select_options(progress: Array[Dictionary], expansion: Array[Dictionary], cores: Array[Dictionary]) -> Array[Dictionary]:
 	# Existing inherent core types have no inventory cap and are valid without slots.
 	for definition in FALLBACK_WEAPONS:
 		_append_unique(cores, _core(definition))

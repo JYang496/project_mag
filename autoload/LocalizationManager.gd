@@ -12,6 +12,7 @@ var _current_locale: String = DEFAULT_LOCALE
 var _weapon_scene_to_id: Dictionary = {}
 
 func _ready() -> void:
+	preload("res://data/localization/modification_points_translations.gd").register()
 	_rebuild_content_lookup()
 	var saved_locale := _load_saved_locale()
 	if saved_locale == "":

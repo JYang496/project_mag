@@ -33,16 +33,16 @@ var phase := REST:
 
 signal phase_changed(new_phase: String)
 signal pre_enter_prepare_loot
-signal post_battle_collect_gate_changed(blocking: bool)
 signal settlement_reward_gate_changed(blocking: bool)
 signal pacing_event_recorded(event: Dictionary)
 
-var post_battle_collect_gate_timeout_sec: float = 2.0
-var _post_battle_collect_gate_active := false
-var _post_battle_collect_gate_token: int = 0
 var _settlement_check_scheduled := false
 var _settlement_reward_gate_active := false
 var _contract_rewards_applied := false
+var _contract_gold_collecting := false
+var _settlement_received_module := false
+var _settlement_new_modules: Array[Module] = []
+var _settlement_module_review_started := false
 var _rest_protocol_consumed_level := -1
 var _protocol_selection_origin := ""
 var _last_completed_level_index := -1
@@ -87,7 +87,9 @@ func _record_phase_pacing_event(new_phase: String) -> void:
 		BATTLE_STARTING: record_pacing_event(&"battle_deployment_started")
 		BATTLE: record_pacing_event(&"battle_started")
 		SETTLEMENT: record_pacing_event(&"battle_completed", {"settlement_type": get_settlement_type()})
-		REST: record_pacing_event(&"chapter_rest_entered", {"settlement_type": get_settlement_type()})
+		REST:
+			PlayerData.grant_rest_modification_points()
+			record_pacing_event(&"chapter_rest_entered", {"settlement_type": get_settlement_type()})
 		RUN_COMPLETE: record_pacing_event(&"run_completed")
 		GAMEOVER: record_pacing_event(&"run_failed")
 
@@ -99,9 +101,10 @@ func enter_settlement() -> void:
 		return
 	cleanup_battle_runtime_transients()
 	var previous_phase := phase
+	_settlement_received_module = false
+	_settlement_new_modules.clear()
+	_settlement_module_review_started = false
 	pre_enter_prepare_loot.emit()
-	if previous_phase == BATTLE:
-		begin_post_battle_collect_gate(post_battle_collect_gate_timeout_sec)
 	if previous_phase == BATTLE:
 		PlayerData.run_completed_levels += 1
 		if PlayerData.weapon_progress_this_battle:
@@ -120,6 +123,7 @@ func enter_settlement() -> void:
 	phase_changed.emit(phase)
 	settlement_reward_gate_changed.emit(true)
 	SaveManager.commit_battle_success()
+	request_settlement_reward_gate_check()
 	request_settlement_completion_check()
 
 func cleanup_battle_runtime_transients() -> void:
@@ -176,7 +180,6 @@ func enter_chapter_rest() -> void:
 func enter_battle_starting() -> void:
 	if phase != PROTOCOL_SELECTION:
 		return
-	complete_post_battle_collect_gate()
 	_endless_entry_rest_available = false
 	phase = BATTLE_STARTING
 	phase_changed.emit(phase)
@@ -255,14 +258,12 @@ func can_accept_reward_loadout_change() -> bool:
 func enter_battle() -> void:
 	if phase != BATTLE_STARTING:
 		return
-	complete_post_battle_collect_gate()
 	PlayerData.weapon_progress_this_battle = false
 	phase = BATTLE
 	phase_changed.emit(phase)
 
 func enter_gameover() -> void:
 	cleanup_battle_runtime_transients()
-	complete_post_battle_collect_gate()
 	phase = GAMEOVER
 	phase_changed.emit(phase)
 
@@ -276,7 +277,6 @@ func enter_run_complete() -> void:
 			return
 		_run_state = RUN_STATE_COMPLETE
 	cleanup_battle_runtime_transients()
-	complete_post_battle_collect_gate()
 	phase = RUN_COMPLETE
 	phase_changed.emit(phase)
 
@@ -290,25 +290,6 @@ func continue_into_endless() -> void:
 	phase = REST
 	phase_changed.emit(phase)
 
-func begin_post_battle_collect_gate(timeout_sec: float) -> void:
-	_post_battle_collect_gate_token += 1
-	_post_battle_collect_gate_active = true
-	post_battle_collect_gate_changed.emit(true)
-	var token := _post_battle_collect_gate_token
-	_complete_post_battle_collect_gate_after_timeout(token, maxf(timeout_sec, 0.0))
-
-func complete_post_battle_collect_gate() -> void:
-	if not _post_battle_collect_gate_active:
-		return
-	_post_battle_collect_gate_active = false
-	_post_battle_collect_gate_token += 1
-	post_battle_collect_gate_changed.emit(false)
-	request_settlement_reward_gate_check()
-	request_settlement_completion_check()
-
-func is_post_battle_collect_gate_active() -> bool:
-	return _post_battle_collect_gate_active
-
 func is_settlement_reward_gate_active() -> bool:
 	return _settlement_reward_gate_active
 
@@ -317,7 +298,7 @@ func request_settlement_reward_gate_check() -> void:
 		call_deferred("_try_clear_settlement_reward_gate")
 
 func _try_clear_settlement_reward_gate() -> void:
-	if phase != SETTLEMENT or not _settlement_reward_gate_active or is_post_battle_collect_gate_active():
+	if phase != SETTLEMENT or not _settlement_reward_gate_active or _contract_gold_collecting:
 		return
 	var ui = GlobalVariables.ui
 	if ui != null and is_instance_valid(ui) and ui.has_method("is_supply_modal_open") and bool(ui.call("is_supply_modal_open")):
@@ -330,8 +311,22 @@ func _try_clear_settlement_reward_gate() -> void:
 				request_settlement_reward_gate_check()
 		return
 	if not _contract_rewards_applied:
-		_contract_rewards_applied = true
 		BattleContractManager.settle_pending_success_rewards()
+		if BattleContractManager.has_pending_success_settlement():
+			await get_tree().process_frame
+			request_settlement_reward_gate_check()
+			return
+		_contract_rewards_applied = true
+	if BattleContractManager.has_uncollected_contract_gold():
+		_contract_gold_collecting = true
+		var collected: bool = await BattleContractManager.collect_remaining_contract_gold()
+		_contract_gold_collecting = false
+		if phase != SETTLEMENT:
+			return
+		if not collected:
+			request_settlement_reward_gate_check()
+			return
+	if _contract_rewards_applied:
 		TaskRewardManager.refresh_success_rollback_snapshot()
 		SaveManager.commit_battle_success()
 		if PlayerData.gold_supply_enabled and not PlayerData.get_pending_gold_supplies().is_empty():
@@ -341,24 +336,21 @@ func _try_clear_settlement_reward_gate() -> void:
 	settlement_reward_gate_changed.emit(false)
 	request_settlement_completion_check()
 
-func _complete_post_battle_collect_gate_after_timeout(token: int, timeout_sec: float) -> void:
-	if timeout_sec > 0.0:
-		await get_tree().create_timer(timeout_sec).timeout
-	else:
-		await get_tree().process_frame
-	if token != _post_battle_collect_gate_token:
-		return
-	complete_post_battle_collect_gate()
-
 func request_settlement_completion_check() -> void:
 	if phase != SETTLEMENT or _settlement_check_scheduled:
 		return
 	_settlement_check_scheduled = true
 	call_deferred("_try_complete_settlement")
 
+func record_settlement_module_reward(module_instance: Module) -> void:
+	if phase == SETTLEMENT:
+		_settlement_received_module = true
+		if is_instance_valid(module_instance) and not _settlement_new_modules.has(module_instance):
+			_settlement_new_modules.append(module_instance)
+
 func _try_complete_settlement() -> void:
 	_settlement_check_scheduled = false
-	if phase != SETTLEMENT or is_post_battle_collect_gate_active() or is_settlement_reward_gate_active():
+	if phase != SETTLEMENT or is_settlement_reward_gate_active():
 		return
 	if RewardDraftRuntime != null and RewardDraftRuntime.is_standard_draft_blocking_interactions():
 		return
@@ -371,6 +363,18 @@ func _try_complete_settlement() -> void:
 			and ui.has_method("has_pending_blocking_transaction") \
 			and bool(ui.call("has_pending_blocking_transaction")):
 		return
+	if _settlement_received_module and not _settlement_module_review_started:
+		if ui == null or not is_instance_valid(ui):
+			return
+		var modules := InventoryData.get_all_owned_modules()
+		if not modules.is_empty():
+			# Set before opening: transaction signals may schedule another check.
+			_settlement_module_review_started = true
+			if not ui.request_module_equip_selections(modules, Callable(), Callable(), true, _settlement_new_modules):
+				_settlement_module_review_started = false
+				request_settlement_completion_check()
+			return
+		_settlement_module_review_started = true
 	if is_main_run_complete():
 		enter_run_complete()
 		return
@@ -403,13 +407,16 @@ func reset_runtime_state() -> void:
 	_settlement_reward_gate_active = false
 	_contract_rewards_applied = false
 	_rest_protocol_consumed_level = -1
+	_contract_gold_collecting = false
+	_settlement_received_module = false
+	_settlement_new_modules.clear()
+	_settlement_module_review_started = false
 	_protocol_selection_origin = ""
 	_last_completed_level_index = -1
 	_settlement_type = &"quick"
 	endless_mode = false
 	_endless_entry_rest_available = false
 	_run_state = RUN_STATE_ACTIVE
-	complete_post_battle_collect_gate()
 	reset_pacing_telemetry()
 
 # Independent owners release only their own pause lease.

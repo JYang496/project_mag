@@ -9,32 +9,33 @@ var _player: Node
 func setup(player: Node) -> void:
 	_player = player
 
-func process_combat_assist(main_weapon: Weapon, manual_fire_pressed: bool, delta: float) -> void:
+func process_combat_assist(main_weapon: Weapon, manual_fire_pressed: bool, delta: float) -> bool:
 	if _player == null or not is_instance_valid(_player):
-		return
+		return false
 	if main_weapon == null or not is_instance_valid(main_weapon):
-		return
+		return false
 	if manual_fire_pressed:
 		_clear_auto_assist_state(main_weapon)
-		return
+		return false
 	if not _is_auto_aim_continuous_fire_enabled():
 		_clear_auto_assist_state(main_weapon)
-		return
+		return false
 	if _is_auto_reload_switch_enabled() and _is_weapon_reloading(main_weapon):
 		_clear_auto_assist_state(main_weapon)
 		shift_to_next_ready_weapon(main_weapon, 1)
-		return
+		return false
 	var target := _find_auto_aim_target(main_weapon)
 	if target == null:
 		_clear_auto_assist_state(main_weapon)
-		return
+		return false
 	_set_auto_aim_target(main_weapon, target.global_position)
 	if bool(main_weapon.get_meta(AUTO_FIRE_PENDING_META, false)):
-		return
+		return true
 	var fire_target := _find_auto_fire_target(main_weapon)
 	if fire_target == null:
-		return
+		return false
 	_request_auto_fire_at_target(main_weapon, fire_target, delta)
+	return true
 
 func handle_post_fire(main_weapon: Weapon, fired: bool) -> void:
 	if not fired:

@@ -2,7 +2,13 @@ extends Resource
 class_name EconomyConfig
 
 @export var enemy_coin_drop_value: int = 1
+@export var contract_coin_amount_thresholds: PackedInt32Array = PackedInt32Array([10, 20, 30])
+@export var contract_coin_counts: PackedInt32Array = PackedInt32Array([12, 16, 20])
+
 @export var default_player_gold: int = 10
+@export_range(0, 100000, 1) var modification_points_per_rest: int = 3
+@export_range(1, 100000, 1) var weapon_upgrade_modification_cost: int = 2
+@export_range(1, 100000, 1) var module_upgrade_modification_cost: int = 1
 # Opt-in for new runs only. Existing runs restore their saved economy mode.
 @export var gold_supply_enabled: bool = false
 @export var gold_supply_thresholds: PackedInt32Array = PackedInt32Array([18, 26, 36, 82, 84, 88, 92, 94, 98])
@@ -91,6 +97,20 @@ func get_gold_supply_reward_weights() -> Dictionary:
 
 func get_default_player_gold() -> int:
 	return maxi(default_player_gold, 0)
+
+func get_contract_coin_values(amount: int) -> PackedInt32Array:
+	var values := PackedInt32Array()
+	if amount <= 0:
+		return values
+	var count := amount
+	for tier in range(mini(contract_coin_amount_thresholds.size(), contract_coin_counts.size())):
+		if amount > contract_coin_amount_thresholds[tier]:
+			count = mini(amount, maxi(contract_coin_counts[tier], 1))
+	var base_value := int(amount / count)
+	var remainder := amount % count
+	for index in range(count):
+		values.append(base_value + (1 if index < remainder else 0))
+	return values
 
 func get_contract_gold_plan(contract_id: StringName, level_index: int) -> Dictionary:
 	var base_target := _get_kill_gold_target(level_index)

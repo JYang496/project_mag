@@ -55,6 +55,9 @@ func refresh_upgrade_primary_texts() -> void:
 		weapon_button.text = LocalizationManager.tr_key("ui.smith.upgrade.weapon", "Weapon")
 	if owner_ui.upgrade_module_button:
 		owner_ui.upgrade_module_button.text = LocalizationManager.tr_key("ui.smith.upgrade.module", "Module")
+	var fusion_button := owner_ui.upgrade_primary_panel.get_node_or_null("OpenFusionButton") as Button
+	if fusion_button:
+		fusion_button.text = LocalizationManager.tr_key("ui.management.tab.fusion", "Fusion")
 
 func refresh_warehouse_primary_texts() -> void:
 	if owner_ui.warehouse_primary_panel == null:

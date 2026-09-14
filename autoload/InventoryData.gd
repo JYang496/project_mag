@@ -628,6 +628,8 @@ func get_weapon_module_assignment_feedback(
 	if duplicate_module != null and duplicate_module != replaced_module:
 		return {"ok": false, "reason": "Only one module of each type can be owned."}
 	var projected_count := weapon.get_module_count()
+	if module_instance.get_parent() == weapon.modules and module_instance != replaced_module:
+		projected_count -= 1
 	if replaced_module != null and replaced_module.get_parent() == weapon.modules:
 		projected_count -= 1
 	if projected_count >= weapon.module_slot_capacity:
@@ -704,7 +706,8 @@ func move_module_to_temporary(
 		return {"ok": false, "reason": "Module is not equipped."}
 	var existing := find_owned_module_by_scene_path(str(module_instance.scene_file_path), module_instance)
 	if existing != null:
-		return _merge_duplicate_module(existing, module_instance)
+		var merged := _merge_duplicate_module(existing, module_instance)
+		return merged
 	module_instance.unbind_from_weapon()
 	if module_instance.get_parent() != self:
 		if module_instance.get_parent() != null:
@@ -731,6 +734,7 @@ func obtain_module(module_instance: Module, _ignore_weapon: Weapon = null) -> Di
 	if result.get("ok", false):
 		result["result"] = "stored"
 		result["module"] = module_instance
+		PhaseManager.record_settlement_module_reward(module_instance)
 	return result
 
 func purchase_module(module_scene: PackedScene) -> Dictionary:
@@ -761,25 +765,20 @@ func purchase_module(module_scene: PackedScene) -> Dictionary:
 	_refresh_ui()
 	return result
 
-func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
-	if PlayerData.gold_supply_enabled:
-		return {"ok": false, "reason": LocalizationManager.tr_key("ui.workbench.upgrade_supplied", "Upgrades are provided by Gold Supply rewards.")}
+func upgrade_module_with_modification_points(module_instance: Module) -> Dictionary:
 	if not PhaseManager.can_configure_loadout():
 		return {"ok": false, "reason": "Modules can only be upgraded during rest."}
 	if module_instance == null or not is_instance_valid(module_instance):
 		return {"ok": false, "reason": "Invalid module."}
 	if int(module_instance.module_level) >= Module.MAX_LEVEL:
 		return {"ok": false, "reason": "Module is fully upgraded."}
-	var price := _get_economy_config().get_module_upgrade_gold(
-		int(module_instance.cost),
-		int(module_instance.module_level)
-	)
-	if PlayerData.player_gold < price:
-		return {"ok": false, "reason": "Not enough gold.", "price": price}
-	if not PlayerData.spend_gold(price):
-		return {"ok": false, "reason": "Not enough gold.", "price": price}
+	var price := PlayerData.get_modification_upgrade_cost(&"module")
+	if PlayerData.modification_points < price:
+		return {"ok": false, "reason": LocalizationManager.tr_key("ui.modification.insufficient", "Not enough modification points."), "price": price}
+	if not PlayerData.spend_modification_points(price):
+		return {"ok": false, "reason": LocalizationManager.tr_key("ui.modification.insufficient", "Not enough modification points."), "price": price}
 	if not module_instance.increase_module_level(1):
-		PlayerData.refund_gold_spending(price)
+		PlayerData.modification_points += price
 		return {"ok": false, "reason": "Module is fully upgraded.", "price": price}
 	var owner_weapon := _resolve_module_owner_weapon(module_instance)
 	if owner_weapon and owner_weapon.has_method("calculate_status"):
@@ -792,6 +791,10 @@ func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
 	))
 	_refresh_ui()
 	return {"ok": true, "result": "upgraded", "module": module_instance, "price": price}
+
+# Compatibility entry point; service upgrades now use modification points.
+func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
+	return upgrade_module_with_modification_points(module_instance)
 
 func begin_pending_transaction(transaction: Dictionary) -> void:
 	var transaction_id := str(transaction.get("id", ""))

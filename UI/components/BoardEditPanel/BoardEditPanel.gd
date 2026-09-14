@@ -1,5 +1,7 @@
 extends Control
 
+const LIST_INPUT_GUARD := preload("res://UI/scripts/management/list_layout_input_guard.gd")
+
 signal close_requested
 
 const CELL_BUTTON_SCENE := preload("res://UI/components/BoardCellButton/BoardCellButton.tscn")
@@ -148,12 +150,29 @@ func _refresh() -> void:
 		return
 	_refresh_grid()
 	_refresh_inventory()
+	LIST_INPUT_GUARD.settle([_grid, _inventory_list])
+	_refresh_detail()
+	_undo_button.disabled = _selected_cell_id <= 0 or not CellEffectRuntime.get_pending_snapshot().has(str(_selected_cell_id))
+	_clear_button.disabled = not CellEffectRuntime.has_pending_edits()
+
+func _refresh_selection() -> void:
+	for child in _grid.get_children():
+		if child is Button:
+			var cell_id := int(child.get("logical_id"))
+			child.set_pressed_no_signal(_selected_cell_id == cell_id)
+			child.add_theme_stylebox_override("normal", _make_cell_style(cell_id, false))
+			child.add_theme_stylebox_override("hover", _make_cell_style(cell_id, true))
+			child.add_theme_stylebox_override("pressed", _make_cell_style(cell_id, true))
+	for child in _inventory_list.get_children():
+		if child is Button:
+			child.set_pressed_no_signal(str(child.get("effect_id")) == _selected_effect_id)
 	_refresh_detail()
 	_undo_button.disabled = _selected_cell_id <= 0 or not CellEffectRuntime.get_pending_snapshot().has(str(_selected_cell_id))
 	_clear_button.disabled = not CellEffectRuntime.has_pending_edits()
 
 func _refresh_grid() -> void:
 	for child in _grid.get_children():
+		_grid.remove_child(child)
 		child.queue_free()
 	var ids := [7, 8, 9, 4, 5, 6, 1, 2, 3]
 	for id in ids:
@@ -173,6 +192,7 @@ func _refresh_grid() -> void:
 
 func _refresh_inventory() -> void:
 	for child in _inventory_list.get_children():
+		_inventory_list.remove_child(child)
 		child.queue_free()
 	var inventory := CellEffectRuntime.get_inventory_snapshot()
 	var ids := inventory.keys()
@@ -336,14 +356,14 @@ func _on_effect_pressed(effect_id: String) -> void:
 	if _selected_cell_id > 0:
 		install_effect_on_cell(effect_id, _selected_cell_id)
 		return
-	_refresh()
+	_refresh_selection()
 
 func _on_cell_pressed(cell_id: int) -> void:
 	_selected_cell_id = cell_id
 	if _selected_effect_id != "":
 		install_effect_on_cell(_selected_effect_id, cell_id)
 	else:
-		_refresh()
+		_refresh_selection()
 
 func _on_undo_pressed() -> void:
 	if _selected_cell_id <= 0:
@@ -363,7 +383,7 @@ func _on_close_pressed() -> void:
 func _clear_selection() -> void:
 	_selected_effect_id = ""
 	_selected_cell_id = 0
-	_refresh()
+	_refresh_selection()
 
 func clear_selection_if_any() -> bool:
 	if _selected_effect_id == "" and _selected_cell_id <= 0:

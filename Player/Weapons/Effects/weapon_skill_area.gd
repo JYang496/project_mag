@@ -26,8 +26,8 @@ var radius := 150.0
 var tick_interval_sec := 0.5
 var damage_ratio := 0.45
 var follow_player := false
-var fill_color := Color(0.45, 0.3, 1.0, 0.16)
-var line_color := Color(0.72, 0.55, 1.0, 0.9)
+var fill_color := PALETTE.PLAYER_RANGE_FILL
+var line_color := PALETTE.PLAYER_RANGE_OUTLINE
 var show_countdown := false
 var _elapsed := 0.0
 var _tick_accum := 0.0
@@ -40,7 +40,7 @@ const WHITE_FROST_APPEAR_START_SCALE := 0.74
 const WHITE_FROST_RELEASE_END_SCALE := 0.94
 const PLASMA_APPEAR_SEC := 0.20
 const PLASMA_RELEASE_SEC := 0.50
-const PLASMA_TEXTURE_OPACITY := 0.55
+const PLASMA_TEXTURE_OPACITY := 0.16
 
 func setup(
 	mode_value: Mode,
@@ -62,14 +62,14 @@ func setup(
 	follow_player = mode == Mode.WHITE_FROST_DOMAIN
 	match mode:
 		Mode.CHAINSAW_CAGE:
-			fill_color = Color(PALETTE.WARNING, 0.14)
-			line_color = Color(PALETTE.WARNING, 0.9)
+			fill_color = PALETTE.PLAYER_RANGE_FILL
+			line_color = PALETTE.PLAYER_RANGE_OUTLINE
 		Mode.PLASMA_STORM:
-			fill_color = Color(PALETTE.ENERGY, 0.18)
-			line_color = Color(PALETTE.ENERGY, 0.9)
+			fill_color = PALETTE.PLAYER_RANGE_FILL
+			line_color = PALETTE.PLAYER_RANGE_OUTLINE
 		Mode.WHITE_FROST_DOMAIN:
-			fill_color = Color(PALETTE.FREEZE, 0.15)
-			line_color = Color(PALETTE.PLAYER_PRIMARY, 0.85)
+			fill_color = PALETTE.PLAYER_RANGE_FILL
+			line_color = PALETTE.PLAYER_RANGE_OUTLINE
 	return self
 
 func _ready() -> void:
@@ -122,7 +122,7 @@ func get_warning_texture() -> Texture2D:
 
 func get_warning_texture_alpha() -> float:
 	if mode == Mode.WHITE_FROST_DOMAIN:
-		return _get_white_frost_phase_alpha() * 0.72
+		return _get_white_frost_phase_alpha() * 0.16
 	if mode == Mode.PLASMA_STORM:
 		return _get_plasma_phase_alpha() * PLASMA_TEXTURE_OPACITY
 	return 0.0

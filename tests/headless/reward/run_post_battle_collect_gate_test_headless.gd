@@ -22,7 +22,6 @@ func _run() -> void:
 	DataHandler.load_weapon_data()
 	DataHandler.load_weapon_branch_data()
 	DataHandler.load_economy_data()
-	PhaseManager.post_battle_collect_gate_timeout_sec = 5.0
 	PhaseManager.phase = PhaseManager.BATTLE
 
 	_player = PLAYER_SCENE.instantiate() as Player
@@ -30,7 +29,7 @@ func _run() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	PlayerData.earn_gold(50, true)
-	_expect(PlayerData.get_pending_gold_supplies().size() == 2, "auto-pickup crossing two thresholds must enqueue two supplies")
+	_expect(PlayerData.get_pending_gold_supplies().size() == 2, "gold earnings crossing two thresholds must enqueue two supplies")
 
 	_ui = UI_SCENE.instantiate() as UI
 	add_child(_ui)
@@ -57,34 +56,19 @@ func _run() -> void:
 
 	var rest_center := _rest_area.get_spawn_position()
 	_player.global_position = rest_center + Vector2(180.0, 0.0)
-	PhaseManager.phase = PhaseManager.SETTLEMENT
-	PhaseManager._settlement_reward_gate_active = true
-	PhaseManager._contract_rewards_applied = false
-	PhaseManager.begin_post_battle_collect_gate(5.0)
-	_rest_area.call("_on_phase_changed", PhaseManager.SETTLEMENT)
-	await get_tree().process_frame
-	await get_tree().process_frame
-
-	_expect(PhaseManager.is_post_battle_collect_gate_active(), "expected collect gate to be active")
-	_expect(TaskRewardManager.is_reward_blocking_interactions(), "expected collect gate to block rest rewards")
-	_expect(not _rest_area.is_active(), "rest area must remain inactive during reward settlement")
-	_expect(not _player.is_auto_nav_active(), "settlement must not route the player into an unselected rest protocol")
-
 	var reward := RewardInfo.new()
 	reward.gold_value = 1
 	RewardDraftRuntime.set_pending_standard_draft([reward], {"draft_index": 1})
-	_reward_manager.call("_open_completed_battle_standard_draft_if_ready")
-	await get_tree().process_frame
-	await get_tree().process_frame
-
-	_expect(not _is_reward_panel_open(), "reward panel must wait while battle-end auto-collect remains active")
-	_expect(PhaseManager.current_state() == PhaseManager.SETTLEMENT, "settlement must remain active while auto-collect blocks rewards")
-	PhaseManager.complete_post_battle_collect_gate()
+	var pickup_radius: float = _player.grab_radius.shape.radius
+	PhaseManager.enter_settlement()
+	_expect(is_equal_approx(_player.grab_radius.shape.radius, pickup_radius), "settlement must preserve normal pickup range")
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	_expect(_ui.gold_supply_controller.active, "first pending supply must open after auto-collect")
+	_expect(not _rest_area.is_active(), "rest area must remain inactive during reward settlement")
+	_expect(not _player.is_auto_nav_active(), "settlement must not route the player into an unselected rest protocol")
+	_expect(_ui.gold_supply_controller.active, "first pending supply must open immediately without auto-collect waiting")
 	_expect(RewardDraftRuntime.is_standard_draft_blocking_interactions(), "protocol reward must remain queued while supply is open")
 	_claim_current_supply()
 	await get_tree().process_frame
@@ -100,7 +84,6 @@ func _run() -> void:
 	_expect(not _ui.gold_supply_controller.active, "supply panel must close before protocol reward panel opens")
 	_expect(_is_reward_panel_open(), "reward panel should open only after all supplies clear")
 	_expect(PhaseManager.current_state() == PhaseManager.SETTLEMENT, "settlement remains active until the reward is confirmed")
-	_expect(not PhaseManager.is_post_battle_collect_gate_active(), "expected collect gate to be inactive after completion")
 
 	_finish()
 

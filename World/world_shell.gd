@@ -40,6 +40,7 @@ func _build_world_over_frames() -> void:
 	await _run_stage(&"rest_area", 0.89, _build_rest_area)
 	await _run_stage(&"ui", 0.91, _build_ui)
 	await _run_stage(&"player", 0.925, _build_player)
+	await _run_stage(&"reward_panel", 0.932, _prewarm_reward_panel)
 	await _run_stage(&"ground", 0.94, _build_ground)
 	await _run_stage(&"world_services", 0.955, _build_world_services)
 
@@ -55,7 +56,7 @@ func _build_world_over_frames() -> void:
 func _run_stage(stage: StringName, progress: float, builder: Callable) -> void:
 	_set_stage(stage, progress)
 	LoadingPerformance.begin_segment("world_shell_%s" % stage)
-	builder.call()
+	await builder.call()
 	LoadingPerformance.end_segment("world_shell_%s" % stage)
 	# Adding a subtree runs its enter/ready callbacks synchronously. Yield after
 	# every bounded phase so the persistent loading preview can keep rendering.
@@ -104,6 +105,20 @@ func _build_ui() -> void:
 	var ui := UI_SCENE.instantiate()
 	ui.name = "UI"
 	add_child(ui)
+
+
+func _prewarm_reward_panel() -> void:
+	if not PlayerData.gold_supply_enabled:
+		return
+	var ui := get_node_or_null("UI") as UI
+	if ui != null:
+		# Keep the hidden panel alive so first claim reuses its loaded dependencies
+		# and initialized nodes while the loading preview covers this work.
+		ui._init_reward_selection_panel()
+		ui._init_weapon_replacement_panel()
+		await PlayerData.gold_supply_rewards.prewarm_catalog()
+		await ui.reward_selection_panel.prewarm_supply_visuals()
+		ui.gold_supply_controller.finish_resource_prewarm()
 
 
 func _build_player() -> void:

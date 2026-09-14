@@ -670,6 +670,14 @@ func find_auto_fire_target() -> Node2D:
 #endregion
 
 #region Lifecycle And Processing
+func _enter_tree() -> void:
+	# Warehouse transfers re-enter the tree without running _init or _ready again.
+	if skill_runtime.weapon == null:
+		skill_runtime.setup(self)
+	if skill_unlock_runtime.weapon == null:
+		skill_unlock_runtime.setup(self)
+		skill_unlock_runtime.configure(skill_unlock_condition, skill_unlock_hint, skill_unlock_required)
+
 func _initialize_branch_runtime() -> void:
 	branch_runtime.setup(self)
 	branch_runtime.name = "BranchRuntime"

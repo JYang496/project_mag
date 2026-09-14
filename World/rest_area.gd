@@ -103,8 +103,6 @@ func _ready() -> void:
 		_board = get_node_or_null(board_path) as BoardCellGenerator
 	if not PhaseManager.is_connected("phase_changed", Callable(self, "_on_phase_changed")):
 		PhaseManager.connect("phase_changed", Callable(self, "_on_phase_changed"))
-	if not PhaseManager.post_battle_collect_gate_changed.is_connected(_on_post_battle_collect_gate_changed):
-		PhaseManager.post_battle_collect_gate_changed.connect(_on_post_battle_collect_gate_changed)
 	if not LocalizationManager.is_connected("language_changed", Callable(self, "_on_language_changed")):
 		LocalizationManager.connect("language_changed", Callable(self, "_on_language_changed"))
 	if not InventoryData.temporary_modules_changed.is_connected(_on_zone_hint_status_changed):
@@ -113,6 +111,8 @@ func _ready() -> void:
 		InventoryData.weapon_storage_changed.connect(_on_zone_hint_status_changed)
 	if not PlayerData.weapon_list_changed.is_connected(_on_zone_hint_status_changed):
 		PlayerData.weapon_list_changed.connect(_on_zone_hint_status_changed)
+	if not PlayerData.modification_points_changed.is_connected(_on_zone_hint_status_changed):
+		PlayerData.modification_points_changed.connect(_on_zone_hint_status_changed)
 	if not PlayerData.player_gold_changed.is_connected(_on_zone_hint_status_changed):
 		PlayerData.player_gold_changed.connect(_on_zone_hint_status_changed)
 	if not CellEffectRuntime.inventory_changed.is_connected(_on_zone_hint_status_changed):
@@ -218,8 +218,6 @@ func _exit_tree() -> void:
 		CellEffectRuntime.pending_changed.disconnect(_on_zone_hint_status_changed)
 	if TaskRewardManager and TaskRewardManager.pending_reward_changed.is_connected(_on_pending_reward_changed):
 		TaskRewardManager.pending_reward_changed.disconnect(_on_pending_reward_changed)
-	if PhaseManager and PhaseManager.post_battle_collect_gate_changed.is_connected(_on_post_battle_collect_gate_changed):
-		PhaseManager.post_battle_collect_gate_changed.disconnect(_on_post_battle_collect_gate_changed)
 
 func _on_language_changed(_new_locale: String) -> void:
 	if _hint_presenter != null:
@@ -235,16 +233,6 @@ func _on_pending_reward_changed(_has_pending: bool) -> void:
 	_on_zone_hint_status_changed()
 	_refresh_interaction_state()
 	_update_zone_hint_visuals(true)
-	queue_redraw()
-
-func _on_post_battle_collect_gate_changed(blocking: bool) -> void:
-	if PhaseManager.current_state() != PhaseManager.PREPARE:
-		return
-	if blocking:
-		_refresh_interaction_state()
-		return
-	_start_zone_hint_intro()
-	_refresh_interaction_state()
 	queue_redraw()
 
 func _refresh_scene_hint_labels() -> void:
@@ -309,6 +297,7 @@ func _on_phase_changed(new_phase: String) -> void:
 	_enter_non_prepare_phase()
 
 func _enter_prepare_phase() -> void:
+	_collect_all_coins()
 	_sync_to_target_center()
 	_set_active(true, false)
 	_refresh_readiness_checklist(true)
@@ -322,6 +311,14 @@ func _enter_prepare_phase() -> void:
 	_refresh_interaction_state()
 	if _start_battle_button:
 		_start_battle_button.reset_state()
+
+func _collect_all_coins() -> void:
+	var player: Player = PlayerData.player as Player
+	if not is_instance_valid(player):
+		return
+	for coin in CollectableRegistry.get_coins():
+		if is_instance_valid(coin) and not coin.is_queued_for_deletion():
+			player._on_collect_area_area_entered(coin)
 
 func _enter_non_prepare_phase() -> void:
 	_zone_hint_intro_remaining = 0.0

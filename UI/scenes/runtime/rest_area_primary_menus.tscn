@@ -126,6 +126,14 @@ offset_right = 248.0
 offset_bottom = 212.0
 text = "Module"
 
+[node name="OpenFusionButton" type="Button" parent="UpgradePrimaryRoot/Panel"]
+layout_mode = 0
+offset_left = 28.0
+offset_top = 224.0
+offset_right = 248.0
+offset_bottom = 270.0
+text = "Fusion"
+
 [node name="WarehousePrimaryRoot" type="Control" parent="." unique_id=1319409131]
 visible = false
 anchors_preset = 0

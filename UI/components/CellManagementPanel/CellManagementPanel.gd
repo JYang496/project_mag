@@ -1,5 +1,7 @@
 extends Control
 
+const LIST_INPUT_GUARD := preload("res://UI/scripts/management/list_layout_input_guard.gd")
+
 signal board_management_requested
 
 const PANEL_BG := Color(0.045, 0.065, 0.09, 0.98)
@@ -28,6 +30,9 @@ var owner_ui: UI
 var _board: BoardCellGenerator
 var _mode: StringName = &"home"
 var _selected_inventory_index: int = -1
+var _task_view: HBoxContainer
+var _task_layout_pending := false
+var _task_layout_generation := 0
 var _pending_overwrite_inventory_index: int = -1
 var _pending_overwrite_module_id: String = ""
 var _pending_overwrite_cell_id: int = 0
@@ -87,7 +92,7 @@ func clear_selection_if_any() -> bool:
 		return true
 	if _mode == &"task" and _selected_inventory_index >= 0:
 		_selected_inventory_index = -1
-		_refresh()
+		_refresh_task_selection()
 		return true
 	return false
 
@@ -101,6 +106,14 @@ func cancel_menu_level() -> bool:
 func _refresh() -> void:
 	if not visible:
 		return
+	_task_layout_generation += 1
+	_task_layout_pending = _mode == &"task"
+	if _hover_task_detail_cell_id > 0:
+		_hover_task_detail_cell_id = 0
+		if _locked_task_detail_cell_id > 0:
+			_show_task_detail_for_cell(_locked_task_detail_cell_id)
+		else:
+			_close_task_detail_window(false)
 	match _mode:
 		&"task":
 			_clear_panel_content()
@@ -110,6 +123,22 @@ func _refresh() -> void:
 			_refresh_home()
 	_apply_panel_size_for_mode()
 	call_deferred("_apply_panel_size_for_mode")
+	if _mode == &"task":
+		_finish_task_layout(_task_layout_generation)
+
+func _finish_task_layout(generation: int) -> void:
+	await LIST_INPUT_GUARD.settle([_task_view])
+	if not is_inside_tree():
+		return
+	await get_tree().process_frame
+	if generation != _task_layout_generation or not is_inside_tree() or not visible or _mode != &"task":
+		return
+	_task_layout_pending = false
+	var hovered := get_viewport().gui_get_hovered_control()
+	for child in _task_view.get_node("GridPanel/Margin/Grid").get_children():
+		if child is Button and not child.disabled and (hovered == child or (hovered != null and child.is_ancestor_of(hovered))) and child.get_global_rect().has_point(child.get_global_mouse_position()):
+			_on_cell_hovered(int(child.get_meta("cell_id")))
+			break
 
 func _refresh_home() -> void:
 	var helper: ManagementUiStyleHelper = null
@@ -137,6 +166,7 @@ func _refresh_task_management() -> void:
 	_title_label.text = LocalizationManager.tr_key("ui.task_management.title", "Task Management")
 	_subtitle_label.text = LocalizationManager.tr_key("ui.task_management.subtitle", "Install task modules on active cells before the next battle.")
 	var view := TASK_VIEW_SCENE.instantiate() as HBoxContainer
+	_task_view = view
 	_content.add_child(view)
 	_populate_cell_preview_grid(view.get_node("GridPanel/Margin/Grid") as GridContainer)
 	_populate_task_module_side(view)
@@ -147,6 +177,7 @@ func _populate_cell_preview_grid(grid: GridContainer) -> void:
 	for id_variant in ids:
 		var cell_id := int(id_variant)
 		var button := WAREHOUSE_DRAG_DROP_BUTTON_SCENE.instantiate() as Button
+		button.set_meta("cell_id", cell_id)
 		button.call("set_drag_context", self, {}, {"kind": "task_cell", "cell_id": cell_id})
 		button.custom_minimum_size = CELL_PREVIEW_BUTTON_SIZE
 		button.toggle_mode = false
@@ -189,6 +220,8 @@ func _populate_task_module_side(view: Control) -> void:
 			index == _selected_inventory_index,
 			{"kind": "task_inventory_module", "inventory_index": index, "module_id": module_id}
 		)
+		button.set_meta("inventory_index", index)
+		button.set_meta("module_id", module_id)
 		button.pressed.connect(_on_inventory_pressed.bind(index))
 		column.add_child(button)
 
@@ -546,9 +579,12 @@ func _make_panel_style(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	return style
 
 func _clear_panel_content() -> void:
+	_task_view = null
 	for child in _content.get_children():
+		_content.remove_child(child)
 		child.queue_free()
 	for child in _footer.get_children():
+		_footer.remove_child(child)
 		child.queue_free()
 
 func _on_primary_menu_entry_pressed(entry_id: StringName) -> void:
@@ -579,11 +615,35 @@ func _return_to_primary_menu() -> bool:
 	_refresh()
 	return true
 
+func _refresh_task_selection() -> void:
+	if not is_instance_valid(_task_view):
+		return
+	var inventory := CellTaskModuleRuntime.get_inventory_snapshot()
+	var guidance := _task_management_guidance(inventory.size(), CellTaskModuleRuntime.get_deployment_snapshot().size(), int(CellTaskModuleRuntime.ACTIVE_LIMIT))
+	var title_text := LocalizationManager.tr_format("ui.task_management.ready_title", {"count": inventory.size()}, "Ready To Install (%d)" % inventory.size())
+	_task_view.call("set_data", title_text, guidance.status, guidance.instruction, guidance.detail, guidance.warning)
+	for child in _task_view.get_node("Side/Scroll/InventoryList").get_children():
+		if child is Button and child.has_meta("inventory_index"):
+			var selected: bool = int(child.get_meta("inventory_index")) == _selected_inventory_index
+			child.toggle_mode = true
+			child.set_pressed_no_signal(selected)
+			_style_task_module_button(child, CellTaskModuleRuntime.get_definition(str(child.get_meta("module_id"))), selected)
+	for child in _task_view.get_node("GridPanel/Margin/Grid").get_children():
+		if child is Button:
+			var cell_id := int(child.get_meta("cell_id"))
+			child.add_theme_stylebox_override("normal", _make_cell_preview_style(cell_id, false, child.disabled))
+			child.add_theme_stylebox_override("hover", _make_cell_preview_style(cell_id, true, child.disabled))
+			child.add_theme_stylebox_override("pressed", _make_cell_preview_style(cell_id, true, child.disabled))
+
 func _on_inventory_pressed(index: int) -> void:
+	if _task_layout_pending:
+		return
 	_selected_inventory_index = index
-	_refresh()
+	_refresh_task_selection()
 
 func _on_cell_pressed(cell_id: int) -> void:
+	if _task_layout_pending:
+		return
 	if _selected_inventory_index < 0:
 		_show_task_detail_for_cell(cell_id, true, false)
 		return
@@ -602,9 +662,13 @@ func _on_cell_pressed(cell_id: int) -> void:
 	_refresh()
 
 func _on_cell_hovered(cell_id: int) -> void:
+	if _task_layout_pending:
+		return
 	_show_task_detail_for_cell(cell_id, false, true)
 
 func _on_cell_unhovered(cell_id: int) -> void:
+	if _task_layout_pending:
+		return
 	if _hover_task_detail_cell_id != cell_id:
 		return
 	_hover_task_detail_cell_id = 0

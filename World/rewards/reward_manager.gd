@@ -45,12 +45,6 @@ func _open_completed_battle_standard_draft_if_ready() -> void:
 	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
 		RewardDraftRuntime.clear_standard_draft_opening()
 		return
-	if PhaseManager.is_post_battle_collect_gate_active():
-		await PhaseManager.post_battle_collect_gate_changed
-		if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
-			return
-		call_deferred("_open_completed_battle_standard_draft_if_ready")
-		return
 	if PhaseManager.is_settlement_reward_gate_active():
 		await PhaseManager.settlement_reward_gate_changed
 		if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
@@ -458,6 +452,7 @@ func grant_reward_immediately(reward: RewardInfo) -> bool:
 			var obtained_module := obtain_result.get("module", null) as Module
 			var ui = GlobalVariables.ui
 			if granted_any and str(obtain_result.get("result", "")) == "stored" \
+					and PhaseManager.current_state() != PhaseManager.SETTLEMENT \
 					and obtained_module != null \
 					and InventoryData.can_assign_module_to_any_equipped_weapon(obtained_module, true) \
 					and ui != null and is_instance_valid(ui) \

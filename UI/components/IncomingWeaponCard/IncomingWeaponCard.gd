@@ -29,4 +29,4 @@ func _resolve_nodes() -> void:
 	icon_host = get_node("Margin/Row/IconHost") as Control
 	name_label = get_node("Margin/Row/Text/Name") as Label
 	meta_label = get_node("Margin/Row/Text/Meta") as Label
-	stats_label = get_node("Margin/Row/Text/Stats") as Label
+	stats_label = get_node("Margin/Row/Stats") as Label

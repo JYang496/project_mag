@@ -15,7 +15,7 @@ corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
 [node name="IncomingWeaponCard" type="PanelContainer"]
-custom_minimum_size = Vector2(520, 96)
+custom_minimum_size = Vector2(520, 80)
 theme_override_styles/panel = SubResource("CardStyle")
 script = ExtResource("1_script")
 
@@ -59,9 +59,12 @@ theme_override_font_sizes/font_size = 14
 clip_text = true
 vertical_alignment = 1
 
-[node name="Stats" type="Label" parent="Margin/Row/Text"]
+[node name="Stats" type="Label" parent="Margin/Row"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(352, 40)
 layout_mode = 2
+size_flags_vertical = 1
+autowrap_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.72, 0.88, 0.92, 1)
 theme_override_font_sizes/font_size = 12

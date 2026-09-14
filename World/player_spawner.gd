@@ -134,6 +134,7 @@ func _add_player_to_root(player_instance: Node) -> void:
 	grant_startup_feature_test_loadout(player_instance as Player)
 	TaskRewardManager.restore_snapshot_after_player_spawn()
 	SaveManager.restore_after_player_spawn()
+	PlayerData.grant_rest_modification_points()
 	LoadingPerformance.end_segment("player_add_to_tree")
 
 static func grant_startup_feature_test_loadout(player: Player, force_enabled: bool = false) -> void:

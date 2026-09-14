@@ -25,7 +25,10 @@ func setup(source_weapon: Weapon) -> void:
 
 func update(delta: float) -> void:
 	var step := maxf(delta, 0.0)
+	var was_on_cooldown := _cooldown_remaining > 0.0
 	_cooldown_remaining = maxf(_cooldown_remaining - step, 0.0)
+	if was_on_cooldown and _cooldown_remaining <= 0.0 and is_instance_valid(weapon):
+		weapon.set_meta(&"_weapon_skill_cooldown_ready_msec", Time.get_ticks_msec())
 	if _active_remaining <= 0.0:
 		return
 	_active_remaining = maxf(_active_remaining - step, 0.0)
@@ -77,6 +80,8 @@ func request() -> bool:
 
 
 func get_status() -> Dictionary:
+	if not is_instance_valid(weapon):
+		return {"available": false, "ready": false, "active": false}
 	var definition := _get_player_skill_definition()
 	var cooldown_sec := _read_float(definition, &"cooldown_sec", DEFAULT_COOLDOWN_SEC, 0.05)
 	var energy_cost := _read_energy_cost(definition)

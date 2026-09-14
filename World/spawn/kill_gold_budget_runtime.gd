@@ -188,7 +188,7 @@ func get_registered_coins() -> Array[Coin]:
 
 func is_uncollected_coin(collectable: Node) -> bool:
 	var coin := collectable as Coin
-	if coin == null:
+	if coin == null or coin.contract_reward:
 		return false
 	if coin.sprite != null and not coin.sprite.visible:
 		return false

@@ -1,4 +1,6 @@
 extends Ranger
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 
 const CLOSE_CHAIN_RULES := preload("res://Player/Weapons/close_quarters_chain_rules.gd")
 const CHAINSAW_SPIN_FRAMES := preload("res://Player/Weapons/Projectiles/chainsaw_spin_frames.tres")
@@ -159,8 +161,8 @@ func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
 	boundary.damage_type = Attack.TYPE_PHYSICAL
 	boundary.source_node = self
 	boundary.source_category = DamageData.SOURCE_PLAYER_WEAPON
-	boundary.fill_color = Color(1.0, 0.28, 0.12, 0.28)
-	boundary.line_color = Color(1.0, 0.62, 0.2, 0.95)
+	boundary.fill_color = PALETTE.PLAYER_RANGE_FILL
+	boundary.line_color = PALETTE.PLAYER_RANGE_OUTLINE
 	get_projectile_spawn_parent().add_child(boundary)
 	var corners := [bounds.position, Vector2(bounds.end.x, bounds.position.y), bounds.end, Vector2(bounds.position.x, bounds.end.y)]
 	for index in range(4):

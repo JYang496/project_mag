@@ -13,8 +13,8 @@ var radius: float = 140.0
 var affect_players: bool = false
 var max_instances_per_owner: int = 3
 @export var show_range_indicator: bool = true
-@export var indicator_fill_color: Color = Color(PALETTE.FREEZE, 0.12)
-@export var indicator_outline_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.58)
+@export var indicator_fill_color: Color = PALETTE.PLAYER_RANGE_FILL
+@export var indicator_outline_color: Color = PALETTE.PLAYER_RANGE_OUTLINE
 
 var _elapsed_sec: float = 0.0
 var _tick_accum_sec: float = 0.0
@@ -72,7 +72,7 @@ func _draw() -> void:
 	var outline_color: Color = indicator_outline_color
 	outline_color.a *= life_ratio
 	draw_circle(Vector2.ZERO, radius, fill_color)
-	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, outline_color, 2.0, false)
+	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, outline_color, PALETTE.PLAYER_RANGE_LINE_WIDTH, false)
 
 func _apply_tick_damage() -> void:
 	var candidates: Array[Node] = []

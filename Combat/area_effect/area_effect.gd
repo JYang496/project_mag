@@ -653,8 +653,9 @@ func _draw() -> void:
 	if not _is_debug_draw_enabled():
 		return
 	var alpha_multiplier := get_visual_alpha_multiplier()
-	var fill_color := debug_fill_color
-	var line_color := debug_line_color
+	var player_range := source_category == DamageData.SOURCE_PLAYER_WEAPON
+	var fill_color := CombatVisualPalette.PLAYER_RANGE_FILL if player_range else debug_fill_color
+	var line_color := CombatVisualPalette.PLAYER_RANGE_OUTLINE if player_range else debug_line_color
 	fill_color.a *= alpha_multiplier
 	line_color.a *= alpha_multiplier
 	draw_circle(Vector2.ZERO, radius, fill_color)
@@ -665,7 +666,7 @@ func _draw() -> void:
 		TAU,
 		64,
 		line_color,
-		maxf(debug_line_width, 1.0),
+		1.0 if player_range else maxf(debug_line_width, 1.0),
 		true
 	)
 

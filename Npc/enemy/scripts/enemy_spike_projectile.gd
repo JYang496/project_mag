@@ -4,7 +4,7 @@ class_name EnemySpikeProjectile
 @export var speed: float = 190.0
 @export var life_time: float = 3.2
 @export var damage: int = 1
-@export var radius: float = 11.0
+@export var radius: float = 7.0
 @export var damage_type: StringName = Attack.TYPE_PHYSICAL
 
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D

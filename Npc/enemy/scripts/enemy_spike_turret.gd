@@ -14,8 +14,8 @@ const PROJECTILE_SCENE := preload("res://Npc/enemy/scenes/enemy_spike_projectile
 @export var muzzle_offset: float = 22.0
 @export var screen_fire_margin: float = 28.0
 @export var aim_warning_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.94)
-@export var aim_warning_width: float = 3.0
-@export var aim_warning_outline_width: float = 9.0
+@export var aim_warning_width: float = 2.0
+@export var aim_warning_outline_width: float = 6.0
 @export var release_flash_duration: float = 0.11
 @export_range(0.0, 0.2, 0.005) var fire_camera_shake: float = 0.045
 
@@ -40,7 +40,7 @@ func _ready() -> void:
 	combat_role = "ranged"
 	_aim_warning_outline = _create_warning_line("AimWarningOutline", aim_warning_outline_width, Color(PALETTE.ENEMY_DARK, 0.72), 7)
 	_aim_warning_line = _create_warning_line("AimWarningLine", aim_warning_width, aim_warning_color, 8)
-	_aim_warning_fill = _create_warning_line("AimWarningProgress", maxf(aim_warning_width - 1.0, 2.0), Color(1.0, 0.86, 0.62, 1.0), 9)
+	_aim_warning_fill = _create_warning_line("AimWarningProgress", maxf(aim_warning_width - 1.0, 1.0), Color(1.0, 0.86, 0.62, 1.0), 9)
 	_warning_lines.assign([_aim_warning_outline, _aim_warning_line, _aim_warning_fill])
 	call_deferred("_register_warning_lines_with_hybrid_ground")
 

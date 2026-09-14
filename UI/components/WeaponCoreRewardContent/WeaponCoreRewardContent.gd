@@ -1,21 +1,29 @@
 extends VBoxContainer
 
-@onready var title_label: Label = %WeaponCoreTitle
-@onready var source_image: TextureRect = %WeaponCoreSourceImage
-@onready var source_label: Label = %WeaponCoreSource
-@onready var gain_label: Label = %WeaponCoreGain
-@onready var inventory_status: PanelContainer = %WeaponCoreInventoryStatus
-@onready var inventory_label: Label = %WeaponCoreInventory
-@onready var tag_heading: Label = %CoreTagHeading
-@onready var chip_grid: GridContainer = %BuildChipRow
-@onready var usage_panel: PanelContainer = $WeaponCoreUsagePanel
-@onready var usage_heading: Label = %WeaponCoreUsageHeading
-@onready var usage_summary: Label = %WeaponCoreUsageSummary
-@onready var supported_weapon_grid: GridContainer = %WeaponCoreSupportedWeaponGrid
-@onready var usage_line_one: Label = %WeaponCoreUsageLine1
-@onready var usage_line_two: Label = %WeaponCoreUsageLine2
-@onready var usage_more: Label = %WeaponCoreUsageMore
-@onready var usage_empty: Label = %WeaponCoreUsageEmpty
+const MAX_VISIBLE_WEAPON_ROWS := 4
+const WEAPON_TILE_HEIGHT := 38.0
+const WEAPON_ROW_SEPARATION := 5.0
+const OVERLAY_GAP := 6.0
+const VIEWPORT_MARGIN := 8.0
+const DISMISS_DELAY_SECONDS := 0.125
+
+var title_label: Label
+var source_image: TextureRect
+var source_label: Label
+var gain_label: Label
+var inventory_status: PanelContainer
+var inventory_label: Label
+var tag_heading: Label
+var chip_grid: GridContainer
+var usage_panel: PanelContainer
+var usage_heading: Label
+var usage_summary: Label
+var supported_weapon_scroll: ScrollContainer
+var supported_weapon_grid: GridContainer
+var usage_line_one: Label
+var usage_line_two: Label
+var usage_more: Label
+var usage_empty: Label
 
 var _default_usage_heading := ""
 var _default_usage_summary := ""
@@ -23,6 +31,12 @@ var _default_usage_lines := PackedStringArray()
 var _default_usage_entries: Array = []
 var _default_usage_more := ""
 var _default_usage_empty := ""
+var _dismiss_timer: Timer
+var _active_chip: Control
+
+
+func _ready() -> void:
+	_resolve_nodes()
 
 
 func set_data(data: Dictionary) -> void:
@@ -79,6 +93,8 @@ func emphasize_inherited_tags() -> void:
 
 func configure_tag_weapon_interactions(chips: Array, tag_weapon_map: Dictionary) -> void:
 	_resolve_nodes()
+	_attach_usage_overlay_to_card()
+	_ensure_interaction_runtime()
 	for index in range(mini(chips.size(), chip_grid.get_child_count())):
 		var chip_data := chips[index] as Dictionary
 		var chip := chip_grid.get_child(index) as Control
@@ -90,13 +106,53 @@ func configure_tag_weapon_interactions(chips: Array, tag_weapon_map: Dictionary)
 		chip.mouse_filter = Control.MOUSE_FILTER_PASS
 		chip.focus_mode = Control.FOCUS_ALL
 		chip.tooltip_text = LocalizationManager.tr_format("ui.reward.core.tag_focus_hint", {"tag": tag_label}, "Show weapons supported by %s" % tag_label)
-		chip.mouse_entered.connect(_show_tag_weapons.bind(tag_label, weapon_entries, chip))
-		chip.mouse_exited.connect(_restore_default_usage)
-		chip.focus_entered.connect(_show_tag_weapons.bind(tag_label, weapon_entries, chip))
-		chip.focus_exited.connect(_restore_default_usage)
+		chip.mouse_entered.connect(_on_tag_entered.bind(tag_label, weapon_entries, chip))
+		chip.mouse_exited.connect(_request_usage_dismiss)
+		chip.focus_entered.connect(_on_tag_entered.bind(tag_label, weapon_entries, chip))
+		chip.focus_exited.connect(_request_usage_dismiss)
+
+
+func _attach_usage_overlay_to_card() -> void:
+	var ancestor := get_parent()
+	while ancestor != null and not ancestor is Button:
+		ancestor = ancestor.get_parent()
+	if ancestor == null or usage_panel.get_parent() == ancestor:
+		return
+	_clear_scene_owner(usage_panel)
+	usage_panel.reparent(ancestor, false)
+	usage_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	usage_panel.z_index = 20
+
+
+func _clear_scene_owner(node: Node) -> void:
+	node.owner = null
+	for child in node.get_children():
+		_clear_scene_owner(child)
+
+
+func _ensure_interaction_runtime() -> void:
+	if _dismiss_timer == null:
+		_dismiss_timer = Timer.new()
+		_dismiss_timer.name = "WeaponCoreUsageDismissTimer"
+		_dismiss_timer.one_shot = true
+		_dismiss_timer.wait_time = DISMISS_DELAY_SECONDS
+		add_child(_dismiss_timer)
+		_dismiss_timer.timeout.connect(_dismiss_usage_if_outside)
+	usage_panel.mouse_entered.connect(_cancel_usage_dismiss)
+	usage_panel.mouse_exited.connect(_request_usage_dismiss)
+	supported_weapon_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	supported_weapon_scroll.focus_mode = Control.FOCUS_ALL
+	supported_weapon_scroll.focus_entered.connect(_cancel_usage_dismiss)
+	supported_weapon_scroll.focus_exited.connect(_request_usage_dismiss)
+
+
+func _on_tag_entered(tag_label: String, weapon_entries: Array, chip: Control) -> void:
+	_cancel_usage_dismiss()
+	_show_tag_weapons(tag_label, weapon_entries, chip)
 
 
 func _show_tag_weapons(tag_label: String, weapon_entries: Array, active_chip: Control) -> void:
+	_active_chip = active_chip
 	usage_panel.visible = true
 	usage_heading.text = "%s → %s" % [tag_label, LocalizationManager.tr_key("ui.reward.core.usable_by_label", "Supported Weapons")]
 	usage_summary.visible = false
@@ -106,10 +162,64 @@ func _show_tag_weapons(tag_label: String, weapon_entries: Array, active_chip: Co
 	usage_empty.visible = weapon_entries.is_empty()
 	usage_empty.text = LocalizationManager.tr_key("ui.reward.core.tag_no_weapons", "No current fusion branch uses this Tag")
 	_set_active_tag_chip(active_chip)
+	call_deferred("_place_usage_overlay")
+
+
+func _cancel_usage_dismiss() -> void:
+	if _dismiss_timer != null:
+		_dismiss_timer.stop()
+
+
+func _request_usage_dismiss() -> void:
+	if _dismiss_timer == null or not _dismiss_timer.is_inside_tree():
+		return
+	_dismiss_timer.start(DISMISS_DELAY_SECONDS)
+
+
+func _dismiss_usage_if_outside() -> void:
+	if _pointer_or_focus_is_inside_interaction():
+		return
+	_restore_default_usage()
+
+
+func _pointer_or_focus_is_inside_interaction() -> bool:
+	if not is_inside_tree():
+		return false
+	var pointer := get_global_mouse_position()
+	if chip_grid.get_global_rect().has_point(pointer):
+		return true
+	if usage_panel.visible and usage_panel.get_global_rect().has_point(pointer):
+		return true
+	var focus_owner := get_viewport().gui_get_focus_owner()
+	if focus_owner == null:
+		return false
+	return chip_grid == focus_owner or chip_grid.is_ancestor_of(focus_owner) \
+		or usage_panel == focus_owner or usage_panel.is_ancestor_of(focus_owner)
+
+
+func _place_usage_overlay() -> void:
+	if not usage_panel.visible or _active_chip == null or not is_instance_valid(_active_chip):
+		return
+	usage_panel.reset_size()
+	var anchor_rect := chip_grid.get_global_rect()
+	var panel_width := anchor_rect.size.x
+	var panel_height := usage_panel.get_combined_minimum_size().y
+	usage_panel.size = Vector2(panel_width, panel_height)
+	var viewport_rect := get_viewport().get_visible_rect()
+	var below_y := anchor_rect.end.y + OVERLAY_GAP
+	var above_y := anchor_rect.position.y - panel_height - OVERLAY_GAP
+	var target_y := below_y
+	if below_y + panel_height > viewport_rect.end.y - VIEWPORT_MARGIN:
+		target_y = above_y
+	target_y = clampf(target_y, viewport_rect.position.y + VIEWPORT_MARGIN, viewport_rect.end.y - panel_height - VIEWPORT_MARGIN)
+	var target_x := clampf(anchor_rect.position.x, viewport_rect.position.x + VIEWPORT_MARGIN, viewport_rect.end.x - panel_width - VIEWPORT_MARGIN)
+	usage_panel.global_position = Vector2(target_x, target_y)
 
 
 func _restore_default_usage() -> void:
+	_cancel_usage_dismiss()
 	usage_panel.visible = false
+	_active_chip = null
 	usage_heading.text = _default_usage_heading
 	usage_summary.text = _default_usage_summary
 	usage_summary.visible = false
@@ -129,12 +239,18 @@ func _set_weapon_entries(entries: Array) -> void:
 	for index in range(entries.size()):
 		supported_weapon_grid.add_child(_make_weapon_tile(entries[index] as Dictionary, index))
 	supported_weapon_grid.visible = not entries.is_empty()
+	supported_weapon_scroll.visible = not entries.is_empty()
+	var row_count := ceili(float(entries.size()) / float(supported_weapon_grid.columns))
+	var visible_rows := mini(row_count, MAX_VISIBLE_WEAPON_ROWS)
+	var viewport_height := float(visible_rows) * WEAPON_TILE_HEIGHT + float(maxi(0, visible_rows - 1)) * WEAPON_ROW_SEPARATION
+	supported_weapon_scroll.custom_minimum_size.y = viewport_height
+	supported_weapon_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO if row_count > MAX_VISIBLE_WEAPON_ROWS else ScrollContainer.SCROLL_MODE_DISABLED
 
 
 func _make_weapon_tile(entry: Dictionary, index: int) -> PanelContainer:
 	var tile := PanelContainer.new()
 	tile.name = "WeaponCoreWeaponTile%d" % (index + 1)
-	tile.custom_minimum_size = Vector2(0.0, 38.0)
+	tile.custom_minimum_size = Vector2(0.0, WEAPON_TILE_HEIGHT)
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
@@ -232,7 +348,8 @@ func _resolve_nodes() -> void:
 	usage_panel = get_node("WeaponCoreUsagePanel") as PanelContainer
 	usage_heading = get_node("WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreUsageHeadingRow/WeaponCoreUsageHeading") as Label
 	usage_summary = get_node("WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreUsageSummary") as Label
-	supported_weapon_grid = get_node("WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreSupportedWeaponGrid") as GridContainer
+	supported_weapon_scroll = get_node("WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreSupportedWeaponScroll") as ScrollContainer
+	supported_weapon_grid = get_node("WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreSupportedWeaponScroll/WeaponCoreSupportedWeaponGrid") as GridContainer
 	usage_line_one = get_node("WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreUsageLine1") as Label
 	usage_line_two = get_node("WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreUsageLine2") as Label
 	usage_more = get_node("WeaponCoreUsagePanel/WeaponCoreUsageSection/WeaponCoreUsageMore") as Label

@@ -31,13 +31,51 @@ var _allow_cancel := true
 var _on_complete := Callable()
 @onready var _store_button: Button = %Store
 @onready var _confirm_button: Button = %ConfirmReplacement
+@onready var _selection_summary: Label = %SelectionSummary
 var _selected_slot_index := -1
 var _selected_old_weapon: Weapon
 var _slot_buttons: Array[Button] = []
+var _prepared_selection_weapon: Weapon
+
+func has_prepared_selection() -> bool:
+	return is_instance_valid(_prepared_selection_weapon) and not _prepared_selection_weapon.is_queued_for_deletion()
+
+func get_prepared_selection_weapon() -> Weapon:
+	return _prepared_selection_weapon if has_prepared_selection() else null
+
+func invalidate_prepared_selection() -> void:
+	if visible:
+		return
+	if is_instance_valid(_prepared_selection_weapon):
+		if _new_weapon == _prepared_selection_weapon:
+			_new_weapon = null
+		_prepared_selection_weapon.queue_free()
+	_prepared_selection_weapon = null
+
+func prepare_selection(new_weapon: Weapon, still_current: Callable) -> bool:
+	if visible or not is_instance_valid(new_weapon):
+		return false
+	invalidate_prepared_selection()
+	_new_weapon = new_weapon
+	_prepared_selection_weapon = new_weapon
+	_clear_slot_content()
+	incoming_host.add_child(_make_incoming_weapon_card(new_weapon))
+	await get_tree().process_frame
+	for index in range(PlayerData.max_weapon_num):
+		if not still_current.is_valid() or not bool(still_current.call()) or not has_prepared_selection():
+			invalidate_prepared_selection()
+			return false
+		_append_slot(index)
+		await get_tree().process_frame
+	return true
+
+func _exit_tree() -> void:
+	if is_instance_valid(_new_weapon) and _new_weapon.get_parent() == null:
+		_new_weapon.queue_free()
 
 func _ready() -> void:
 	visible = false
-	slots.add_theme_constant_override("separation", 8)
+	slots.add_theme_constant_override("separation", 6)
 	var scroll_bar := slots_scroll.get_v_scroll_bar()
 	scroll_bar.custom_minimum_size.x = 14
 	cancel_button.pressed.connect(_on_cancel_pressed)
@@ -67,6 +105,10 @@ func open_for_weapon(
 		return false
 	if visible:
 		return false
+	var use_prepared := selection_only and has_prepared_selection() and _prepared_selection_weapon == new_weapon
+	if not use_prepared:
+		invalidate_prepared_selection()
+	_prepared_selection_weapon = null
 	_selection_only = selection_only
 	_new_weapon = new_weapon
 	_allow_cancel = allow_cancel
@@ -78,6 +120,7 @@ func open_for_weapon(
 			"weapon": DataHandler.build_weapon_save_payload(new_weapon),
 			"allow_cancel": allow_cancel,
 		})
+	$Margin/Root/ComparisonHeading.text = LocalizationManager.tr_key("ui.weapon.replace.delta_heading", "Changes after replacement")
 	title_label.text = LocalizationManager.tr_key("ui.weapon.replace.install_title", "Install Weapon")
 	description_label.text = LocalizationManager.tr_key(
 		"ui.weapon.replace.consequence_hint",
@@ -90,14 +133,22 @@ func open_for_weapon(
 	_store_button.text = LocalizationManager.tr_key("ui.weapon.warehouse.store", "Store in Warehouse")
 	_selected_slot_index = -1
 	_selected_old_weapon = null
-	_confirm_button.text = LocalizationManager.tr_key("ui.weapon.replace.confirm_prompt", "Select a slot first")
+	_selection_summary.text = LocalizationManager.tr_key("ui.weapon.replace.confirm_prompt", "Select a slot first")
+	_confirm_button.text = LocalizationManager.tr_key("ui.weapon.replace.confirm_install", "Confirm Install")
 	_confirm_button.disabled = true
-	_rebuild_slots()
+	if not use_prepared:
+		_rebuild_slots()
 	visible = true
 	_focus_first_slot.call_deferred()
 	return true
 
 func _rebuild_slots() -> void:
+	_clear_slot_content()
+	incoming_host.add_child(_make_incoming_weapon_card(_new_weapon))
+	for index in range(PlayerData.max_weapon_num):
+		_append_slot(index)
+
+func _clear_slot_content() -> void:
 	_slot_buttons.clear()
 	for child in incoming_host.get_children():
 		incoming_host.remove_child(child)
@@ -105,35 +156,20 @@ func _rebuild_slots() -> void:
 	for child in slots.get_children():
 		slots.remove_child(child)
 		child.queue_free()
-	incoming_host.add_child(_make_incoming_weapon_card(_new_weapon))
-	for index in range(PlayerData.max_weapon_num):
-		if index < PlayerData.player_weapon_list.size():
-			var old_weapon := PlayerData.player_weapon_list[index] as Weapon
-			var button := _make_slot_button(
-				index,
-				old_weapon,
-				LocalizationManager.tr_key("ui.weapon.replace.action_replace", "Replace"),
-				false
-			)
-			button.pressed.connect(_on_slot_selected.bind(index, old_weapon))
-			slots.add_child(button)
-			_slot_buttons.append(button)
-		else:
-			var button := _make_slot_button(
-				index,
-				null,
-				LocalizationManager.tr_key("ui.weapon.replace.action_equip", "Equip"),
-				true
-			)
-			button.pressed.connect(_on_slot_selected.bind(index, null))
-			slots.add_child(button)
-			_slot_buttons.append(button)
+
+func _append_slot(index: int) -> void:
+	var old_weapon := PlayerData.player_weapon_list[index] as Weapon if index < PlayerData.player_weapon_list.size() else null
+	var button := _make_slot_button(index, old_weapon,
+		LocalizationManager.tr_key("ui.weapon.replace.action_replace", "Replace") if old_weapon != null else LocalizationManager.tr_key("ui.weapon.replace.action_equip", "Equip"), old_weapon == null)
+	button.pressed.connect(_on_slot_selected.bind(index, old_weapon))
+	slots.add_child(button)
+	_slot_buttons.append(button)
 
 func _make_incoming_weapon_card(weapon: Weapon) -> PanelContainer:
 	var display_model = WEAPON_DISPLAY_BUILDER.build_from_instance(weapon)
 	var card := INCOMING_WEAPON_CARD_SCENE.instantiate() as PanelContainer
 	card.call("set_data", {
-		"name": display_model.display_name,
+		"name": LocalizationManager.tr_key("ui.weapon.replace.incoming_label", "Incoming Weapon") + " · " + display_model.display_name,
 		"meta": _format_weapon_meta(weapon),
 		"stats": WEAPON_STAT_FORMATTER.format_summary(
 			display_model.current_stats,
@@ -144,7 +180,7 @@ func _make_incoming_weapon_card(weapon: Weapon) -> PanelContainer:
 	card.call("set_icon", _make_weapon_icon(weapon, Vector2(54, 54)))
 	return card
 
-func _make_slot_button(slot_index: int, weapon: Weapon, action_text: String, is_empty: bool) -> Button:
+func _make_slot_button(slot_index: int, weapon: Weapon, _action_text: String, is_empty: bool) -> Button:
 	var button := WEAPON_REPLACEMENT_SLOT_SCENE.instantiate() as Button
 	var module_count := weapon.modules.get_child_count() if not is_empty and weapon.modules != null else 0
 	var current_text := LocalizationManager.tr_key("ui.inventory.slot.empty", "Empty") if is_empty else LocalizationManager.get_weapon_instance_display_name(weapon)
@@ -153,11 +189,11 @@ func _make_slot_button(slot_index: int, weapon: Weapon, action_text: String, is_
 		warning = LocalizationManager.tr_format("ui.weapon.replace.modules_safely_removed", {"count": module_count}, "%d installed modules will be safely removed." % module_count)
 	button.call("set_data", {
 		"slot_index": slot_index,
-		"height": 120 if module_count > 0 else (96 if not is_empty else 72),
+		"height": 98 if module_count > 0 else 76,
 		"slot_label": LocalizationManager.tr_format("ui.weapon.replace.slot_label", {"slot": slot_index + 1}, "Slot %d" % [slot_index + 1]),
 		"name": current_text,
 		"meta": LocalizationManager.tr_key("ui.weapon.replace.empty_slot_hint", "Open slot") if is_empty else _format_weapon_meta(weapon),
-		"action": LocalizationManager.tr_key("ui.weapon.replace.action_select", "Select") if not is_empty else action_text,
+		"action": "○",
 		"warning": warning,
 		"show_comparison": not is_empty,
 		"accent": EMPTY_SLOT_COLOR if is_empty else _get_weapon_color(weapon),
@@ -176,14 +212,12 @@ func _populate_replacement_comparison(comparison_row: HFlowContainer, incoming_w
 	var full_comparison := PackedStringArray()
 	var visible_count := 0
 	for delta_data in comparison:
-		if not bool(delta_data.get("changed", false)):
-			continue
 		full_comparison.append(WEAPON_STAT_FORMATTER.format_delta_line(delta_data))
 		if visible_count >= WEAPON_DISPLAY_POLICY.summary_limit(WEAPON_DISPLAY_POLICY.REPLACEMENT_COMPARE):
 			continue
 		comparison_row.add_child(_make_delta_chip(delta_data))
 		visible_count += 1
-	comparison_row.tooltip_text = "\n".join(full_comparison)
+	comparison_row.tooltip_text = LocalizationManager.tr_key("ui.weapon.replace.delta_heading", "Changes after replacement") + "\n" + "\n".join(full_comparison)
 
 func _make_delta_chip(delta_data: Dictionary) -> PanelContainer:
 	var benefit := StringName(str(delta_data.get("benefit", "neutral")))
@@ -202,8 +236,11 @@ func _make_delta_chip(delta_data: Dictionary) -> PanelContainer:
 		value_text = LocalizationManager.tr_key("ui.weapon.replace.mechanic_changed", "Mechanic changed")
 	else:
 		value_text = WEAPON_STAT_FORMATTER.format_value(key, absf(float(delta_value)))
+	if delta_value != null:
+		marker = "↑" if float(delta_value) > 0.0 else ("↓" if float(delta_value) < 0.0 else "=")
 	var chip := WEAPON_STAT_DELTA_CHIP_SCENE.instantiate() as PanelContainer
 	chip.call("set_data", "%s %s %s" % [WEAPON_STAT_FORMATTER.format_label(key), marker, value_text], color)
+	chip.tooltip_text = WEAPON_STAT_FORMATTER.format_delta_line(delta_data)
 	return chip
 
 func _make_weapon_icon(weapon: Weapon, min_size: Vector2, is_empty: bool = false) -> Control:
@@ -279,14 +316,7 @@ func _on_slot_selected(slot_index: int, old_weapon: Weapon) -> void:
 	_selected_old_weapon = old_weapon
 	for button in _slot_buttons:
 		var selected := int(button.get_meta("slot_index", -1)) == slot_index
-		button.call("set_accent", ACTION_COLOR if selected else _slot_accent_for_button(button))
-		var action_label := button.get_meta("action_label", null) as Label
-		if action_label != null:
-			action_label.text = LocalizationManager.tr_key("ui.reward.selected", "Selected") if selected else (
-				LocalizationManager.tr_key("ui.weapon.replace.action_equip", "Equip")
-				if int(button.get_meta("slot_index", -1)) >= PlayerData.player_weapon_list.size()
-				else LocalizationManager.tr_key("ui.weapon.replace.action_select", "Select")
-			)
+		button.call("set_selected", selected, ACTION_COLOR if selected else _slot_accent_for_button(button))
 	if old_weapon == null:
 		_confirm_button.text = LocalizationManager.tr_format(
 			"ui.weapon.replace.confirm_equip_slot",
@@ -299,6 +329,9 @@ func _on_slot_selected(slot_index: int, old_weapon: Weapon) -> void:
 			{"slot": slot_index + 1},
 			"Replace Slot %d" % (slot_index + 1)
 		)
+	_selection_summary.text = _confirm_button.text
+	if old_weapon != null:
+		_selection_summary.text += "\n" + LocalizationManager.tr_format("ui.weapon.replace.storage_summary", {"weapon": LocalizationManager.get_weapon_instance_display_name(old_weapon)}, "{weapon} → Warehouse; modules safely removed")
 	_confirm_button.disabled = false
 	_confirm_button.grab_focus()
 

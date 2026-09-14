@@ -1,5 +1,7 @@
 extends Melee
+
 class_name DashBlade
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 
 const TRAIL_AREA_EFFECT := preload("res://Combat/area_effect/trail_area_effect.gd")
 
@@ -302,8 +304,8 @@ func _start_rift_trail() -> void:
 	trail.damage_type = Attack.TYPE_ENERGY
 	trail.source_node = self
 	trail.source_category = DamageData.SOURCE_PLAYER_WEAPON
-	trail.fill_color = Color(0.60, 0.32, 1.0, 0.22)
-	trail.line_color = Color(0.78, 0.62, 1.0, 0.9)
+	trail.fill_color = PALETTE.PLAYER_RANGE_FILL
+	trail.line_color = PALETTE.PLAYER_RANGE_OUTLINE
 	get_tree().root.add_child(trail)
 	trail.attach_emitter(blade_anchor, 34.0, 10.0, false)
 	_active_rift = trail

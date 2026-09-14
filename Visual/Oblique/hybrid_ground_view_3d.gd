@@ -840,7 +840,8 @@ func _register_area_effect(area: Node2D) -> void:
 	var color: Color = area.get("visual_modulate") as Color
 	if color.a <= 0.0:
 		color = area.get("debug_fill_color") as Color
-	color.a = maxf(color.a, 0.18)
+	var player_preview: bool = area.get("source_category") == DamageData.SOURCE_PLAYER_WEAPON and not bool(area.get("use_animated_visual"))
+	color = CombatVisualPalette.PLAYER_RANGE_FILL if player_preview else Color(color, maxf(color.a, 0.18))
 	var visual_shape := int(area.get("visual_shape"))
 	var is_player_area: bool = area.get("source_category") == DamageData.SOURCE_PLAYER_WEAPON
 	var render_priority := PLAYER_GROUND_EFFECT_RENDER_PRIORITY if is_player_area else GROUND_AREA_RENDER_PRIORITY
@@ -1009,10 +1010,11 @@ func _register_warning_circle(warning: Node2D) -> void:
 		return
 	var color: Color = warning.get("fill_color") as Color
 	# Large danger zones must preserve visibility of units and terrain beneath them.
-	color.a = clampf(color.a, 0.12, 0.20)
+	var player_range := bool(warning.get_meta(&"player_attack_range", false)) or warning is WeaponSkillArea or warning is WeaponSkillBlastPulse
+	color.a = clampf(color.a, 0.0, 0.07) if player_range else clampf(color.a, 0.12, 0.20)
 	var mesh := _create_translucent_warning_disc(color)
 	var outline_color: Color = warning.get("line_color") as Color
-	var outline := _create_ring_mesh(outline_color, 0.05)
+	var outline := _create_ring_mesh(outline_color, 1.0 / maxf(float(warning.get("radius")), 1.0) if player_range else 0.05)
 	var show_countdown := bool(warning.get("show_countdown"))
 	var countdown_label := _create_warning_countdown_label() if show_countdown else null
 	# Registration precedes the next position sync. Keep new visuals hidden so

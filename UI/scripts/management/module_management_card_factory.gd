@@ -21,6 +21,8 @@ func bind(module_view: Node, ui: Node) -> void:
 
 func make_weapon_button(weapon: Weapon, location: String, selected: bool, pressed_callback: Callable) -> Button:
 	var button := INVENTORY_CARD_SCENE.instantiate() as Button
+	button.set_meta("selection_weapon", weapon)
+	button.set_meta("selection_location", location)
 	var drag_payload: Dictionary
 	var drop_payload: Dictionary
 	if location == "stored":
@@ -43,6 +45,7 @@ func make_empty_weapon_slot_button(slot_index: int) -> Button:
 
 func make_module_button(module_instance: Module, selected: bool, pressed_callback: Callable) -> Button:
 	var button := INVENTORY_CARD_SCENE.instantiate() as Button
+	button.set_meta("selection_module", module_instance)
 	button.call("set_drag_interface", {"kind": "temporary_module", "module": module_instance}, {}, Callable(view, "build_drag_data"), Callable(), Callable())
 	button.pressed.connect(pressed_callback)
 	button.call("set_data", {"icon": _get_module_texture(module_instance), "name": LocalizationManager.get_module_name(module_instance), "accent": RARITY_UTIL.get_color(module_instance.get_rarity()), "meta": _format_module_meta(module_instance), "detail": "%s: %s" % [
@@ -82,14 +85,34 @@ func make_module_socket_button(weapon: Weapon, existing: Module, index: int, pre
 	if existing != null and is_instance_valid(existing):
 		drag_payload = {"kind": "equipped_module", "module": existing, "weapon": weapon}
 	button.call("set_drag_interface", drag_payload, drop_payload, Callable(view, "build_drag_data"), Callable(view, "can_drop_payload"), Callable(view, "drop_payload"))
-	var feedback := _get_slot_feedback(weapon, existing)
+	button.set_meta("selection_socket", {"weapon": weapon, "existing": existing, "index": index})
 	button.pressed.connect(pressed_callback)
+	_refresh_socket(button, weapon, existing, index)
+	return button
+
+func _refresh_socket(button: Button, weapon: Weapon, existing: Module, index: int) -> void:
+	var feedback := _get_slot_feedback(weapon, existing)
 	var tooltip := str(feedback.get("reason", ""))
 	if tooltip.strip_edges() == "":
 		tooltip = LocalizationManager.get_module_name(existing) if existing else LocalizationManager.tr_format("ui.module.slot_empty", {"index": index + 1}, "Slot %d" % (index + 1))
 	button.call("set_data", {"occupied": existing != null, "icon": _get_module_texture(existing) if existing else null, "badge": "Lv.%d" % int(existing.module_level) if existing else str(index + 1), "accent": RARITY_UTIL.get_color(existing.get_rarity()) if existing else Color(0.58, 0.72, 0.8), "tooltip": tooltip, "feedback_ok": bool(feedback.get("ok", true))})
 	_style_button(button, bool(feedback.get("ok", true)) and _get_selected_module() != null)
-	return button
+
+func refresh_selection(parent: Node) -> void:
+	for child in parent.get_children():
+		if child is Button:
+			if child.has_meta("selection_weapon"):
+				var weapon := child.get_meta("selection_weapon") as Weapon
+				var field := "selected_stored_weapon" if child.get_meta("selection_location") == "stored" else "selected_equipped_weapon"
+				var selected: bool = view.get(field) == weapon
+				_populate_weapon_button(child, weapon, selected)
+				_style_button(child, selected)
+			elif child.has_meta("selection_module"):
+				_style_button(child, child.get_meta("selection_module") == _get_selected_module())
+			elif child.has_meta("selection_socket"):
+				var socket: Dictionary = child.get_meta("selection_socket")
+				_refresh_socket(child, socket.weapon, socket.existing, int(socket.index))
+		refresh_selection(child)
 
 func apply_module_weapon_card_style(panel: PanelContainer, weapon: Weapon, active_drag_module: Module) -> void:
 	var accent := _get_weapon_rarity_color(weapon)

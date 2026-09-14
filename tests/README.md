@@ -2,6 +2,32 @@
 
 This folder keeps the project test infrastructure and archived historical test assets.
 
+## Execution policy
+
+The project-wide policy in `AGENTS.md` applies across conversations. Do not run
+tests automatically after modifications. Run tests only when the player requests
+them, except that genuinely new feature development allows one focused validation
+run for the completed feature. Further gameplay test runs require a player request.
+
+After modifying runtime scripts, scenes, resources, or project configuration,
+run the minimal windowless Godot error check required by `AGENTS.md`. Inspect
+the output and exit code, fix task-related errors, and repeat only the necessary
+check. This does not authorize gameplay tests, full audits, or graphical windows.
+Temporary probes and broader validation/audit commands still require the
+authorization described in `AGENTS.md`. Test commands below are reference
+instructions for authorized runs, not mandatory post-edit steps.
+New-feature tests may be retained and registered for future player-requested
+runs; retaining them does not authorize automatic reruns. Other work must not
+add persistent active tests, as specified in `AGENTS.md`.
+
+Visual content requiring repeated player review (such as UI and HUD) may retain
+manual showcases and their supporting files under `tests/showcases/<domain>/`,
+including for visual changes and maintenance. Follow the Manual Visual Showcase
+Policy in `AGENTS.md`: provide launch instructions and review states, document
+sample-data or isolation limitations, and keep the scene open for player review.
+Do not register showcases in the active test manifest or automated runners.
+Retention does not authorize automatic validation or graphical window launches.
+
 ## Layout
 
 ```text
@@ -10,6 +36,7 @@ tests/
   scenes/          Active scene-backed regression tests.
   headless/        Active runner scripts used directly or by scene wrappers.
   fixtures/        Shared fake runtime collaborators for active tests.
+  showcases/       Retained manual visual review scenes and local support files.
   archive/         Preserved retired tests, one-time acceptance assets, and benchmarks.
 ```
 

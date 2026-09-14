@@ -61,7 +61,7 @@ func select_module(module_instance: Module) -> void:
 func trigger_action() -> bool:
 	if selected_module == null or not is_instance_valid(selected_module):
 		return false
-	var result := InventoryData.upgrade_module_with_gold(selected_module)
+	var result := InventoryData.upgrade_module_with_modification_points(selected_module)
 	if not result.get("ok", false):
 		if owner_ui and owner_ui.has_method("show_item_message"):
 			owner_ui.call("show_item_message", str(result.get("reason", "")), 1.6)
@@ -76,11 +76,11 @@ func refresh_action() -> void:
 	var ready := selected_module != null and is_instance_valid(selected_module) \
 		and int(selected_module.module_level) < Module.MAX_LEVEL
 	var price := get_upgrade_price(selected_module) if ready else 0
-	module_upgrade_action_button.disabled = not ready or PlayerData.player_gold < price
+	module_upgrade_action_button.disabled = not ready or PlayerData.modification_points < price or not PhaseManager.can_configure_loadout()
 	module_upgrade_action_button.text = LocalizationManager.tr_format(
-		"ui.upgrade.module.action",
+		"ui.modification.action",
 		{"value": price},
-		"Upgrade Module: %s" % price
+		"Upgrade: {value} modification points"
 	) if ready else LocalizationManager.tr_key("ui.upgrade.module.action_empty", "Upgrade Module")
 	if ready:
 		module_upgrade_selection_label.text = LocalizationManager.tr_format(
@@ -97,21 +97,11 @@ func build_row_text(module_instance: Module) -> String:
 		LocalizationManager.get_module_name(module_instance),
 		int(module_instance.module_level),
 		int(module_instance.module_level) + 1,
-		LocalizationManager.tr_format("ui.upgrade.cost", {"value": price}, "Cost: %s" % price),
+		LocalizationManager.tr_format("ui.modification.cost", {"value": price}, "Cost: {value} modification points"),
 	]
 
 func get_upgrade_price(module_instance: Module) -> int:
-	if module_instance == null or not is_instance_valid(module_instance):
-		return 0
-	if GlobalVariables.economy_data:
-		return GlobalVariables.economy_data.get_module_upgrade_gold(
-			int(module_instance.cost),
-			int(module_instance.module_level)
-		)
-	return EconomyConfig.new().get_module_upgrade_gold(
-		int(module_instance.cost),
-		int(module_instance.module_level)
-	)
+	return PlayerData.get_modification_upgrade_cost(&"module") if is_instance_valid(module_instance) else 0
 
 func _clear_container(container: Node) -> void:
 	for child in container.get_children():

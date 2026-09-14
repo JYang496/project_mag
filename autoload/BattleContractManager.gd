@@ -9,6 +9,7 @@ const OPERATION := preload("res://data/battle_contracts/operation.tres")
 const CONTAINMENT := preload("res://data/battle_contracts/containment.tres")
 const EXTRACTION := preload("res://data/battle_contracts/extraction.tres")
 const REWARD := preload("res://data/battle_contracts/reward.tres")
+const CONTRACT_COIN_SCENE := preload("res://Objects/loots/coin.tscn")
 const REST_PROTOCOL := preload("res://data/battle_contracts/rest.tres")
 const FINALE := preload("res://data/battle_contracts/finale.tres")
 const ELIMINATION_RUNTIME := preload("res://Combat/battle_contract/runtime/elimination_contract_runtime.gd")
@@ -63,6 +64,7 @@ var _enhanced_reward_settled := false
 var _pending_success_settlement := false
 var _staged_completion_granted := 0
 var _staged_milestones: Dictionary = {}
+var _restored_contract_gold := 0
 const STATE_PATH := "user://battle_contract_state.json"
 
 func _ready() -> void:
@@ -346,6 +348,7 @@ func reset_runtime_state() -> void:
 	_enhanced_reward_settled = false
 	_staged_completion_granted = 0
 	_staged_milestones.clear()
+	_restored_contract_gold = 0
 	_set_state(IDLE)
 
 func _start_selected_runtime() -> void:
@@ -386,14 +389,20 @@ func _on_runtime_completed(snapshot: Dictionary) -> void:
 		_combat_port.request_finish_battle(snapshot)
 
 func has_pending_success_settlement() -> bool:
-	return _pending_success_settlement
+	return _pending_success_settlement or _restored_contract_gold > 0
 
 func settle_pending_success_rewards() -> bool:
+	if _restored_contract_gold > 0:
+		if spawn_contract_gold(_restored_contract_gold) != _restored_contract_gold:
+			return false
+		_restored_contract_gold = 0
 	if not _pending_success_settlement or state != COMPLETED:
 		return false
-	_pending_success_settlement = false
 	_settle_performance_reward(runtime_snapshot)
 	_settle_enhanced_reward()
+	if not _reward_settled or (selected_enhanced_contract != null and not selected_enhanced_reward.is_empty() and not _enhanced_reward_settled):
+		return false
+	_pending_success_settlement = false
 	return true
 
 func _grant_staged_completion_gold(snapshot: Dictionary, completed_successfully: bool) -> void:
@@ -433,17 +442,19 @@ func _grant_staged_completion_gold(snapshot: Dictionary, completed_successfully:
 			continue
 		var cumulative := int(floor(float(completion_budget * milestone) / float(milestone_count)))
 		var amount := maxi(cumulative - _staged_completion_granted, 0)
-		_staged_milestones[key] = true
 		if amount > 0:
-			_staged_completion_granted += PlayerData.earn_gold(amount)
-			performance_reward_granted.emit({"type": &"gold", "amount": amount, "contract_id": contract_id, "staged": true, "milestone": milestone, "milestone_count": milestone_count})
+			var spawned := spawn_contract_gold(amount)
+			if spawned != amount:
+				return
+			_staged_completion_granted += spawned
+		_staged_milestones[key] = true
 
 func _settle_performance_reward(result: Dictionary) -> void:
 	if _reward_settled:
 		return
 	_reward_settled = true
 	var economy: EconomyConfig = GlobalVariables.economy_data
-	var level := maxi(PhaseManager.current_level, 0)
+	var level := maxi(PhaseManager.current_level - (1 if PhaseManager.current_state() == PhaseManager.SETTLEMENT else 0), 0)
 	var contract_id := StringName(result.get("contract_id", &""))
 	if contract_id == &"reward":
 		return
@@ -462,8 +473,8 @@ func _settle_performance_reward(result: Dictionary) -> void:
 	var amount := maxi(completion_remainder + performance_gold, 0)
 	if amount <= 0:
 		return
-	PlayerData.earn_gold(amount)
-	performance_reward_granted.emit({"type": &"gold", "amount": amount, "contract_id": contract_id, "completion_gold": completion_remainder, "completion_gold_budget": completion_gold, "staged_completion_gold": _staged_completion_granted, "performance_gold": performance_gold})
+	if spawn_contract_gold(amount) != amount:
+		_reward_settled = false
 
 func _settle_enhanced_reward() -> void:
 	if _enhanced_reward_settled or selected_enhanced_contract == null or selected_enhanced_reward.is_empty():
@@ -475,17 +486,100 @@ func _settle_enhanced_reward() -> void:
 		"gold_pack":
 			var amount := maxi(int(reward.get("amount", 0)), 0)
 			if amount > 0:
-				PlayerData.earn_gold(amount)
-				granted = true
+				granted = spawn_contract_gold(amount) == amount
+				if not granted:
+					_enhanced_reward_settled = false
 		"equipped_weapon_core":
 			granted = bool(InventoryData.add_weapon_cores(reward.get("core_tags", []), 1).get("ok", false))
 		"compatible_module":
 			var manager := _resolve_reward_manager()
 			if manager != null and manager.has_method("grant_enhanced_module"):
 				granted = bool(manager.call("grant_enhanced_module", str(reward.get("module_scene_path", ""))))
-	if granted:
+	if granted and str(reward.get("type", "")) != "gold_pack":
 		reward["enhanced_id"] = selected_enhanced_contract.enhanced_id
 		enhanced_reward_granted.emit(reward)
+
+# Gold is issued as loot; only the player's normal pickup path records income.
+func spawn_contract_gold(amount: int) -> int:
+	if amount <= 0:
+		return 0
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	if player == null or get_tree().current_scene == null:
+		return 0
+	var economy: EconomyConfig = GlobalVariables.economy_data
+	var values := economy.get_contract_coin_values(amount)
+	var facing := Vector2.DOWN
+	if player.has_method("get_aim_world_position"):
+		var aim: Vector2 = player.call("get_aim_world_position")
+		if player.global_position.distance_squared_to(aim) > 0.001:
+			facing = player.global_position.direction_to(aim)
+	for index in range(values.size()):
+		var angle := lerpf(-0.7, 0.7, float(index) / float(maxi(values.size() - 1, 1)))
+		var offset := facing.rotated(angle) * (52.0 + float(index % 3) * 14.0)
+		var landing := player.global_position + offset
+		var spawner := GlobalVariables.enemy_spawner
+		if is_instance_valid(spawner):
+			landing = spawner.clamp_position(landing.x, landing.y)
+		var query := PhysicsRayQueryParameters2D.create(player.global_position, landing, 32)
+		var obstruction := player.get_world_2d().direct_space_state.intersect_ray(query)
+		if not obstruction.is_empty():
+			var hit_position: Vector2 = obstruction["position"]
+			var safe_distance := maxf(player.global_position.distance_to(hit_position) - 12.0, 0.0)
+			landing = player.global_position.move_toward(hit_position, safe_distance)
+		var coin := CONTRACT_COIN_SCENE.instantiate() as Coin
+		coin.value = values[index]
+		coin.contract_reward = true
+		var parent_2d := get_tree().current_scene as Node2D
+		coin.position = parent_2d.to_local(landing) if parent_2d != null else landing
+		get_tree().current_scene.add_child(coin)
+		coin.global_position = landing
+	return amount
+
+func has_uncollected_contract_gold() -> bool:
+	for coin in CollectableRegistry.get_coins():
+		if coin.contract_reward and not coin._collected:
+			return true
+	return false
+
+func _get_uncollected_contract_gold_amount() -> int:
+	var amount := _restored_contract_gold
+	for coin in CollectableRegistry.get_coins():
+		if coin.contract_reward and not coin._collected:
+			amount += coin.value
+	return amount
+
+func collect_remaining_contract_gold() -> bool:
+	if not has_uncollected_contract_gold():
+		return true
+	# Allow the drop to land before the victory collection sweep.
+	await get_tree().create_timer(0.7).timeout
+	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
+		return false
+	var player := get_tree().get_first_node_in_group("player") as Node2D
+	if player == null or not player.has_method("_on_collect_area_area_entered"):
+		return false
+	var coins: Array[Coin] = []
+	var sweep := create_tween().set_parallel(true).set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	for coin in CollectableRegistry.get_coins():
+		if not coin.contract_reward or coin._collected:
+			continue
+		coins.append(coin)
+		coin.target = null
+		sweep.tween_method(_move_contract_coin_to_player.bind(coin, player, coin.global_position), 0.0, 1.0, 0.45)
+	if coins.is_empty():
+		sweep.kill()
+		return true
+	await sweep.finished
+	if not is_instance_valid(player) or PhaseManager.current_state() != PhaseManager.SETTLEMENT:
+		return false
+	for coin in coins:
+		if is_instance_valid(coin) and not coin._collected:
+			player.call("_on_collect_area_area_entered", coin)
+	return not has_uncollected_contract_gold()
+
+func _move_contract_coin_to_player(ratio: float, coin: Coin, player: Node2D, start: Vector2) -> void:
+	if is_instance_valid(coin) and not coin._collected and is_instance_valid(player):
+		coin.global_position = start.lerp(player.global_position, ratio)
 
 func _roll_enhanced_reward(definition: EnhancedContractDefinition) -> Dictionary:
 	var candidates: Array[Dictionary] = []
@@ -578,6 +672,7 @@ func _build_settlement_snapshot() -> Dictionary:
 		"enhanced_reward_settled": _enhanced_reward_settled,
 		"staged_completion_granted": _staged_completion_granted,
 		"staged_milestones": _staged_milestones.duplicate(true),
+		"uncollected_contract_gold": _get_uncollected_contract_gold_amount(),
 	}
 
 func _restore_settlement_snapshot(payload: Dictionary) -> void:
@@ -596,6 +691,7 @@ func _restore_settlement_snapshot(payload: Dictionary) -> void:
 	_enhanced_reward_settled = bool(payload.get("enhanced_reward_settled", false))
 	_staged_completion_granted = maxi(int(payload.get("staged_completion_granted", 0)), 0)
 	_staged_milestones = (payload.get("staged_milestones", {}) as Dictionary).duplicate(true)
+	_restored_contract_gold = maxi(int(payload.get("uncollected_contract_gold", 0)), 0)
 	_set_state(restored_state)
 
 func reset_persistent_state() -> void:

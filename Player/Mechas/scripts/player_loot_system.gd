@@ -2,7 +2,6 @@ extends RefCounted
 class_name PlayerLootSystem
 
 var _player
-var _auto_loot_running: bool = false
 
 func setup(player) -> void:
 	_player = player
@@ -13,13 +12,17 @@ func on_collect_area_entered(area) -> void:
 	if area.is_in_group("collectables") and area is Coin:
 		var denomination := int(area.value)
 		var value: int = area.collect()
-		value = _player.apply_loot_bonus(value, &"coin")
-		_player.PlayerData.earn_gold(value, true)
+		if value <= 0:
+			return
+		if not area.contract_reward:
+			value = _player.apply_loot_bonus(value, &"coin")
+		_player.PlayerData.earn_gold(value, not area.contract_reward)
 		if denomination >= 5 and _player.has_method("_spawn_player_floating_hint"):
 			_player.call("_spawn_player_floating_hint", "+%d" % denomination)
-		if GlobalVariables.enemy_spawner and is_instance_valid(GlobalVariables.enemy_spawner) and GlobalVariables.enemy_spawner.has_method("record_kill_gold_coin_collected"):
+		if not area.contract_reward and GlobalVariables.enemy_spawner and is_instance_valid(GlobalVariables.enemy_spawner) and GlobalVariables.enemy_spawner.has_method("record_kill_gold_coin_collected"):
 			GlobalVariables.enemy_spawner.record_kill_gold_coin_collected(value)
-		_player.coin_collected.emit()
+		if not area.contract_reward:
+			_player.coin_collected.emit()
 
 func on_collect_chip_area_entered(area) -> void:
 	if _player == null:
@@ -38,82 +41,3 @@ func on_grab_area_entered(area) -> void:
 			area.target = _player.collect_area
 		elif area is Chip:
 			area.target = _player
-
-func on_phase_changed(new_phase: String, previous_phase: String) -> void:
-	if _player == null:
-		return
-	if new_phase == PhaseManager.SETTLEMENT and previous_phase == PhaseManager.BATTLE:
-		run_battle_end_auto_collect()
-		return
-	if new_phase == PhaseManager.BATTLE and _auto_loot_running:
-		_auto_loot_running = false
-		restore_collect_ranges_after_auto_loot()
-
-func run_battle_end_auto_collect() -> void:
-	if _player == null or _auto_loot_running:
-		return
-	_auto_loot_running = true
-	expand_collect_ranges_for_auto_loot()
-	var elapsed := 0.0
-	while elapsed < _player.AUTO_LOOT_DURATION_SEC and _auto_loot_running and _player.is_inside_tree():
-		attract_all_coins()
-		process_auto_loot_grab_overlaps()
-		if _are_collectables_cleared():
-			break
-		await _player.get_tree().create_timer(_player.AUTO_LOOT_TICK_SEC).timeout
-		elapsed += _player.AUTO_LOOT_TICK_SEC
-	restore_collect_ranges_after_auto_loot()
-	_auto_loot_running = false
-	if PhaseManager != null and PhaseManager.has_method("complete_post_battle_collect_gate"):
-		PhaseManager.complete_post_battle_collect_gate()
-	if GlobalVariables.enemy_spawner and is_instance_valid(GlobalVariables.enemy_spawner) and GlobalVariables.enemy_spawner.has_method("print_kill_gold_debug_summary"):
-		GlobalVariables.enemy_spawner.print_kill_gold_debug_summary("auto_loot_end")
-
-func attract_all_coins() -> void:
-	if _player == null or not _player.collect_area:
-		return
-	for collectable in _get_collectable_candidates():
-		if not is_instance_valid(collectable):
-			continue
-		if collectable is Coin:
-			collectable.target = _player.collect_area
-		elif collectable is Chip:
-			collectable.target = _player
-
-func _get_collectable_candidates() -> Array[Node2D]:
-	var output: Array[Node2D] = []
-	if _player == null or not _player.is_inside_tree():
-		return output
-	var registry: Node = _player.get_node_or_null("/root/CollectableRegistry")
-	if registry != null and registry.has_method("get_collectables"):
-		var registered_collectables: Variant = registry.call("get_collectables")
-		if registered_collectables is Array:
-			for collectable_ref in registered_collectables:
-				var collectable := collectable_ref as Node2D
-				if collectable != null and is_instance_valid(collectable):
-					output.append(collectable)
-			return output
-	for collectable_ref in _player.get_tree().get_nodes_in_group("collectables"):
-		var collectable := collectable_ref as Node2D
-		if collectable != null and is_instance_valid(collectable):
-			output.append(collectable)
-	return output
-
-func _are_collectables_cleared() -> bool:
-	return _get_collectable_candidates().is_empty()
-
-func expand_collect_ranges_for_auto_loot() -> void:
-	var grab_circle := _player.grab_radius.shape as CircleShape2D
-	if grab_circle:
-		grab_circle.radius = _player.AUTO_LOOT_GRAB_RADIUS
-
-func restore_collect_ranges_after_auto_loot() -> void:
-	if _player == null:
-		return
-	_player.update_grab_radius()
-
-func process_auto_loot_grab_overlaps() -> void:
-	if _player == null or _player.grab_area == null:
-		return
-	for area in _player.grab_area.get_overlapping_areas():
-		on_grab_area_entered(area)

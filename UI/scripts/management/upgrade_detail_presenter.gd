@@ -65,7 +65,7 @@ func _add_weapon_overview(item_data: Dictionary, weapon: Weapon, model: Variant)
 	_add_fact_card(
 		grid,
 		LocalizationManager.tr_key("ui.service.detail.upgrade_price", "Upgrade Price"),
-		"-" if model.level >= model.max_level else str(_get_weapon_upgrade_price(weapon))
+		"-" if model.level >= model.max_level else LocalizationManager.tr_format("ui.modification.amount", {"value": _get_weapon_upgrade_price(weapon)}, "{value} modification points")
 	)
 	_add_fact_card(
 		grid,
@@ -83,7 +83,7 @@ func fill_module_detail(item_data: Dictionary) -> void:
 	if module_instance == null or not is_instance_valid(module_instance):
 		return
 	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.current_level", "Current Level"), "Lv.%d/%d" % [int(module_instance.module_level), Module.MAX_LEVEL])
-	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.upgrade_price", "Upgrade Price"), "-" if int(module_instance.module_level) >= Module.MAX_LEVEL else str(_get_module_upgrade_price(module_instance)))
+	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.upgrade_price", "Upgrade Price"), "-" if int(module_instance.module_level) >= Module.MAX_LEVEL else LocalizationManager.tr_format("ui.modification.amount", {"value": _get_module_upgrade_price(module_instance)}, "{value} modification points"))
 	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.location", "Location"), str(item_data.get("location", "")))
 	_add_detail_section(LocalizationManager.tr_key("ui.service.detail.install_targets", "Compatible Weapons"), format_module_install_targets(module_instance))
 	var original_level := int(module_instance.module_level)

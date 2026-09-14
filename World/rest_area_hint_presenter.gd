@@ -294,8 +294,6 @@ func _get_zone_hint_text_parts(zone_id: int) -> Array[String]:
 	return []
 
 func _get_upgrade_status_text() -> String:
-	if PlayerData.gold_supply_enabled:
-		return LocalizationManager.tr_key("ui.workbench.upgrade_status", "Inspect upgrades or fuse weapon cores")
 	var upgradable_count := _get_affordable_upgrade_count()
 	if upgradable_count > 0:
 		return LocalizationManager.tr_format(
@@ -417,7 +415,7 @@ func _build_zone_hint_status_signature() -> String:
 	for weapon in _get_owned_weapons_for_upgrade():
 		weapon_parts.append("%d:%d" % [int(weapon.level), int(weapon.max_level)])
 	return "%d|%d|%d|%d|%d|%s" % [
-		int(PlayerData.player_gold),
+		int(PlayerData.modification_points),
 		InventoryData.temporary_modules.size(),
 		CellEffectRuntime.get_inventory_snapshot().size(),
 		CellEffectRuntime.get_pending_snapshot().size(),
@@ -426,19 +424,17 @@ func _build_zone_hint_status_signature() -> String:
 	]
 
 func _get_affordable_upgrade_count() -> int:
-	if PlayerData.gold_supply_enabled:
-		return 0
 	var count := 0
 	for weapon in _get_owned_weapons_for_upgrade():
 		if weapon.level >= weapon.max_level:
 			continue
-		if PlayerData.player_gold >= _get_weapon_upgrade_cost(weapon):
+		if PlayerData.modification_points >= _get_weapon_upgrade_cost(weapon):
 			count += 1
 	for module_ref in InventoryData.get_all_owned_modules():
 		var module_instance := module_ref as Module
 		if module_instance == null or not is_instance_valid(module_instance) or int(module_instance.module_level) >= Module.MAX_LEVEL:
 			continue
-		if PlayerData.player_gold >= _get_module_upgrade_cost(module_instance):
+		if PlayerData.modification_points >= _get_module_upgrade_cost(module_instance):
 			count += 1
 	return count
 
@@ -455,21 +451,11 @@ func _get_owned_weapons_for_upgrade() -> Array[Weapon]:
 			result.append(weapon)
 	return result
 
-func _get_weapon_upgrade_cost(weapon: Weapon) -> int:
-	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
-	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-	if weapon_def == null:
-		return 1
-	if GlobalVariables.economy_data == null:
-		return maxi(1, int(round(float(weapon_def.price) * 0.5)))
-	return GlobalVariables.economy_data.get_weapon_upgrade_gold(int(weapon_def.price))
+func _get_weapon_upgrade_cost(_weapon: Weapon) -> int:
+	return PlayerData.get_modification_upgrade_cost(&"weapon")
 
-func _get_module_upgrade_cost(module_instance: Module) -> int:
-	if module_instance == null or not is_instance_valid(module_instance):
-		return 1
-	if GlobalVariables.economy_data == null:
-		return maxi(1, int(module_instance.cost))
-	return GlobalVariables.economy_data.get_module_upgrade_gold(int(module_instance.cost))
+func _get_module_upgrade_cost(_module_instance: Module) -> int:
+	return PlayerData.get_modification_upgrade_cost(&"module")
 
 func _style_zone_hint(label: Label, zone_id: int) -> void:
 	if label == null or not _is_owner_valid():

@@ -34,7 +34,7 @@ func _init() -> void:
 func _exit_tree() -> void:
 	REGISTRATION.unregister(self)
 
-func update_surface(active: Array[Dictionary], retired: Array[Dictionary], style: int, show_surface: bool) -> void:
+func update_surface(active: Array[Dictionary], retired: Array[Dictionary], style: int, show_surface: bool, player_range: bool = false) -> void:
 	if active.is_empty() and retired.is_empty() and not enabled:
 		return
 	var records: Array[Dictionary] = []
@@ -71,6 +71,8 @@ func update_surface(active: Array[Dictionary], retired: Array[Dictionary], style
 		target.set_shader_parameter("lives", timing)
 		target.set_shader_parameter("segment_total", count)
 		target.set_shader_parameter("trail_style", style)
+		target.set_shader_parameter("player_range", player_range)
+		target.set_shader_parameter("range_color", CombatVisualPalette.PLAYER_RANGE_FILL)
 		target.set_shader_parameter("clock_sec", float(Time.get_ticks_msec()) / 1000.0)
 		target.set_shader_parameter("surface_bounds", Vector4(bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y))
 	visible = enabled and not REGISTRATION.register(self, &"register_ground_trail")

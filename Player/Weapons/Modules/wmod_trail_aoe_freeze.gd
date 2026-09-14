@@ -18,9 +18,9 @@ var ITEM_NAME := "Frost Trail"
 @export var damage_ratio_lv3: float = 0.30
 @export var max_active_fields: int = 18
 @export var show_trail_range: bool = true
-@export var trail_fill_color: Color = Color(PALETTE.FREEZE, 0.14)
-@export var trail_line_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.48)
-@export var trail_line_width: float = 1.5
+@export var trail_fill_color: Color = PALETTE.PLAYER_RANGE_FILL
+@export var trail_line_color: Color = PALETTE.PLAYER_RANGE_OUTLINE
+@export var trail_line_width: float = PALETTE.PLAYER_RANGE_LINE_WIDTH
 
 var _trail_effect: Node
 

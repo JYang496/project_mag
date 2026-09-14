@@ -1174,5 +1174,23 @@ ui.loading.mecha,MECHA // {id},机甲编号 // {id}
 ui.supply.progress,Supply {current}/{next},补给 {current}/{next}
 ui.supply.ready,Supply ready ×{count},补给就绪 ×{count}
 ui.supply.title,Gold Supply,金币补给
+ui.supply.preparing,Preparing upgrade…,正在准备补给…
 ui.supply.hint,Claim one supply. Combat pauses while choosing.,主动领取一条补给；选择期间暂停战斗。
 ui.supply.failed,Supply could not be claimed. It remains available.,补给领取失败，仍可稍后领取。
+
+ui.weapon.replace.confirm_install,Confirm Install,确认安装
+ui.weapon.replace.incoming_label,Incoming Weapon,待安装武器
+ui.weapon.replace.delta_heading,Changes after replacement,替换后的变化
+ui.weapon.replace.storage_summary,{weapon} → Warehouse; modules safely removed,{weapon} → 仓库；模组安全卸下
+
+ui.supply.upgrade_ready,Upgrade ready ×{count},可领取强化 ×{count}
+ui.supply.claim_upgrade,Claim upgrade,领取强化
+ui.supply.collect,Collect gold to upgrade,收集金币获取强化
+ui.supply.choosing,Choosing upgrade,选择强化中
+ui.supply.blocked,Close menu to claim,关闭当前界面后领取
+ui.supply.next_progress,Next supply {current}/{next},下一份补给 {current}/{next}
+ui.supply.finished,All supplies unlocked,全部补给已解锁
+ui.supply.first_ready,Supply ready! Press {key} to upgrade. Combat pauses while choosing.,补给已就绪！按 {key} 选择强化，选择期间暂停战斗。
+ui.supply.applied,Supply applied: {reward},补给已应用：{reward}
+ui.module.review.pending,Pending modules: {count},待处理模组：{count}
+ui.module.review.store_remaining,Store all {count} pending modules and continue?,还有 {count} 个模组未处理。全部暂存仓库并继续？

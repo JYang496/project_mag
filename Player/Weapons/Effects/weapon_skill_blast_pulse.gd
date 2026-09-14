@@ -1,5 +1,7 @@
 extends Node2D
+
 class_name WeaponSkillBlastPulse
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 
 const HYBRID_GROUND_REGISTRATION := preload("res://Visual/Oblique/hybrid_ground_registration.gd")
 
@@ -9,8 +11,8 @@ var radius := 100.0
 var damage_type: StringName = Attack.TYPE_PHYSICAL
 var _elapsed := 0.0
 var _duration := 0.28
-var fill_color := Color(1.0, 0.30, 0.08, 0.18)
-var line_color := Color(1.0, 0.62, 0.18, 0.95)
+var fill_color := PALETTE.PLAYER_RANGE_FILL
+var line_color := PALETTE.PLAYER_RANGE_OUTLINE
 var show_countdown := false
 
 func setup(weapon: Weapon, ratio: float, radius_value: float, type: StringName) -> WeaponSkillBlastPulse:
@@ -65,6 +67,6 @@ func _draw() -> void:
 		return
 	var progress := clampf(_elapsed / _duration, 0.0, 1.0)
 	var draw_radius := lerpf(radius * 0.25, radius, progress)
-	var color := Color(1.0, 0.48, 0.15, (1.0 - progress) * 0.85)
-	draw_circle(Vector2.ZERO, draw_radius, Color(color, color.a * 0.18))
-	draw_arc(Vector2.ZERO, draw_radius, 0.0, TAU, 48, color, 4.0)
+	var color := Color(PALETTE.PLAYER_RANGE_COLOR, (1.0 - progress) * 0.30)
+	draw_circle(Vector2.ZERO, draw_radius, Color(color, (1.0 - progress) * 0.05))
+	draw_arc(Vector2.ZERO, draw_radius, 0.0, TAU, 48, color, PALETTE.PLAYER_RANGE_LINE_WIDTH)

@@ -24,11 +24,11 @@ signal upgrade_level(level)
 func _ready():
 	if upgrade_card:
 		CursorManager.register_control_rule(upgrade_card, Callable(self, "_cursor_can_click"))
-	_connect_gold_signal()
+	_connect_modification_signal()
 	if weapon_node != null:
 		connect("upgrade_level",Callable(weapon_node,"set_level"))
 		cost_price = _get_upgrade_cost(weapon_node)
-		cost.text = LocalizationManager.tr_format("ui.upgrade.cost", {"value": cost_price}, "Cost: %s" % cost_price)
+		cost.text = LocalizationManager.tr_format("ui.modification.cost", {"value": cost_price}, "Cost: {value} modification points")
 		comb_status = combine_status(weapon_node)
 		for key in comb_status:
 			var status_label := UPGRADE_STATUS_LINE_SCENE.instantiate() as Label
@@ -45,32 +45,35 @@ func _ready():
 func _exit_tree() -> void:
 	if upgrade_card:
 		CursorManager.unregister_control_rule(upgrade_card)
-	_disconnect_gold_signal()
+	_disconnect_modification_signal()
 
 func refresh_affordability(_value: int = 0) -> void:
-	if PlayerData.player_gold < cost_price: # Unable to purchase if player does not have enough gold
+	if not is_instance_valid(weapon_node) or int(weapon_node.level) >= int(weapon_node.max_level) or not PhaseManager.can_configure_loadout() or PlayerData.modification_points < cost_price:
 		cost.set("theme_override_colors/font_color",Color(1.0,0.0,0.0,1.0))
 		upgradable = false
 	else:
 		cost.set("theme_override_colors/font_color",Color(1.0,1.0,1.0,1.0))
 		upgradable = true
 
-func _connect_gold_signal() -> void:
+func _connect_modification_signal() -> void:
 	var callback := Callable(self, "refresh_affordability")
-	if not PlayerData.player_gold_changed.is_connected(callback):
-		PlayerData.player_gold_changed.connect(callback)
+	if not PlayerData.modification_points_changed.is_connected(callback):
+		PlayerData.modification_points_changed.connect(callback)
 
-func _disconnect_gold_signal() -> void:
+func _disconnect_modification_signal() -> void:
 	var callback := Callable(self, "refresh_affordability")
-	if PlayerData.player_gold_changed.is_connected(callback):
-		PlayerData.player_gold_changed.disconnect(callback)
+	if PlayerData.modification_points_changed.is_connected(callback):
+		PlayerData.modification_points_changed.disconnect(callback)
 		
 
 		
 func _input(_event):
 	if Input.is_action_just_released("CLICK"):
+		if not is_visible_in_tree():
+			return
+		refresh_affordability()
 		if mouse_over and upgradable:
-			if not PlayerData.spend_gold(cost_price):
+			if not PlayerData.spend_modification_points(cost_price):
 				return
 			upgrade_level.emit(int(weapon_node.level) + 1)
 			var ui = GlobalVariables.ui
@@ -105,13 +108,5 @@ func _on_upgrade_card_mouse_exited():
 func _cursor_can_click() -> bool:
 	return weapon_node != null and is_instance_valid(weapon_node) and upgradable
 
-func _get_upgrade_cost(weapon: Weapon) -> int:
-	if weapon == null or not is_instance_valid(weapon):
-		return 1
-	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
-	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-	if weapon_def == null:
-		return 1
-	if GlobalVariables.economy_data == null:
-		return maxi(1, int(round(float(weapon_def.price) * 0.5)))
-	return GlobalVariables.economy_data.get_weapon_upgrade_gold(int(weapon_def.price))
+func _get_upgrade_cost(_weapon: Weapon) -> int:
+	return PlayerData.get_modification_upgrade_cost(&"weapon")

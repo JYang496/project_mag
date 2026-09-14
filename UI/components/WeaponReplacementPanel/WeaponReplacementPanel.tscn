@@ -60,6 +60,12 @@ autowrap_mode = 2
 [node name="IncomingHost" type="VBoxContainer" parent="Margin/Root"]
 layout_mode = 2
 
+[node name="ComparisonHeading" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "Changes after replacement"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 12
+
 [node name="SlotsScroll" type="ScrollContainer" parent="Margin/Root"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -73,16 +79,23 @@ theme_override_constants/margin_bottom = 12
 [node name="Slots" type="VBoxContainer" parent="Margin/Root/SlotsScroll/SlotsPadding"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="Footer" type="HBoxContainer" parent="Margin/Root"]
 layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 2
 
+[node name="SelectionSummary" type="Label" parent="Margin/Root/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 2
+theme_override_font_sizes/font_size = 13
+
 [node name="Store" type="Button" parent="Margin/Root/Footer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(220, 44)
+custom_minimum_size = Vector2(150, 44)
 layout_mode = 2
 theme_override_styles/normal = SubResource("ButtonStyle")
 theme_override_styles/hover = SubResource("ButtonStyle")
@@ -91,7 +104,7 @@ theme_override_styles/focus = SubResource("ButtonStyle")
 theme_override_styles/disabled = SubResource("ButtonStyle")
 
 [node name="Cancel" type="Button" parent="Margin/Root/Footer"]
-custom_minimum_size = Vector2(160, 44)
+custom_minimum_size = Vector2(80, 44)
 layout_mode = 2
 text = "Cancel"
 theme_override_styles/normal = SubResource("ButtonStyle")
@@ -102,7 +115,7 @@ theme_override_styles/disabled = SubResource("ButtonStyle")
 
 [node name="ConfirmReplacement" type="Button" parent="Margin/Root/Footer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 44)
+custom_minimum_size = Vector2(170, 44)
 layout_mode = 2
 disabled = true
 theme_override_styles/normal = SubResource("ButtonStyle")

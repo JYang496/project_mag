@@ -1,6 +1,8 @@
 extends Node2D
 class_name DelayedGroundImpact
 
+const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+
 const TARGET_WARNING_SCENE := preload("res://Npc/enemy/scenes/target_warning.tscn")
 const BILLBOARD_VISUAL := preload("res://Visual/Oblique/billboard_visual_2d.gd")
 
@@ -12,7 +14,7 @@ var impact_radius := 72.0
 var impact_damage := 1
 var impact_damage_type: StringName = Attack.TYPE_PHYSICAL
 var arc_height := 110.0
-var telegraph_color := Color(1.0, 0.48, 0.18, 0.85)
+var telegraph_color := PALETTE.PLAYER_RANGE_OUTLINE
 var idle_empowered := false
 var _elapsed_sec := 0.0
 var _impacted := false
@@ -66,9 +68,10 @@ func _create_projected_visuals() -> void:
 	warning.global_position = impact_position
 	warning.duration = impact_delay_sec
 	warning.radius = impact_radius
-	warning.fill_color = Color(telegraph_color, 0.18)
+	warning.set_meta(&"player_attack_range", true)
+	warning.fill_color = PALETTE.PLAYER_RANGE_FILL
 	warning.line_color = telegraph_color
-	warning.line_width = 2.0
+	warning.line_width = PALETTE.PLAYER_RANGE_LINE_WIDTH
 	warning.show_countdown = false
 	warning.reveal_from_center = false
 	add_child(warning)
@@ -171,22 +174,21 @@ func _draw() -> void:
 			draw_set_transform(Vector2.ZERO)
 		if not center_visible:
 			return
-		var blink := impact_delay_sec - _elapsed_sec <= 0.1 and int(_elapsed_sec * 40) % 2 == 0
-		var accent := Color.WHITE if blink else telegraph_color
+		var accent := Color(PALETTE.PLAYER_RANGE_COLOR, lerpf(0.40, 0.50, t))
 		var radius := lerpf(28, 7, t)
 		draw_arc(center, radius, 0, TAU, 16, accent, 1)
 		if idle_empowered:
 			var diamond := PackedVector2Array([center+Vector2(0,-10),center+Vector2(10,0),center+Vector2(0,10),center+Vector2(-10,0),center+Vector2(0,-10)])
-			draw_polyline(diamond, accent, 2)
+			draw_polyline(diamond, accent, 1)
 			draw_arc(center, radius + 5, 0, TAU, 8, accent, 1)
 		else:
 			draw_line(center-Vector2(5,0),center+Vector2(5,0),accent,1)
 			draw_line(center-Vector2(0,5),center+Vector2(0,5),accent,1)
 		return
 	var progress: float = clampf(_elapsed_sec / impact_delay_sec, 0.0, 1.0)
-	var marker_alpha: float = 0.30 + progress * 0.35
-	draw_circle(impact_position, impact_radius, Color(telegraph_color, marker_alpha * 0.35))
-	draw_arc(impact_position, impact_radius, 0.0, TAU, 64, Color(telegraph_color, marker_alpha), 2.0)
+	var marker_alpha: float = 0.25 + progress * 0.05
+	draw_circle(impact_position, impact_radius, Color(telegraph_color, 0.05))
+	draw_arc(impact_position, impact_radius, 0.0, TAU, 64, Color(telegraph_color, marker_alpha), 1.0)
 	if _impacted:
 		draw_circle(impact_position, impact_radius, Color(1.0, 0.72, 0.28, 0.38))
 		return

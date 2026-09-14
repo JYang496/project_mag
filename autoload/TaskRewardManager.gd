@@ -39,7 +39,6 @@ func is_task_reward_blocking_interactions() -> bool:
 func is_reward_blocking_interactions() -> bool:
 	return is_task_reward_blocking_interactions() \
 		or RewardDraftRuntime.is_standard_draft_blocking_interactions() \
-		or PhaseManager.is_post_battle_collect_gate_active() \
 		or PhaseManager.is_settlement_reward_gate_active()
 
 func _connect_reward_draft_runtime() -> void:
@@ -114,6 +113,7 @@ func restore_snapshot_after_player_spawn() -> bool:
 	_restore_player_state(snapshot.get("player", {}) as Dictionary)
 	_restore_inventory_state(snapshot.get("inventory", {}) as Dictionary)
 	PlayerData.import_gold_supply_state(snapshot.get("gold_supply", {}) as Dictionary)
+	PlayerData.import_modification_state(snapshot.get("modification_points", {}) as Dictionary)
 	if snapshot.get("reward_draft_runtime", {}) is Dictionary:
 		RewardDraftRuntime.restore_battle_rollback_snapshot(snapshot.get("reward_draft_runtime", {}) as Dictionary)
 	if snapshot.get("battle_contract", {}) is Dictionary:
@@ -175,9 +175,6 @@ func _try_open_pending_reward() -> void:
 	if not _reward_unlocked or _reward_panel_open:
 		return
 	if PhaseManager.current_state() != PhaseManager.SETTLEMENT:
-		return
-	if PhaseManager.is_post_battle_collect_gate_active():
-		_retry_open_later()
 		return
 	if PhaseManager.is_settlement_reward_gate_active():
 		_retry_open_later()
@@ -466,6 +463,7 @@ func _build_rollback_snapshot() -> Dictionary:
 		"reward_draft_runtime": RewardDraftRuntime.build_battle_rollback_snapshot(),
 		"battle_contract": BattleContractManager.build_rollback_snapshot(),
 	}
+	snapshot["modification_points"] = PlayerData.export_modification_state()
 	if PlayerData.gold_supply_enabled:
 		snapshot["gold_supply"] = PlayerData.export_gold_supply_state()
 	return snapshot
@@ -481,6 +479,7 @@ func restore_run_snapshot_after_player_spawn(payload: Dictionary) -> void:
 	_restore_player_state(payload.get("player", {}) as Dictionary)
 	_restore_inventory_state(payload.get("inventory", {}) as Dictionary)
 	PlayerData.import_gold_supply_state(payload.get("gold_supply", {}) as Dictionary)
+	PlayerData.import_modification_state(payload.get("modification_points", {}) as Dictionary)
 
 func export_save_state() -> Dictionary:
 	var entries: Array[Dictionary] = []

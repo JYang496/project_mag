@@ -35,6 +35,12 @@ var _current_module_index := 0
 var _on_item_complete: Callable = Callable()
 var _on_complete: Callable = Callable()
 var _allow_reward_transaction := false
+var _review_mode := false
+var _review_selector: OptionButton
+var _pending_review_indices: Array[int] = []
+var _review_results: Dictionary = {}
+var _store_button: Button
+var _store_current_requested := false
 var _tracked_stat_keys: PackedStringArray = [
 	"damage", "attack_cooldown", "projectile_hits", "speed", "size", "hp",
 	"dash_speed", "return_speed", "attack_range",
@@ -61,7 +67,7 @@ func open_for_module(module_instance: Module, on_complete: Callable = Callable()
 	var modules: Array[Module] = [module_instance]
 	return open_for_modules(modules, Callable(), on_complete, allow_reward_transaction)
 
-func open_for_modules(module_instances: Array[Module], on_item_complete: Callable = Callable(), on_complete: Callable = Callable(), allow_reward_transaction: bool = false) -> bool:
+func open_for_modules(module_instances: Array[Module], on_item_complete: Callable = Callable(), on_complete: Callable = Callable(), allow_reward_transaction: bool = false, review_mode: bool = false, pending_modules: Array[Module] = []) -> bool:
 	if is_instance_valid(GlobalVariables.ui) and GlobalVariables.ui.has_method("is_supply_modal_open") and GlobalVariables.ui.is_supply_modal_open():
 		return false
 	if visible:
@@ -76,9 +82,41 @@ func open_for_modules(module_instances: Array[Module], on_item_complete: Callabl
 	_on_item_complete = on_item_complete
 	_on_complete = on_complete
 	_allow_reward_transaction = allow_reward_transaction
+	_review_mode = review_mode
+	_pending_review_indices.clear()
+	_review_results.clear()
+	_store_current_requested = false
+	for index in range(_module_instances.size()):
+		if pending_modules.has(_module_instances[index]):
+			_pending_review_indices.append(index)
+	if not _pending_review_indices.is_empty():
+		_current_module_index = _pending_review_indices[0]
+	if _review_selector == null:
+		_review_selector = OptionButton.new()
+		$Margin/Root/TopRow/TitleBlock.add_child(_review_selector)
+		_review_selector.item_selected.connect(_on_review_module_selected)
+	_review_selector.visible = _review_mode
+	if _store_button == null:
+		_store_button = Button.new()
+		$Margin/Root/Footer.add_child(_store_button)
+		_store_button.pressed.connect(_on_store_current_pressed)
+	_store_button.visible = _review_mode
+	_refresh_review_selector()
 	_show_current_module()
 	visible = true
 	return true
+
+func _refresh_review_selector() -> void:
+	if not _review_mode:
+		return
+	_review_selector.clear()
+	for module_instance in _module_instances:
+		_review_selector.add_item("%s · Lv.%d" % [LocalizationManager.get_module_name(module_instance), module_instance.module_level])
+	_review_selector.select(_current_module_index)
+
+func _on_review_module_selected(index: int) -> void:
+	_current_module_index = index
+	_show_current_module()
 
 func _show_current_module() -> void:
 	if _current_module_index < 0 or _current_module_index >= _module_instances.size():
@@ -89,7 +127,13 @@ func _show_current_module() -> void:
 		_finish_current(false)
 		return
 	_apply_localized_static_text()
+	if _review_mode:
+		cancel_button.text = LocalizationManager.tr_key("ui.task_objective.complete", "Complete")
 	progress_label.text = "%d / %d" % [_current_module_index + 1, _module_instances.size()] if _module_instances.size() > 1 else ""
+	if _review_mode:
+		progress_label.text = LocalizationManager.tr_format("ui.module.review.pending", {"count": _pending_review_indices.size()}, "Pending: %d" % _pending_review_indices.size())
+		_store_button.text = LocalizationManager.tr_key("ui.module.reward_cancel.store", "Store Module")
+		_store_button.disabled = not _pending_review_indices.has(_current_module_index)
 	module_name_label.text = LocalizationManager.get_module_name(_module_instance)
 	level_label.text = "Lv.%d" % int(_module_instance.module_level)
 	var effect_lines := _module_instance.get_effect_descriptions()
@@ -188,6 +232,13 @@ func _on_cancel_pressed() -> void:
 	_request_cancel()
 
 func _request_cancel() -> void:
+	if _review_mode:
+		if _pending_review_indices.is_empty():
+			_cancel_remaining()
+		else:
+			_store_current_requested = false
+			_show_review_store_confirmation()
+		return
 	if _allow_reward_transaction:
 		reward_cancel_dialog.title = LocalizationManager.tr_key("ui.module.reward_cancel.title", "Store Module")
 		reward_cancel_dialog.dialog_text = LocalizationManager.tr_key("ui.module.reward_cancel.confirm", "Cancel installation and keep this module in the module warehouse?")
@@ -198,7 +249,24 @@ func _request_cancel() -> void:
 	_cancel_remaining()
 
 func _on_reward_cancel_confirmed() -> void:
+	if _review_mode and _store_current_requested:
+		_store_current_requested = false
+		_finish_current(false)
+		return
 	_cancel_remaining()
+
+func _on_store_current_pressed() -> void:
+	if not _pending_review_indices.has(_current_module_index):
+		return
+	_store_current_requested = true
+	_show_review_store_confirmation()
+
+func _show_review_store_confirmation() -> void:
+	reward_cancel_dialog.title = LocalizationManager.tr_key("ui.module.reward_cancel.title", "Store Module")
+	reward_cancel_dialog.dialog_text = LocalizationManager.tr_key("ui.module.reward_cancel.confirm", "Keep this module in the warehouse?") if _store_current_requested else LocalizationManager.tr_format("ui.module.review.store_remaining", {"count": _pending_review_indices.size()}, "Store all %d pending modules and continue?" % _pending_review_indices.size())
+	reward_cancel_dialog.ok_button_text = LocalizationManager.tr_key("ui.module.reward_cancel.store", "Store Module")
+	reward_cancel_dialog.cancel_button_text = LocalizationManager.tr_key("ui.module.reward_cancel.back", "Return")
+	reward_cancel_dialog.popup_centered(Vector2i(560, 240))
 
 func close_without_assignment() -> void:
 	if visible:
@@ -228,8 +296,19 @@ func _complete(assigned: bool) -> void:
 	_on_item_complete = Callable()
 	_on_complete = Callable()
 	_allow_reward_transaction = false
+	_review_mode = false
+	_pending_review_indices.clear()
+	_review_results.clear()
 
 func _finish_current(assigned: bool) -> void:
+	if _review_mode:
+		_review_results[_current_module_index] = assigned
+		_pending_review_indices.erase(_current_module_index)
+		if not _pending_review_indices.is_empty():
+			_current_module_index = _pending_review_indices[0]
+		_refresh_review_selector()
+		_show_current_module()
+		return
 	var completed_index := _current_module_index
 	var completed_module := _module_instance
 	if _on_item_complete.is_valid():
@@ -241,10 +320,12 @@ func _finish_current(assigned: bool) -> void:
 		_show_current_module()
 
 func _cancel_remaining() -> void:
+	if _review_mode:
+		_current_module_index = 0
 	while _current_module_index < _module_instances.size():
 		_module_instance = _module_instances[_current_module_index]
 		if _on_item_complete.is_valid():
-			_on_item_complete.call(_current_module_index, _module_instance, false)
+			_on_item_complete.call(_current_module_index, _module_instance, bool(_review_results.get(_current_module_index, false)))
 		_current_module_index += 1
 	_complete(false)
 

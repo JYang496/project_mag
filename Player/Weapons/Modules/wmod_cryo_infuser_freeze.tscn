@@ -13,5 +13,4 @@ required_hooks = 2
 module_tags = PackedStringArray("freeze")
 
 [node name="Sprite" parent="." index="0"]
-visible = true
 texture = ExtResource("3_icon")

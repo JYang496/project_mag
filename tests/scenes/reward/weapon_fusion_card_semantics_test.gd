@@ -114,12 +114,8 @@ func _run() -> void:
 		_fail("duplicate core card must not imply recipe progress with an inventory progress bar")
 	elif core_content.size_flags_vertical != Control.SIZE_EXPAND_FILL or core_content.get_theme_constant("separation") != 8:
 		_fail("duplicate core card must expand with eight pixels between its information blocks")
-	elif core_content.get_child_count() != 3:
-		_fail("duplicate core card must expose exactly acquisition, inheritance, and usage information blocks")
-	elif core_usage_panel.size_flags_vertical != Control.SIZE_SHRINK_BEGIN:
-		_fail("duplicate core usage panel must expand directly below the Tag grid")
-	elif core_usage_panel.get_index() != 2:
-		_fail("duplicate core usage panel must remain directly after the inheritance block")
+	elif core_usage_panel.get_parent() != rendered_core_card:
+		_fail("duplicate core usage panel must be a card-level overlay outside the content VBox")
 	elif core_usage_icon.text.strip_edges() == "":
 		_fail("duplicate core card must identify its fusion-usage section with an icon")
 	elif core_icon.get_index() >= core_source.get_index():
@@ -169,6 +165,8 @@ func _run() -> void:
 	if heat_chip == null or heat_chip.focus_mode != Control.FOCUS_ALL:
 		_fail("core Tags must be keyboard-focusable compatibility controls")
 	else:
+		var acquisition_minimum_before := core_acquisition.get_combined_minimum_size()
+		var inheritance_minimum_before := core_inheritance.get_combined_minimum_size()
 		heat_chip.focus_entered.emit()
 		var focused_heading := rendered_core_card.find_child("WeaponCoreUsageHeading", true, false) as Label
 		var focused_name := rendered_core_card.find_child("SupportedWeaponName", true, false) as Label
@@ -177,9 +175,14 @@ func _run() -> void:
 		for tag_chip in rendered_core_tags.get_children():
 			if tag_chip != heat_chip and tag_chip.modulate.a > 0.5:
 				_fail("focusing a core Tag must de-emphasize unrelated Tag controls")
+		if core_acquisition.get_combined_minimum_size() != acquisition_minimum_before or core_inheritance.get_combined_minimum_size() != inheritance_minimum_before:
+			_fail("opening the supported-weapon overlay must not resize the card's primary content")
 		heat_chip.focus_exited.emit()
+		if not core_usage_panel.visible:
+			_fail("leaving a core Tag must keep the overlay open during the dismissal grace period")
+		core_content.call("_dismiss_usage_if_outside")
 		if core_usage_panel.visible:
-			_fail("leaving a core Tag must hide the supported-weapon panel again")
+			_fail("the supported-weapon overlay must close after the grace period when pointer and focus are outside")
 	var supported_grid := rendered_core_card.find_child("WeaponCoreSupportedWeaponGrid", true, false) as GridContainer
 	var supported_tiles := rendered_core_card.find_children("WeaponCoreWeaponTile*", "PanelContainer", true, false)
 	var rendered_usage_summary := rendered_core_card.find_child("WeaponCoreUsageSummary", true, false) as Label
@@ -195,8 +198,35 @@ func _run() -> void:
 			_fail("supported weapon names must remain visually stronger than branch names")
 	if rendered_usage_summary == null or rendered_usage_summary.visible:
 		_fail("duplicate core card must omit redundant supported-weapon counts")
-	for usage_count in range(6):
+	for usage_count in range(10):
 		_assert_core_usage_count(panel, usage_count)
+	if heat_chip != null:
+		rendered_core_card.position = Vector2(32.0, 900.0)
+		rendered_core_card.size = Vector2(320.0, 400.0)
+		add_child(rendered_core_card)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var acquisition_position_before := core_acquisition.global_position
+		var inheritance_position_before := core_inheritance.global_position
+		var overflow_entries: Array = []
+		for index in range(9):
+			overflow_entries.append({"name": "Weapon %d" % (index + 1), "branches": PackedStringArray(["Branch %d" % (index + 1)])})
+		core_content.call("_show_tag_weapons", "Heat", overflow_entries, heat_chip)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var overflow_scroll := rendered_core_card.find_child("WeaponCoreSupportedWeaponScroll", true, false) as ScrollContainer
+		if overflow_scroll == null or overflow_scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_AUTO or not is_equal_approx(overflow_scroll.custom_minimum_size.y, 167.0):
+			_fail("nine supported weapons must retain a fixed four-row scrolling viewport")
+		if core_acquisition.global_position != acquisition_position_before or core_inheritance.global_position != inheritance_position_before:
+			_fail("opening an overflow overlay must not move the icon, inventory, or Tag sections")
+		if core_usage_panel.global_position.y >= rendered_core_tags.global_position.y:
+			_fail("the supported-weapon overlay must open upward when there is insufficient viewport space below")
+		if core_usage_panel.get_global_rect().end.y > get_viewport().get_visible_rect().end.y - 8.0:
+			_fail("the supported-weapon overlay must remain inside the bottom viewport edge")
+		core_content.call("_request_usage_dismiss")
+		await get_tree().create_timer(0.16).timeout
+		if core_usage_panel.visible:
+			_fail("the supported-weapon overlay must close after its 125ms dismissal delay")
 	var assembler: Variant = panel.call("_get_reward_data_assembler")
 	var filtered_usage_lines: PackedStringArray = assembler.call("_format_core_usage_lines", [
 		{"weapon_id": "missing_weapon", "branch_id": "missing_branch"},
@@ -651,6 +681,14 @@ func _assert_core_usage_count(panel: Node, usage_count: int) -> void:
 		_fail("core usage count %d should render every supported weapon tile (rendered=%d)" % [usage_count, tiles.size()])
 	var more := section.find_child("WeaponCoreUsageMore", true, false) as Label
 	var empty := section.find_child("WeaponCoreUsageEmpty", true, false) as Label
+	var scroll := section.find_child("WeaponCoreSupportedWeaponScroll", true, false) as ScrollContainer
+	if scroll == null:
+		_fail("core usage section must provide a bounded supported-weapon scroll viewport")
+	elif usage_count > 8:
+		if scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_AUTO or not is_equal_approx(scroll.custom_minimum_size.y, 167.0):
+			_fail("core usage counts above eight must scroll inside a fixed four-row viewport")
+	elif scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
+		_fail("core usage counts up to eight must not show a redundant scrollbar")
 	if usage_count == 0 and (empty == null or not empty.visible):
 		_fail("core usage count 0 should render the neutral empty state")
 	elif usage_count > 0 and empty != null and empty.visible:

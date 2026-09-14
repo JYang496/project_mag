@@ -4,9 +4,9 @@ class_name OrbitEnergyFieldIndicator
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 
 @export var radius: float = 84.0
-@export var fill_color: Color = Color(PALETTE.ENERGY, 0.10)
-@export var outline_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.52)
-@export var outline_width: float = 1.5
+@export var fill_color: Color = PALETTE.PLAYER_RANGE_FILL
+@export var outline_color: Color = PALETTE.PLAYER_RANGE_OUTLINE
+@export var outline_width: float = PALETTE.PLAYER_RANGE_LINE_WIDTH
 
 func _process(_delta: float) -> void:
 	queue_redraw()

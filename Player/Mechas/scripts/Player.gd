@@ -70,10 +70,6 @@ const ENERGY_MARK_RATIO: float = 0.10
 const ENERGY_MARK_DURATION_SEC: float = 6.0
 const ENERGY_MARK_MAX_HP_RATIO: float = 0.40
 const ENERGY_MARK_TRIGGER_COOLDOWN_SEC: float = 2.0
-const AUTO_LOOT_DURATION_SEC: float = 2.0
-const AUTO_LOOT_TICK_SEC: float = 0.2
-const AUTO_LOOT_GRAB_RADIUS: float = 2500.0
-const COLLECT_AREA_TOP_PADDING: float = 0.0
 var weapon_orbit_states: Dictionary = {}
 var _base_detect_shape_size := Vector2.ZERO
 var _base_hurtbox_shape_size := Vector2.ZERO
@@ -281,7 +277,7 @@ func _ready():
 	var viewport := get_viewport()
 	if viewport and not viewport.is_connected("size_changed", Callable(self, "_on_viewport_size_changed")):
 		viewport.size_changed.connect(Callable(self, "_on_viewport_size_changed"))
-	_update_collect_area_anchor_to_screen_top()
+	_update_collect_area_anchor_to_supply_hud()
 	_cache_hurtbox_shape_base()
 	_sync_hurtbox_to_idle_sprite_scale()
 	LoadingPerformance.begin_segment("player_ready_systems")
@@ -322,7 +318,7 @@ func _physics_process(delta):
 	_update_incoming_elemental_effects(delta)
 	_regen_energy(delta)
 	_update_passive_time_tick(delta)
-	_update_collect_area_anchor_to_screen_top()
+	_update_collect_area_anchor_to_supply_hud()
 	if not _require_movement_system_or_halt():
 		return
 	_tick_movement(delta)
@@ -341,7 +337,7 @@ func _physics_process(delta):
 	if not _require_camera_system_or_halt():
 		return
 	_camera_system.tick(delta, global_position, _get_board_generator())
-	_update_collect_area_anchor_to_screen_top()
+	_update_collect_area_anchor_to_supply_hud()
 
 var _enemy_contact_tick_accumulator := 0.0
 var _invulnerable_until_msec := 0
@@ -452,7 +448,12 @@ func _process_combat_input(delta: float) -> void:
 	_ensure_assist_system()
 	if _assist_system != null and pressed:
 		_assist_system.process_combat_assist(main_weapon, true, delta)
-	if main_weapon.has_method("handle_primary_input"):
+	# Auto assist owns held input while it has a firing target. A manual release
+	# before assist would reset continuous weapons on every physics frame.
+	var assist_owns_input := false
+	if _assist_system != null and not pressed:
+		assist_owns_input = _assist_system.process_combat_assist(main_weapon, false, delta)
+	if not assist_owns_input and main_weapon.has_method("handle_primary_input"):
 		main_weapon.call("handle_primary_input", pressed, just_pressed, just_released, delta)
 	elif pressed and main_weapon.has_method("request_primary_fire"):
 		fired = bool(main_weapon.call("request_primary_fire"))
@@ -461,8 +462,6 @@ func _process_combat_input(delta: float) -> void:
 	if _assist_system != null:
 		if pressed:
 			_assist_system.handle_post_fire(main_weapon, fired)
-		else:
-			_assist_system.process_combat_assist(main_weapon, pressed, delta)
 
 func _try_show_reload_block_hint(main_weapon: Weapon) -> void:
 	_ensure_active_skill_runtime()
@@ -1271,7 +1270,7 @@ func _resolve_buffered_move_input() -> Vector2:
 	return Vector2.ZERO
 
 func _on_viewport_size_changed() -> void:
-	_update_collect_area_anchor_to_screen_top()
+	_update_collect_area_anchor_to_supply_hud()
 
 func _get_board_generator() -> Node:
 	if _board_generator_ref != null and is_instance_valid(_board_generator_ref):
@@ -1307,21 +1306,17 @@ func _constrain_to_board_traversable_area() -> void:
 	global_position = projected_pos
 	velocity = Vector2.ZERO
 
-func _update_collect_area_anchor_to_screen_top() -> void:
+func _update_collect_area_anchor_to_supply_hud() -> void:
 	if collect_area == null or not is_instance_valid(collect_area):
 		return
-	var viewport := get_viewport()
-	if viewport == null:
+	var ui := GlobalVariables.ui
+	var anchor: Control = ui.get_gold_supply_collection_anchor() if is_instance_valid(ui) else null
+	if anchor == null:
+		collect_area.global_position = global_position
 		return
-	var inverse_canvas := viewport.get_canvas_transform().affine_inverse()
-	var viewport_width := viewport.get_visible_rect().size.x
-	var world_top_left: Vector2 = inverse_canvas * Vector2.ZERO
-	var world_top_right: Vector2 = inverse_canvas * Vector2(viewport_width, 0.0)
-	var player_screen_x := (viewport.get_canvas_transform() * global_position).x
-	var edge_t := clampf(player_screen_x / maxf(viewport_width, 1.0), 0.0, 1.0)
-	var target_global := world_top_left.lerp(world_top_right, edge_t)
-	target_global += (world_top_right - world_top_left).orthogonal().normalized() * COLLECT_AREA_TOP_PADDING
-	collect_area.global_position = target_global
+	# HUD canvas coordinates must be converted back into the coin's world canvas.
+	var screen_center := anchor.get_global_transform_with_canvas() * (anchor.size * 0.5)
+	collect_area.global_position = collect_area.get_canvas_transform().affine_inverse() * screen_center
 
 func _update_projected_depth() -> void:
 	if not fixed_oblique_enabled:
@@ -1874,7 +1869,6 @@ func _on_grab_area_area_entered(area):
 
 
 func _on_phase_changed(new_phase: String) -> void:
-	var previous_phase := _last_phase
 	_last_phase = new_phase
 	if new_phase == PhaseManager.BATTLE:
 		clear_global_weapon_energy()
@@ -1899,9 +1893,6 @@ func _on_phase_changed(new_phase: String) -> void:
 		reset_shared_heat_to_neutral()
 		_instant_reload_all_weapons()
 		_force_all_skills_ready()
-	_ensure_loot_system()
-	if _loot_system != null:
-		_loot_system.on_phase_changed(new_phase, previous_phase)
 
 func _ensure_movement_system() -> void:
 	if _movement_system == null:

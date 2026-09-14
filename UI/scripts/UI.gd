@@ -217,7 +217,7 @@ func set_reward_modal_hud_hidden(hidden: bool) -> void:
 		if _reward_modal_hud_hidden:
 			return
 		_reward_modal_hud_visibility.clear()
-		for hud_variant in [battle_hud, right_hud_stack, left_contract_hud_stack, controls_hint_view]:
+		for hud_variant in [battle_hud, right_hud_stack, left_contract_hud_stack, controls_hint_view, gold_supply_controller.button if gold_supply_controller != null else null]:
 			var hud := hud_variant as Control
 			if hud == null or not is_instance_valid(hud):
 				continue
@@ -285,6 +285,11 @@ var _owned_ui_pauses: Dictionary = {}
 
 func is_supply_modal_open() -> bool:
 	return gold_supply_controller != null and gold_supply_controller.active
+
+func get_gold_supply_collection_anchor() -> Control:
+	if gold_supply_controller == null or not is_instance_valid(gold_supply_controller.progress_bar):
+		return null
+	return gold_supply_controller.progress_bar
 
 func request_settlement_gold_supply() -> bool:
 	return gold_supply_controller != null and gold_supply_controller.open_supply(true)
@@ -971,7 +976,9 @@ func request_module_equip_selection(
 func request_module_equip_selections(
 	module_instances: Array[Module],
 	on_item_complete: Callable = Callable(),
-	on_complete: Callable = Callable()
+	on_complete: Callable = Callable(),
+	review_mode: bool = false,
+	pending_modules: Array[Module] = []
 ) -> bool:
 	if module_instances.is_empty():
 		return false
@@ -1003,7 +1010,9 @@ func request_module_equip_selections(
 		module_instances,
 		wrapped_item_complete,
 		wrapped_complete,
-		true
+		true,
+		review_mode,
+		pending_modules
 	))
 	if not opened:
 		for transaction_id in transaction_ids:

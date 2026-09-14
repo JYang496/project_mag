@@ -65,6 +65,7 @@ func get_service_primary_buttons(menu_id: StringName) -> Array:
 			return [
 				owner_ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button,
 				owner_ui.upgrade_module_button,
+				owner_ui.upgrade_primary_panel.get_node_or_null("OpenFusionButton") as Button,
 			]
 		&"warehouse":
 			return [
@@ -463,15 +464,24 @@ func back_to_purchase_primary_menu() -> void:
 	_menu_transition_locked = false
 
 func open_upgrade_panel(mode: StringName = &"weapon") -> void:
-	mode = _set_management_item_mode(mode)
-	owner_ui.ensure_upgrade_management()
+	await _open_upgrade_service_panel(mode, &"upgrade")
+
+func open_fusion_panel() -> void:
+	await _open_upgrade_service_panel(&"weapon", &"fusion")
+
+func _open_upgrade_service_panel(mode: StringName, service: StringName) -> void:
 	if _menu_transition_locked or owner_ui.is_branch_selection_blocking_interactions():
 		if owner_ui.is_branch_selection_blocking_interactions():
 			owner_ui.show_item_message(LocalizationManager.tr_key("ui.branch.pending_blocks", "Choose an evolution branch first."), 1.6)
 		return
 	_menu_transition_locked = true
+	mode = _set_management_item_mode(mode)
+	owner_ui.ensure_upgrade_management()
 	_hide_primary_menu(&"upgrade", owner_ui.upgrade_primary_root, owner_ui.upgrade_primary_panel)
-	owner_ui.upgrade_management_controller.apply_mode(mode)
+	if service == &"fusion":
+		owner_ui.upgrade_management_controller.open_fusion()
+	else:
+		owner_ui.upgrade_management_controller.open_upgrade(mode)
 	upgrade_panel_in()
 	await _animate_secondary_root_in(owner_ui.upgrade_management_root)
 	_menu_transition_locked = false

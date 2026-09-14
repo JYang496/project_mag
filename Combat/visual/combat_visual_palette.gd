@@ -7,6 +7,12 @@ class_name CombatVisualPalette
 ## outlines, brackets, and outer telegraph edges. Semantic colors answer
 ## "what does this effect do?" and belong in fills, particles, and inner lines.
 
+# Shared subdued style for all player attack range previews.
+const PLAYER_RANGE_COLOR := Color("#78949E")
+const PLAYER_RANGE_FILL := Color(PLAYER_RANGE_COLOR, 0.05)
+const PLAYER_RANGE_OUTLINE := Color(PLAYER_RANGE_COLOR, 0.30)
+const PLAYER_RANGE_LINE_WIDTH := 1.0
+
 const PLAYER_PRIMARY := Color("#35D7FF")
 const PLAYER_CORE := Color("#EAFBFF")
 const PLAYER_DARK := Color("#123746")

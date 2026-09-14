@@ -93,6 +93,10 @@ func ensure_management_menu_buttons() -> void:
 		owner_ui.upgrade_module_button = owner_ui.upgrade_primary_panel.get_node_or_null("OpenModuleUpgradeButton") as Button
 	owner_ui.upgrade_module_button.text = LocalizationManager.tr_key("ui.smith.upgrade.module", "Module")
 	_connect_button_pressed(owner_ui.upgrade_module_button, owner_ui.rest_area_ui_controller.open_upgrade_panel.bind(&"module"))
+	var fusion_button := owner_ui.upgrade_primary_panel.get_node_or_null("OpenFusionButton") as Button
+	if fusion_button:
+		fusion_button.text = LocalizationManager.tr_key("ui.management.tab.fusion", "Fusion")
+	_connect_button_pressed(fusion_button, owner_ui.rest_area_ui_controller.open_fusion_panel)
 	# Secondary management panels are loaded later with Management Shell.
 	if owner_ui.upgrade_panel != null:
 		var upgrade_back := owner_ui.upgrade_panel.get_node_or_null("BackToUpgradeMenu") as Button
@@ -137,6 +141,7 @@ func style_primary_menu_controls() -> void:
 		[
 			owner_ui.upgrade_primary_panel.get_node_or_null("OpenUpgradeButton") as Button,
 			owner_ui.upgrade_module_button,
+			owner_ui.upgrade_primary_panel.get_node_or_null("OpenFusionButton") as Button,
 		]
 	)
 	_apply_primary_menu_layout(

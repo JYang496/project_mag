@@ -20,6 +20,44 @@ var _save_dirty := false
 var _pending_restore: Dictionary = {}
 var rest_area_service_intro_seen := false
 var _reward_transaction_active := false
+var _reward_write_thread: Thread
+var _save_epoch := 0
+var _queued_reward_save: Dictionary = {}
+
+# Capture scene state on the main thread; only detached data and file operations
+# cross the worker boundary. The transaction lock remains held until completion.
+func commit_prepared_reward_async(reason: StringName) -> Dictionary:
+	if not _reward_transaction_active or _save_in_progress:
+		return _result(false, "no_reward_transaction")
+	_save_in_progress = true
+	var epoch := _save_epoch
+	var payload := _build_document(STATE_BATTLE if PhaseManager.current_state() == PhaseManager.BATTLE else STATE_REST_AREA).duplicate(true)
+	var worker := Thread.new()
+	_reward_write_thread = worker
+	var error := worker.start(_write_prepared_document.bind(payload))
+	if error != OK:
+		_reward_write_thread = null
+		_save_in_progress = false
+		return _result(false, "worker_start_failed")
+	while worker.is_alive():
+		await get_tree().process_frame
+	if epoch != _save_epoch:
+		return _result(false, "cleared")
+	var result: Dictionary = worker.wait_to_finish()
+	_reward_write_thread = null
+	_save_in_progress = false
+	save_completed.emit(reason, result)
+	return result
+
+static func _write_prepared_document(payload: Dictionary) -> Dictionary:
+	var result := _write_document_atomic(RUN_PATH, BACKUP_PATH, payload)
+	if bool(result.get("ok", false)):
+		_write_manifest(payload)
+	return result
+
+func _exit_tree() -> void:
+	if _reward_write_thread != null and _reward_write_thread.is_started():
+		_reward_write_thread.wait_to_finish()
 
 func begin_reward_transaction() -> bool:
 	if _save_in_progress or _reward_transaction_active:
@@ -42,6 +80,21 @@ func commit_reward_transaction(reason: StringName) -> Dictionary:
 
 func abort_reward_transaction() -> void:
 	_reward_transaction_active = false
+	if _save_dirty and not _save_in_progress:
+		_save_dirty = false
+		if not _queued_reward_save.is_empty():
+			var queued := _queued_reward_save
+			_queued_reward_save = {}
+			_flush_queued_reward_save.call_deferred(queued, _save_epoch)
+		else:
+			call_deferred("save_run", &"coalesced", STATE_BATTLE if PhaseManager.current_state() == PhaseManager.BATTLE else STATE_REST_AREA)
+
+func _flush_queued_reward_save(queued: Dictionary, epoch: int) -> void:
+	if epoch != _save_epoch:
+		return
+	var result := save_run(queued.reason, queued.state)
+	if bool(queued.get("clear_checkpoint", false)) and bool(result.get("ok", false)) and not bool(result.get("queued", false)):
+		_delete_file(CHECKPOINT_PATH)
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SLOT_DIRECTORY))
@@ -50,9 +103,17 @@ func has_run() -> bool:
 	return FileAccess.file_exists(RUN_PATH) or FileAccess.file_exists(BACKUP_PATH)
 
 func clear_run() -> void:
+	# Prevent an outgoing preparation worker from recreating a cleared slot.
+	if _reward_write_thread != null and _reward_write_thread.is_started():
+		_reward_write_thread.wait_to_finish()
+	_reward_write_thread = null
+	_save_epoch += 1
+	_save_in_progress = false
+	_reward_transaction_active = false
 	_pending_restore.clear()
 	_revision = 0
 	_save_dirty = false
+	_queued_reward_save.clear()
 	rest_area_service_intro_seen = false
 	_delete_file(CHECKPOINT_PATH)
 	_delete_file(RUN_PATH)
@@ -65,6 +126,10 @@ func create_new_run() -> Dictionary:
 
 func save_run(reason: StringName = &"autosave", state: String = STATE_REST_AREA) -> Dictionary:
 	if _reward_transaction_active:
+		if _reward_write_thread != null:
+			_save_dirty = true
+			_queued_reward_save = {"reason": reason, "state": state, "clear_checkpoint": reason == &"battle_completed" or bool(_queued_reward_save.get("clear_checkpoint", false))}
+			return _result(true).merged({"queued": true})
 		return _result(false, "reward_transaction_in_progress")
 	if _save_in_progress:
 		_save_dirty = true
@@ -90,7 +155,7 @@ func create_battle_checkpoint() -> Dictionary:
 
 func commit_battle_success() -> Dictionary:
 	var result := save_run(&"battle_completed", STATE_REST_AREA)
-	if bool(result.get("ok", false)):
+	if bool(result.get("ok", false)) and not bool(result.get("queued", false)):
 		_delete_file(CHECKPOINT_PATH)
 	return result
 
@@ -181,7 +246,7 @@ func mark_rest_area_service_intro_seen() -> void:
 	rest_area_service_intro_seen = true
 	call_deferred("save_run", &"rest_area_service_intro", STATE_REST_AREA)
 
-func _write_document_atomic(path: String, backup_path: String, payload: Dictionary) -> Dictionary:
+static func _write_document_atomic(path: String, backup_path: String, payload: Dictionary) -> Dictionary:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(SLOT_DIRECTORY))
 	var temp_path := path + ".tmp"
 	var file := FileAccess.open(temp_path, FileAccess.WRITE)
@@ -207,7 +272,7 @@ func _write_document_atomic(path: String, backup_path: String, payload: Dictiona
 		return _result(false, "replace_failed")
 	return _result(true)
 
-func _read_valid_document(path: String) -> Dictionary:
+static func _read_valid_document(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		return _result(false, "not_found")
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -224,7 +289,7 @@ func _read_valid_document(path: String) -> Dictionary:
 		return _result(false, "unsupported_format")
 	return {"ok": true, "error_code": "", "data": data}
 
-func _write_manifest(document: Dictionary) -> void:
+static func _write_manifest(document: Dictionary) -> void:
 	var manifest := {
 		"slot_id": "slot_0",
 		"revision": int(document.get("revision", 0)),
@@ -240,7 +305,7 @@ func _write_manifest(document: Dictionary) -> void:
 	_delete_file(MANIFEST_PATH)
 	DirAccess.rename_absolute(ProjectSettings.globalize_path(MANIFEST_PATH + ".tmp"), ProjectSettings.globalize_path(MANIFEST_PATH))
 
-func _result(ok: bool, error_code: String = "") -> Dictionary:
+static func _result(ok: bool, error_code: String = "") -> Dictionary:
 	return {
 		"ok": ok,
 		"error_code": error_code,
@@ -248,6 +313,6 @@ func _result(ok: bool, error_code: String = "") -> Dictionary:
 		"restored_checkpoint": false,
 	}
 
-func _delete_file(path: String) -> void:
+static func _delete_file(path: String) -> void:
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

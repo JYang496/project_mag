@@ -57,6 +57,20 @@ func on_weapon_mode_pressed() -> void:
 func on_module_mode_pressed() -> void:
 	apply_mode(&"module")
 
+func open_upgrade(item_mode: StringName) -> void:
+	_open_service(item_mode, &"upgrade")
+
+func open_fusion() -> void:
+	_open_service(&"weapon", &"fusion")
+
+func _open_service(item_mode: StringName, service: StringName) -> void:
+	if not ensure_view():
+		return
+	if owner_ui != null and owner_ui.has_method("set_management_item_mode"):
+		owner_ui.call("set_management_item_mode", item_mode)
+	upgrade_management_view.open_service(item_mode, service)
+	sync_view_state()
+
 func apply_mode(new_mode: StringName) -> void:
 	if not ensure_view():
 		return
@@ -264,6 +278,9 @@ func refresh_texts() -> void:
 		upgrade_open.text = LocalizationManager.tr_key("ui.smith.upgrade.weapon", "Weapon")
 	if owner_ui.upgrade_module_button:
 		owner_ui.upgrade_module_button.text = LocalizationManager.tr_key("ui.smith.upgrade.module", "Module")
+	var fusion_button := owner_ui.upgrade_primary_panel.get_node_or_null("OpenFusionButton") as Button
+	if fusion_button:
+		fusion_button.text = LocalizationManager.tr_key("ui.management.tab.fusion", "Fusion")
 	sync_primary_menu_style()
 	refresh_action()
 

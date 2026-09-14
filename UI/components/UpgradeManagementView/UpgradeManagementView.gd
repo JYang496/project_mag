@@ -15,6 +15,7 @@ const DETAIL_TEXT_SCENE := preload("res://UI/components/DetailText/DetailText.ts
 const FUSION_BRANCH_SCENE := preload("res://UI/components/FusionBranchOption/FusionBranchOption.tscn")
 const FUSION_CORE_ROW_SCENE := preload("res://UI/components/FusionCoreSelectionRow/FusionCoreSelectionRow.tscn")
 
+@onready var modification_balance_label: Label = $ModificationBalanceLabel
 @onready var upgrade_mode_buttons: HBoxContainer = $UpgradeModeButtons
 @onready var service_tabs: HBoxContainer = $ServiceTabs
 @onready var upgrade_tab_button: Button = $ServiceTabs/UpgradeTabButton
@@ -44,6 +45,9 @@ var _upgrade_saved_hover: Dictionary = {}
 var _upgrade_saved_selected: Dictionary = {}
 var _upgrade_saved_module: Module
 var _detail_presenter
+var _item_rows: Array[Dictionary] = []
+var _list_layout_pending := false
+var _list_refresh_generation := 0
 
 func bind(owner_ui: Node, upgrade_controller: UpgradeManagementController = null) -> void:
 	if owner_ui == null:
@@ -53,6 +57,8 @@ func bind(owner_ui: Node, upgrade_controller: UpgradeManagementController = null
 	_ensure_detail_presenter()
 	upgrade_tab_button.pressed.connect(set_service_mode.bind(&"upgrade"))
 	fusion_tab_button.pressed.connect(set_service_mode.bind(&"fusion"))
+	PlayerData.modification_points_changed.connect(_on_modification_points_changed)
+	LocalizationManager.language_changed.connect(_on_modification_language_changed)
 	InventoryData.weapon_cores_changed.connect(_on_fusion_state_changed)
 	InventoryData.weapon_fusion_changed.connect(_on_weapon_fusion_changed)
 	if controller != null:
@@ -75,6 +81,11 @@ func bind(owner_ui: Node, upgrade_controller: UpgradeManagementController = null
 func set_service_mode(new_mode: StringName) -> void:
 	var next_mode: StringName = &"fusion" if new_mode == &"fusion" else &"upgrade"
 	if next_mode == service_mode:
+		upgrade_tab_button.button_pressed = service_mode == &"upgrade"
+		fusion_tab_button.button_pressed = service_mode == &"fusion"
+		upgrade_mode_buttons.visible = service_mode == &"upgrade"
+		if owner_ui:
+			owner_ui.call("_refresh_mode_button_styles", upgrade_tab_button, fusion_tab_button, service_mode == &"upgrade")
 		refresh_template()
 		refresh_action()
 		return
@@ -102,6 +113,18 @@ func set_service_mode(new_mode: StringName) -> void:
 
 func get_service_mode() -> StringName:
 	return service_mode
+
+func open_service(item_mode: StringName, service: StringName) -> void:
+	# Primary-menu entries start a fresh selection in the requested service.
+	_upgrade_saved_hover = {}
+	_upgrade_saved_selected = {}
+	_upgrade_saved_module = null
+	hover_item = {}
+	selected_item = {}
+	selected_module = null
+	_reset_fusion_selection()
+	set_service_mode(service)
+	apply_mode(&"weapon" if service == &"fusion" else item_mode)
 
 func set_state(new_mode: StringName, new_hover: Dictionary, new_selected: Dictionary, new_selected_module: Module) -> void:
 	mode = &"module" if new_mode == &"module" else &"weapon"
@@ -151,6 +174,10 @@ func apply_mode(new_mode: StringName) -> void:
 func refresh_template() -> void:
 	if upgrade_item_list == null:
 		return
+	_list_layout_pending = true
+	_list_refresh_generation += 1
+	hover_item = {}
+	_item_rows.clear()
 	ensure_item_list_layout()
 	_clear_container(upgrade_item_list)
 	var items := build_items(&"weapon" if service_mode == &"fusion" else mode)
@@ -170,6 +197,46 @@ func refresh_template() -> void:
 			add_item_row(item_data)
 	refresh_detail()
 	refresh_action()
+	_finish_list_refresh(_list_refresh_generation)
+
+func _finish_list_refresh(generation: int) -> void:
+	# Let the list and its nested containers finish sorting before enabling hits.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_inside_tree() or generation != _list_refresh_generation:
+		return
+	for item_data in _item_rows:
+		var button := item_data.get("button") as Button
+		if is_instance_valid(button):
+			button.mouse_filter = Control.MOUSE_FILTER_STOP
+	_list_layout_pending = false
+	_refresh_hover_from_pointer()
+	refresh_detail()
+	_sync_controller_state()
+
+func _refresh_hover_from_pointer() -> void:
+	hover_item = {}
+	if not is_visible_in_tree():
+		return
+	var pointer := get_global_mouse_position()
+	if not upgrade_item_scroll.get_global_rect().has_point(pointer):
+		return
+	var hovered := get_viewport().gui_get_hovered_control()
+	if hovered != null and hovered != self and not is_ancestor_of(hovered):
+		return
+	for item_data in _item_rows:
+		var button := item_data.get("button") as Button
+		if is_instance_valid(button) and button.is_visible_in_tree() and button.get_global_rect().has_point(pointer):
+			hover_item = item_data.duplicate(true)
+			return
+
+func _refresh_item_selection_styles() -> void:
+	if owner_ui == null:
+		return
+	for item_data in _item_rows:
+		var button := item_data.get("button") as Button
+		if is_instance_valid(button):
+			owner_ui.call("_style_management_button", button, items_match(selected_item, item_data))
 
 func _rebind_active_items(items: Array[Dictionary]) -> void:
 	var refreshed_selected: Dictionary = {}
@@ -213,6 +280,7 @@ func build_items(item_mode: StringName) -> Array[Dictionary]:
 
 func add_item_row(item_data: Dictionary, parent_container: Container = null) -> void:
 	var button := UPGRADE_ITEM_SCENE.instantiate() as Button
+	button.mouse_filter = Control.MOUSE_FILTER_IGNORE if _list_layout_pending else Control.MOUSE_FILTER_STOP
 	var compact_module := str(item_data.get("type", "")) == "module" and mode == &"module"
 	button.pressed.connect(_on_item_selected.bind(item_data))
 	button.mouse_entered.connect(_on_item_hovered.bind(item_data))
@@ -224,25 +292,31 @@ func add_item_row(item_data: Dictionary, parent_container: Container = null) -> 
 	var price := int(item_data.get("price", 0))
 	var price_text := "-" if level >= maximum else str(price)
 	var enriched := item_data.duplicate(true)
-	enriched["cost_text"] = LocalizationManager.tr_key("ui.workbench.upgrade_supplied", "Upgrades are provided by Gold Supply rewards.") if PlayerData.gold_supply_enabled \
-		else LocalizationManager.tr_format("ui.upgrade.cost", {"value": price_text}, "Cost: %s" % price_text)
+	enriched["cost_text"] = LocalizationManager.tr_format("ui.modification.cost", {"value": price_text}, "Cost: {value} modification points")
 	button.call("set_data", enriched, compact_module)
 	item_data["button"] = button
+	_item_rows.append(item_data)
 	if owner_ui:
 		owner_ui.call("_style_management_button", button, items_match(selected_item, item_data))
 
 func _on_item_hovered(item_data: Dictionary) -> void:
+	if _list_layout_pending:
+		return
 	hover_item = item_data.duplicate(true)
 	refresh_detail()
 	_sync_controller_state()
 
 func _on_item_unhovered(item_data: Dictionary) -> void:
+	if _list_layout_pending:
+		return
 	if items_match(hover_item, item_data):
 		hover_item = {}
 	refresh_detail()
 	_sync_controller_state()
 
 func _on_item_selected(item_data: Dictionary) -> void:
+	if _list_layout_pending:
+		return
 	var changed_fusion_weapon := service_mode == &"fusion" and not items_match(selected_item, item_data)
 	selected_item = item_data.duplicate(true)
 	if str(item_data.get("type", "")) == "weapon":
@@ -253,7 +327,10 @@ func _on_item_selected(item_data: Dictionary) -> void:
 		InventoryData.on_select_upg = null
 	if changed_fusion_weapon:
 		_reset_fusion_selection()
-	refresh_template()
+	_refresh_item_selection_styles()
+	_refresh_hover_from_pointer()
+	refresh_detail()
+	refresh_action()
 	_sync_controller_state()
 
 func refresh_detail() -> void:
@@ -287,9 +364,6 @@ func trigger_action() -> bool:
 	return try_upgrade_selected_item()
 
 func try_upgrade_selected_item() -> bool:
-	if PlayerData.gold_supply_enabled:
-		_show_message(LocalizationManager.tr_key("ui.workbench.upgrade_supplied", "Upgrades are provided by Gold Supply rewards."), 1.6)
-		return false
 	if not PhaseManager.can_configure_loadout():
 		_show_message(LocalizationManager.tr_key("ui.upgrade.rest_only", "Upgrades are only available during rest."), 1.6)
 		return false
@@ -308,10 +382,10 @@ func _try_upgrade_weapon(item_data: Dictionary) -> bool:
 		_show_message(LocalizationManager.tr_key("ui.upgrade.fully_upgraded", "Fully upgraded."), 1.4)
 		return false
 	var price := _get_weapon_upgrade_price(weapon)
-	if PlayerData.player_gold < price:
-		_show_message(LocalizationManager.tr_key("ui.shop.not_enough_gold", "Not enough gold."), 1.4)
+	if PlayerData.modification_points < price:
+		_show_message(LocalizationManager.tr_key("ui.modification.insufficient", "Not enough modification points."), 1.4)
 		return false
-	if not PlayerData.spend_gold(price):
+	if not PlayerData.spend_modification_points(price):
 		return false
 	weapon.set_level(int(weapon.level) + 1)
 	if controller != null:
@@ -322,7 +396,7 @@ func _try_upgrade_module(item_data: Dictionary) -> bool:
 	var module_instance := item_data.get("module", null) as Module
 	if module_instance == null or not is_instance_valid(module_instance):
 		return false
-	var result := InventoryData.upgrade_module_with_gold(module_instance)
+	var result := InventoryData.upgrade_module_with_modification_points(module_instance)
 	if not result.get("ok", false):
 		_show_message(str(result.get("reason", "")), 1.6)
 		return false
@@ -330,7 +404,16 @@ func _try_upgrade_module(item_data: Dictionary) -> bool:
 		controller.update_upg()
 	return true
 
+func _on_modification_points_changed(_value: int) -> void:
+	refresh_action()
+
+func _on_modification_language_changed(_locale: String) -> void:
+	refresh_template()
+
 func refresh_action() -> void:
+	if modification_balance_label != null:
+		modification_balance_label.text = LocalizationManager.tr_format("ui.modification.balance", {"value": PlayerData.modification_points}, "Modification points: {value}")
+		modification_balance_label.tooltip_text = LocalizationManager.tr_key("ui.modification.hint", "Granted once per new rest area. Unspent points carry over within this run.")
 	if upgrade_action_button == null:
 		return
 	if service_mode == &"fusion":
@@ -338,10 +421,6 @@ func refresh_action() -> void:
 		var preview := _get_fusion_preview()
 		upgrade_action_button.disabled = fusion_submit_pending or not bool(preview.get("ok", false)) or not PhaseManager.can_configure_loadout()
 		upgrade_action_button.text = LocalizationManager.tr_key("ui.fusion.confirm", "Confirm Fusion")
-		return
-	if PlayerData.gold_supply_enabled:
-		upgrade_action_button.visible = false
-		upgrade_action_button.disabled = true
 		return
 	upgrade_action_button.visible = true
 	var ready := false
@@ -355,11 +434,11 @@ func refresh_action() -> void:
 			var module_instance := selected_item.get("module", null) as Module
 			ready = module_instance != null and is_instance_valid(module_instance) and int(module_instance.module_level) < Module.MAX_LEVEL
 			price = _get_module_upgrade_price(module_instance) if ready else 0
-	upgrade_action_button.disabled = not ready or PlayerData.player_gold < price
+	upgrade_action_button.disabled = not ready or PlayerData.modification_points < price or not PhaseManager.can_configure_loadout()
 	upgrade_action_button.text = LocalizationManager.tr_format(
-		"ui.upgrade.action_price",
+		"ui.modification.action",
 		{"value": price},
-		"Upgrade: %s" % price
+		"Upgrade: {value} modification points"
 	) if ready else LocalizationManager.tr_key("ui.upgrade.action_empty", "Upgrade")
 
 func _build_weapon_item_data(weapon: Weapon, location_text: String = "") -> Dictionary:
@@ -493,28 +572,10 @@ func _format_type_name(value: String) -> String:
 	return _detail_presenter.format_type_name(value)
 
 func _get_weapon_upgrade_price(weapon: Weapon) -> int:
-	if weapon == null or not is_instance_valid(weapon):
-		return 0
-	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
-	var weapon_def := DataHandler.read_weapon_data(weapon_id) as WeaponDefinition
-	if weapon_def == null:
-		return 0
-	if GlobalVariables.economy_data:
-		return GlobalVariables.economy_data.get_weapon_upgrade_gold(int(weapon_def.price))
-	return maxi(1, int(round(float(weapon_def.price) * 0.5)))
+	return PlayerData.get_modification_upgrade_cost(&"weapon") if is_instance_valid(weapon) else 0
 
 func _get_module_upgrade_price(module_instance: Module) -> int:
-	if module_instance == null or not is_instance_valid(module_instance):
-		return 0
-	if GlobalVariables.economy_data:
-		return GlobalVariables.economy_data.get_module_upgrade_gold(
-			int(module_instance.cost),
-			int(module_instance.module_level)
-		)
-	return EconomyConfig.new().get_module_upgrade_gold(
-		int(module_instance.cost),
-		int(module_instance.module_level)
-	)
+	return PlayerData.get_modification_upgrade_cost(&"module") if is_instance_valid(module_instance) else 0
 
 func _add_detail_section(title: String, value: String) -> void:
 	_ensure_detail_presenter()

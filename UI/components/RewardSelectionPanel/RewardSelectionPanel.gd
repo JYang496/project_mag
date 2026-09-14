@@ -95,6 +95,7 @@ var _pinned_index := 0
 var _hover_index := -1
 var _focus_index := -1
 var _entry_tween: Tween
+var _entry_generation := 0
 var _held_quick_select_index := -1
 var _held_quick_select_elapsed := 0.0
 var _synergy_evaluator: Callable = Callable()
@@ -107,6 +108,180 @@ var _mouse_detail_index := -1
 @onready var _detail_close_timer: Timer = $DetailCloseTimer
 var _using_gamepad := false
 var _gamepad_device_id := 0
+var _supply_viewport: SubViewport
+var _supply_grid: GridContainer
+var _supply_cards: Array[Button] = []
+var _prepared_supply_rewards: Array[RewardInfo] = []
+var _supply_prepare_generation := 0
+
+func _ensure_supply_staging() -> void:
+	if _supply_viewport != null:
+		return
+	_supply_viewport = SubViewport.new()
+	_supply_viewport.name = "SupplyCardWarmup"
+	_supply_viewport.size = Vector2i(952, 500)
+	_supply_viewport.disable_3d = true
+	_supply_viewport.world_2d = World2D.new()
+	_supply_viewport.transparent_bg = true
+	_supply_viewport.gui_disable_input = true
+	_supply_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	add_child(_supply_viewport)
+	_supply_grid = GridContainer.new()
+	_supply_grid.theme = preload("res://UI/themes/global_ui_theme.tres")
+	_supply_grid.columns = 3
+	_supply_grid.size = Vector2(952, 500)
+	_supply_grid.add_theme_constant_override("h_separation", 12)
+	_supply_grid.add_theme_constant_override("v_separation", 12)
+	_supply_viewport.add_child(_supply_grid)
+
+func invalidate_prepared_supply() -> void:
+	_supply_prepare_generation += 1
+	_prepared_supply_rewards.clear()
+	if _supply_viewport != null:
+		_supply_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+
+func has_prepared_supply(rewards: Array[RewardInfo]) -> bool:
+	return not rewards.is_empty() and _prepared_supply_rewards == rewards
+
+func prepare_supply_cards(rewards: Array[RewardInfo], still_current: Callable) -> bool:
+	if visible or rewards.is_empty():
+		return false
+	_ensure_supply_staging()
+	invalidate_prepared_supply()
+	var generation := _supply_prepare_generation
+	for child in options_box.get_children():
+		if child in _supply_cards:
+			child.reparent(_supply_grid, false)
+		else:
+			options_box.remove_child(child)
+			child.queue_free()
+		await get_tree().process_frame
+		if visible or generation != _supply_prepare_generation or not still_current.is_valid() or not bool(still_current.call()):
+			return false
+	for index in range(rewards.size()):
+		if visible or generation != _supply_prepare_generation or not still_current.is_valid() or not bool(still_current.call()):
+			return false
+		var button: Button
+		if index < _supply_cards.size():
+			button = _supply_cards[index]
+			if button.get_parent() != _supply_grid:
+				button.reparent(_supply_grid, false)
+			_reset_supply_card(button)
+		else:
+			button = REWARD_CARD_SCENE.instantiate() as Button
+			_supply_cards.append(button)
+			_supply_grid.add_child(button)
+			_connect_card_inputs(button, index)
+		button.visible = true
+		_build_reward_card_button(rewards[index], index, button)
+		# Never allocate all three cards in the claim input frame.
+		await get_tree().process_frame
+	for index in range(rewards.size(), _supply_cards.size()):
+		_supply_cards[index].visible = false
+	_supply_grid.columns = mini(3, rewards.size())
+	_supply_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# Headless rendering has no guaranteed draw callback. Yield frames rather
+	# than awaiting frame_post_draw, which could strand settlement there.
+	for frame in range(3):
+		await get_tree().process_frame
+		if visible or generation != _supply_prepare_generation or not still_current.is_valid() or not bool(still_current.call()):
+			_supply_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+			return false
+	_supply_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_prepared_supply_rewards.assign(rewards)
+	return true
+
+func _reset_supply_card(button: Button) -> void:
+	if button.has_meta(&"reward_motion_tween"):
+		var tween := button.get_meta(&"reward_motion_tween") as Tween
+		if tween != null:
+			tween.kill()
+		button.remove_meta(&"reward_motion_tween")
+	button.set_meta(&"reward_was_selected", false)
+	button.scale = Vector2.ONE
+	button.button_pressed = false
+	(button.get_node("CardContentMargin/Body/HoldProgress") as ProgressBar).value = 0.0
+	var body := button.get_node("CardContentMargin/Body")
+	for child in body.get_children():
+		if child.name not in ["TopRow", "HoldProgress"]:
+			body.remove_child(child)
+			child.queue_free()
+	for child in button.get_children():
+		if child.name not in ["CardContentMargin", "SelectionIndicatorBar"]:
+			button.remove_child(child)
+			child.queue_free()
+
+func _connect_card_inputs(button: Button, index: int) -> void:
+	button.pressed.connect(_on_reward_button_pressed.bind(index, button))
+	button.focus_entered.connect(_on_reward_card_focus_entered.bind(index, button))
+	button.mouse_entered.connect(_on_reward_card_mouse_entered.bind(index, button))
+	button.mouse_exited.connect(_on_reward_card_mouse_exited.bind(index, button))
+
+func prewarm_supply_visuals() -> void:
+	_ensure_supply_staging()
+	for id in DataHandler.get_weapon_ids():
+		var definition := DataHandler.read_weapon_data(id) as WeaponDefinition
+		if definition != null and definition.icon != null:
+			_crop_reward_texture_to_content(definition.icon)
+		await get_tree().process_frame
+	# Cover the component families while the loading overlay is present. Actual
+	# candidates are rendered again after their dynamic inventory data is known.
+	var definition := DataHandler.read_weapon_data("1") as WeaponDefinition
+	if definition == null:
+		return
+	var samples: Array[RewardInfo] = []
+	var weapon := RewardInfo.new()
+	weapon.item_id = definition.weapon_id
+	samples.append(weapon)
+	var upgrade := RewardInfo.new()
+	upgrade.reward_kind = RewardInfo.KIND_WEAPON_UPGRADE
+	upgrade.target_weapon_id = definition.weapon_id
+	upgrade.target_weapon_from_level = 1
+	upgrade.target_weapon_to_level = 2
+	samples.append(upgrade)
+	var core := RewardInfo.new()
+	core.reward_kind = RewardInfo.KIND_WEAPON_CORE
+	core.item_id = definition.weapon_id
+	core.core_tags = definition.get_normalized_core_tags()
+	core.core_amount = 1
+	samples.append(core)
+	await prepare_supply_cards(samples, func() -> bool: return not visible)
+	var paths := ModuleOfferCatalog.get_all_scene_paths()
+	if not paths.is_empty():
+		var module := RewardInfo.new()
+		module.module_scene = load(paths[0]) as PackedScene
+		samples[0] = module
+		await prepare_supply_cards(samples, func() -> bool: return not visible)
+	title_label.text = LocalizationManager.tr_key("ui.supply.title", "Gold Supply")
+	subtitle_label.text = LocalizationManager.tr_key("ui.supply.hint", "Claim one supply. Combat pauses while choosing.")
+	confirm_button.text = LocalizationManager.tr_key("ui.reward.confirm", "Confirm Reward")
+	cancel_button.text = LocalizationManager.tr_key("ui.panel.cancel", "Cancel")
+	var labels: Array[Control] = [title_label, subtitle_label, confirm_button, cancel_button]
+	await warm_supply_controls(labels, func() -> bool: return not visible)
+	invalidate_prepared_supply()
+
+func warm_supply_controls(controls: Array[Control], still_current: Callable) -> bool:
+	_ensure_supply_staging()
+	var host := VBoxContainer.new()
+	host.theme = _supply_grid.theme
+	host.size = Vector2(952, 500)
+	_supply_viewport.add_child(host)
+	_supply_grid.visible = false
+	for control in controls:
+		# Render property-only copies: an unrelated modal can open during this
+		# warmup without temporarily losing its live controls or callbacks.
+		host.add_child(control.duplicate(0))
+	_supply_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	var ready := true
+	for frame in range(3):
+		await get_tree().process_frame
+		if not still_current.is_valid() or not bool(still_current.call()):
+			ready = false
+			break
+	_supply_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	host.queue_free()
+	_supply_grid.visible = true
+	return ready
 
 func set_synergy_evaluator(evaluator: Callable) -> void:
 	_synergy_evaluator = evaluator
@@ -133,6 +308,7 @@ func _ready() -> void:
 	_detail_close_timer.timeout.connect(_on_detail_close_timeout)
 
 func _exit_tree() -> void:
+	_kill_entry_tween()
 	_set_battle_hud_suppressed(false)
 
 func _input(event: InputEvent) -> void:
@@ -359,6 +535,8 @@ func _open_rewards(
 		return false
 	if visible:
 		return false
+	if _summary_mode or not has_prepared_supply(reward_options):
+		invalidate_prepared_supply()
 	_on_confirm = on_confirm
 	_on_cancel = on_cancel
 	_allow_cancel = allow_cancel
@@ -388,7 +566,10 @@ func _open_rewards(
 	cancel_button.disabled = not _allow_cancel or _summary_mode
 	for child in options_box.get_children():
 		options_box.remove_child(child)
-		child.queue_free()
+		if child in _supply_cards:
+			_supply_grid.add_child(child)
+		else:
+			child.queue_free()
 	var incoming_options := reward_options.duplicate()
 	for reward in incoming_options.slice(0, 3):
 		if reward == null:
@@ -396,13 +577,14 @@ func _open_rewards(
 		_reward_options.append(reward)
 	if _reward_options.is_empty():
 		return false
+	var use_prepared := has_prepared_supply(_reward_options)
 	for idx in range(_reward_options.size()):
-		var button := _build_reward_card_button(_reward_options[idx], idx)
-		button.pressed.connect(Callable(self, "_on_reward_button_pressed").bind(idx, button))
-		button.focus_entered.connect(Callable(self, "_on_reward_card_focus_entered").bind(idx, button))
-		button.mouse_entered.connect(Callable(self, "_on_reward_card_mouse_entered").bind(idx, button))
-		button.mouse_exited.connect(Callable(self, "_on_reward_card_mouse_exited").bind(idx, button))
-		options_box.add_child(button)
+		var button := _supply_cards[idx] if use_prepared else _build_reward_card_button(_reward_options[idx], idx)
+		if use_prepared:
+			button.reparent(options_box, false)
+		else:
+			_connect_card_inputs(button, idx)
+			options_box.add_child(button)
 	if options_box.get_child_count() > 0:
 		var first := options_box.get_child(0) as Button
 		if first:
@@ -522,11 +704,18 @@ func _set_battle_hud_suppressed(suppressed: bool) -> void:
 func _play_entry_animation() -> void:
 	_kill_entry_tween()
 	modulate.a = 0.0
+	var generation := _entry_generation
 	panel.pivot_offset = panel.size * 0.5
 	panel.scale = Vector2.ONE
 	var settled_position := panel.position
 	var enter_start := Vector2(-panel.size.x - ENTRY_OFFSCREEN_MARGIN, settled_position.y)
 	var overshoot := settled_position + Vector2(ENTRY_OVERSHOOT, 0.0)
+	panel.position = enter_start
+	# Cards are already prepared. Only wait for the deferred container layout
+	# after reparenting; the old three-frame preparation catch-up is unnecessary.
+	await get_tree().process_frame
+	if generation != _entry_generation or not visible:
+		return
 	panel.position = enter_start
 	_entry_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	_entry_tween.set_ignore_time_scale(true)
@@ -537,6 +726,7 @@ func _play_entry_animation() -> void:
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _kill_entry_tween() -> void:
+	_entry_generation += 1
 	if _entry_tween != null:
 		_entry_tween.kill()
 		_entry_tween = null
@@ -866,7 +1056,7 @@ func _on_cancel_pressed() -> void:
 		_on_cancel.call_deferred()
 	close_panel()
 
-func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Button:
+func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1, reusable: Button = null) -> Button:
 	var card_data: Dictionary = _build_reward_card_model(reward).to_display_data()
 	var is_module_reward := card_data.has("compatible_weapons")
 	var reward_type := StringName(card_data.get("reward_type", &"generic"))
@@ -874,7 +1064,7 @@ func _build_reward_card_button(reward: RewardInfo, reward_index: int = -1) -> Bu
 	var is_weapon_core_reward := reward_type == &"weapon_core"
 	var is_weapon_visual_reward := reward_type in [&"new_weapon", &"weapon_upgrade"]
 	var weapon_preview: Dictionary = WEAPON_PREVIEW_DATA.build(reward) if is_weapon_visual_reward else {}
-	var button := REWARD_CARD_SCENE.instantiate() as Button
+	var button := reusable if reusable != null else REWARD_CARD_SCENE.instantiate() as Button
 	button.call("set_data", {
 		"reward_index": reward_index,
 		"reward_type": reward_type,

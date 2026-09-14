@@ -221,8 +221,8 @@ func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
 	trail.damage_type = Attack.TYPE_FIRE
 	trail.source_node = self
 	trail.source_category = DamageData.SOURCE_PLAYER_WEAPON
-	trail.fill_color = Color(1.0, 0.18, 0.08, 0.20)
-	trail.line_color = Color(1.0, 0.65, 0.18, 0.82)
+	trail.fill_color = PALETTE.PLAYER_RANGE_FILL
+	trail.line_color = PALETTE.PLAYER_RANGE_OUTLINE
 	get_tree().root.add_child(trail)
 	trail.attach_emitter(player, 42.0, 18.0, false)
 	_moving_inferno = trail
@@ -408,16 +408,16 @@ func _draw_attack_range() -> void:
 	var effective_range: float = _get_effective_attack_range()
 
 	# 扇形填充颜色
-	var fill_color := Color(PALETTE.FIRE, 0.14)
+	var fill_color := PALETTE.PLAYER_RANGE_FILL
 	# 扇形轮廓颜色
-	var outline_color := Color(PALETTE.PLAYER_PRIMARY, 0.42)
+	var outline_color := PALETTE.PLAYER_RANGE_OUTLINE
 
 	# 绘制扇形填充
 	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, fill_color, -1.0)
 	# 绘制扇形轮廓
-	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, outline_color, 2.0)
+	draw_arc(Vector2.ZERO, effective_range, start_angle, end_angle, 32, outline_color, PALETTE.PLAYER_RANGE_LINE_WIDTH)
 	# 绘制中心半径线
-	draw_line(Vector2.ZERO, Vector2.UP * effective_range, outline_color, 2.0)
+	draw_line(Vector2.ZERO, Vector2.UP * effective_range, outline_color, PALETTE.PLAYER_RANGE_LINE_WIDTH)
 	# 绘制边界半径线
 	draw_line(Vector2.ZERO, Vector2.UP.rotated(-half_angle_rad) * effective_range, outline_color, 1.0)
 	draw_line(Vector2.ZERO, Vector2.UP.rotated(half_angle_rad) * effective_range, outline_color, 1.0)
