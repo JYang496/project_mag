@@ -31,7 +31,7 @@ static func damage_feedback(weapon: Node2D, target: Node, data: DamageData, resu
 	if not is_instance_valid(target) or not target is Node2D or not weapon.is_inside_tree():
 		return
 	var id: String = weapon.get_script().resource_path.get_file().get_basename()
-	if id not in ["machine_gun", "shotgun", "rocket_launcher", "cannon", "spear_launcher", "chainsaw_launcher", "orbit", "sniper", "laser", "charged_blaster", "flamethrower", "glacier_projector", "plasma_lance"]:
+	if id not in ["machine_gun", "shotgun", "rocket_launcher", "cannon", "spear_launcher", "chainsaw_launcher", "orbit", "sniper", "laser", "charged_blaster", "energy_bolts", "flamethrower", "glacier_projector", "plasma_lance"]:
 		return
 	var service := ensure(weapon.get_tree())
 	if service == null:

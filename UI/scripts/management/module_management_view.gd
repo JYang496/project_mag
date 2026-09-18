@@ -92,9 +92,12 @@ func _ensure_action_presenter() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
-		_ensure_drag_coordinator()
-		if _drag_coordinator != null:
-			_drag_coordinator.handle_drag_end()
+		cancel_transient_drag_state()
+
+func cancel_transient_drag_state() -> void:
+	_ensure_drag_coordinator()
+	if _drag_coordinator != null:
+		_drag_coordinator.handle_drag_end()
 
 func bind(target_owner_ui: Node, module_controller: ModuleWarehouseController = null) -> void:
 	if target_owner_ui == null:
@@ -409,7 +412,7 @@ func _on_module_socket_pressed(weapon: Weapon, existing: Module) -> void:
 	if selected_module != null and is_instance_valid(selected_module):
 		var result := InventoryData.equip_module_to_weapon(selected_module, weapon, existing, false)
 		if not result.get("ok", false):
-			_show_message(str(result.get("reason", "")), 1.6)
+			_show_message(InventoryOperationResultPresenter.reason(result), 1.6)
 			return
 		selected_module = null
 		selected_equipped_module = null

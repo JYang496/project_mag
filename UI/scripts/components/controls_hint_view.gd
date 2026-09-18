@@ -293,14 +293,14 @@ func refresh_input_glyphs() -> void:
 	_set_action_item(&"move", move_label, _tr("ui.controls.move", "Move"))
 	_set_action_item(&"attack", "AUTO", _tr("ui.controls.auto_fire", "Automatic Fire"))
 	_set_action_item(&"skill", _input_label(&"SKILL_PLAYER"), _tr("ui.controls.skill", "Player Skill"))
-	_set_action_item(&"weapon_skill", "1–4", _tr("ui.controls.weapon_skill_hold", "Switch Weapon & Cast Skill"))
+	_set_action_item(&"weapon_skill", _number_slot_input_label(), _tr("ui.controls.weapon_skill_hold", "Switch Weapon & Cast Skill"))
 	var reload_action := _tr("ui.controls.reload", "Reload")
 	if PlayerAssistSettings.auto_reload_switch:
 		reload_action = _tr("ui.controls.auto_reload", "Auto Reload On")
 	_set_action_item(&"reload", _input_label(&"RELOAD"), reload_action)
 	_set_action_item(
 		&"switch",
-		"%s/%s · 1–4" % [_input_label(&"SWITCH_LEFT"), _input_label(&"SWITCH_RIGHT")],
+		"%s/%s · %s" % [_input_label(&"SWITCH_LEFT"), _input_label(&"SWITCH_RIGHT"), _number_slot_input_label()],
 		_tr("ui.controls.switch_weapon_hold", "Cycle / Tap: Select")
 	)
 	_set_action_item(&"pause", _input_label(&"ESC"), _tr("ui.controls.pause", "Pause"))
@@ -388,8 +388,8 @@ func _render_current_context() -> void:
 			]
 		else:
 			primary_lines = [
-				_tr("ui.tutorial.panel.primary_menu.line1", "[WASD / Arrows] Select · [F / Space] Confirm"),
-				_tr("ui.tutorial.panel.primary_menu.line2", "[Esc / RMB] Back"),
+				"[%s] %s · [%s / %s] %s" % [_movement_input_label(), _tr("ui.weapon.replace.action_select", "Select"), _input_label(&"INTERACT"), _input_label(&"ui_accept"), _tr("ui.panel.confirm", "Confirm")],
+				"[%s / %s] %s" % [_input_label(&"ESC"), _input_label(&"CANCEL"), _tr("ui.common.back", "Back")],
 			]
 		_render_text_context(
 			_primary_context_title(_primary_menu_context),
@@ -756,6 +756,12 @@ func _movement_input_label() -> String:
 	])
 	if labels == PackedStringArray(["W", "A", "S", "D"]):
 		return "WASD"
+	return "/".join(labels)
+
+func _number_slot_input_label() -> String:
+	var labels := PackedStringArray()
+	for action in [&"WEAPON_SLOT_1", &"WEAPON_SLOT_2", &"WEAPON_SLOT_3", &"WEAPON_SLOT_4"]:
+		labels.append(_input_label(action))
 	return "/".join(labels)
 
 func _input_label(action: StringName) -> String:

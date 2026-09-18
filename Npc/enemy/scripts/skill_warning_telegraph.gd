@@ -2,11 +2,12 @@ extends Node2D
 class_name SkillWarningTelegraph
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
 
-@export var warning_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.20)
-@export var progress_color: Color = Color(PALETTE.ENEMY_SECONDARY, 0.98)
+@export var warning_color: Color = Color(FEEDBACK_SPEC.COLOR_DANGER, 0.16)
+@export var progress_color: Color = Color(FEEDBACK_SPEC.COLOR_WARNING, 0.98)
 @export var default_half_width: float = 32.0
-@export var telegraph_z_index: int = 0
+@export var telegraph_z_index: int = -2
 
 var _warning_polygon: Polygon2D
 var _progress_line: Line2D
@@ -107,6 +108,11 @@ func _update_warning_polygon() -> void:
 func _update_progress_line(progress: float) -> void:
 	var clamped_progress := clampf(progress, 0.0, 1.0)
 	var reach := _dash_distance * clamped_progress
+	var urgent := inverse_lerp(FEEDBACK_SPEC.WARNING_URGENT_PHASE, 1.0, clamped_progress) \
+		if clamped_progress >= FEEDBACK_SPEC.WARNING_URGENT_PHASE else 0.0
+	var pulse := sin(urgent * PI * 4.0) * 0.5 + 0.5
+	_warning_polygon.color = Color(warning_color, warning_color.a * lerpf(0.82, 1.0, urgent))
+	_progress_line.default_color = Color(progress_color, lerpf(0.88, 1.0, pulse * urgent))
 	_progress_line.points = PackedVector2Array([
 		Vector2.ZERO,
 		Vector2(reach, 0.0),

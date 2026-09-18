@@ -72,7 +72,7 @@ func close_panel() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if (event.is_action_pressed("ui_cancel") or event.is_action_pressed("CANCEL")) and clear_selection_if_any():
+	if ModalUiController.is_cancel_input(event) and clear_selection_if_any():
 		get_viewport().set_input_as_handled()
 
 func can_drag_effect(effect_id: String) -> bool:

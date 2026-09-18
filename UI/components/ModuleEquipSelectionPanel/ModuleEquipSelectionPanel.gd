@@ -179,7 +179,7 @@ func _build_weapon_row(parent: Container, weapon: Weapon) -> void:
 	var can_equip := bool(feedback.get("ok", false)) or replacement != null
 	var card := WEAPON_CARD_SCENE.instantiate() as Control
 	parent.add_child(card)
-	card.call("set_data", {"icon": _get_node_texture(weapon, "Sprite"), "name": _get_weapon_display_name(weapon), "fit": "✓ %s" % LocalizationManager.tr_key("ui.module.compatible", "Compatible") if can_equip else LocalizationManager.tr_key("ui.module.fit.incompatible_short", "Incompatible"), "fit_color": stat_up_color if can_equip else feedback_text_color, "reason": "" if can_equip else LocalizationManager.localize_module_reason(str(feedback.get("reason", ""))), "stats": _build_stat_preview_bbcode(weapon), "modules_label": LocalizationManager.tr_key("ui.module.equipped_modules_prefix", "Equipped modules:"), "action": LocalizationManager.tr_key("ui.module.action.equip", "Equip"), "available": can_equip})
+	card.call("set_data", {"icon": _get_node_texture(weapon, "Sprite"), "name": _get_weapon_display_name(weapon), "fit": "✓ %s" % LocalizationManager.tr_key("ui.module.compatible", "Compatible") if can_equip else LocalizationManager.tr_key("ui.module.fit.incompatible_short", "Incompatible"), "fit_color": stat_up_color if can_equip else feedback_text_color, "reason": "" if can_equip else InventoryOperationResultPresenter.reason(feedback), "stats": _build_stat_preview_bbcode(weapon), "modules_label": LocalizationManager.tr_key("ui.module.equipped_modules_prefix", "Equipped modules:"), "action": LocalizationManager.tr_key("ui.module.action.equip", "Equip"), "available": can_equip})
 	var equipped_modules := weapon.get_equipped_modules()
 	var socket_data: Array = []
 	for index in range(weapon.module_slot_capacity):
@@ -219,7 +219,7 @@ func _on_slot_selected(weapon: Weapon, replaced_module: Module = null) -> void:
 		return
 	var result := InventoryData.equip_module_to_weapon(_module_instance, weapon, replaced_module, _allow_reward_transaction)
 	if not result.get("ok", false):
-		_show_failure(str(result.get("reason", "")))
+		_show_failure(InventoryOperationResultPresenter.reason(result))
 		return
 	_finish_current(true)
 

@@ -92,7 +92,7 @@ func make_module_socket_button(weapon: Weapon, existing: Module, index: int, pre
 
 func _refresh_socket(button: Button, weapon: Weapon, existing: Module, index: int) -> void:
 	var feedback := _get_slot_feedback(weapon, existing)
-	var tooltip := str(feedback.get("reason", ""))
+	var tooltip := InventoryOperationResultPresenter.reason(feedback)
 	if tooltip.strip_edges() == "":
 		tooltip = LocalizationManager.get_module_name(existing) if existing else LocalizationManager.tr_format("ui.module.slot_empty", {"index": index + 1}, "Slot %d" % (index + 1))
 	button.call("set_data", {"occupied": existing != null, "icon": _get_module_texture(existing) if existing else null, "badge": "Lv.%d" % int(existing.module_level) if existing else str(index + 1), "accent": RARITY_UTIL.get_color(existing.get_rarity()) if existing else Color(0.58, 0.72, 0.8), "tooltip": tooltip, "feedback_ok": bool(feedback.get("ok", true))})

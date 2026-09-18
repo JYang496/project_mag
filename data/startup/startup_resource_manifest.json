@@ -27,6 +27,7 @@
         "res://data/weapons/chainsaw_luncher.tres",
         "res://data/weapons/charged_blaster.tres",
         "res://data/weapons/dash_blade.tres",
+        "res://data/weapons/energy_bolts.tres",
         "res://data/weapons/flamethrower.tres",
         "res://data/weapons/glacier_projector.tres",
         "res://data/weapons/laser.tres",

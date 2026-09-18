@@ -2,6 +2,7 @@ extends Node
 class_name FloatingStatusHintManager
 
 const ProjectedUi := preload("res://Visual/Oblique/projected_world_ui_service.gd")
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
 
 var _host: Node2D
 var _floating_hint_duration_sec: float = 1.0
@@ -36,9 +37,14 @@ func _process(delta: float) -> void:
 	_update_active_hint_positions(maxf(delta, 0.0))
 
 func enqueue_raw_hint(text: String) -> void:
-	enqueue_keyed_raw_hint(text, StringName(), 0.0)
+	enqueue_keyed_raw_hint(text, StringName(), 0.0, CombatFeedbackSpec.FeedbackKind.STATUS_POSITIVE)
 
-func enqueue_keyed_raw_hint(text: String, hint_key: StringName, throttle_sec: float = -1.0) -> void:
+func enqueue_keyed_raw_hint(
+	text: String,
+	hint_key: StringName,
+	throttle_sec: float = -1.0,
+	feedback_kind: CombatFeedbackSpec.FeedbackKind = CombatFeedbackSpec.FeedbackKind.STATUS_POSITIVE
+) -> void:
 	var message := text.strip_edges()
 	if message == "":
 		return
@@ -57,6 +63,7 @@ func enqueue_keyed_raw_hint(text: String, hint_key: StringName, throttle_sec: fl
 	_status_hint_queue.append({
 		"text": message,
 		"key": hint_key,
+		"feedback_kind": feedback_kind,
 		"created_at_msec": Time.get_ticks_msec(),
 	})
 	_try_play_next_status_hint()
@@ -114,6 +121,7 @@ func _emit_status_hint(status_owner: StringName, stat_type: StringName, source_i
 	var status_label := _resolve_status_hint_label(stat_type)
 	if status_label == "":
 		return
+	var polarity := int(_status_hint_meta(stat_type).get("polarity", 0))
 	var now_msec := Time.get_ticks_msec()
 	var throttle_msec := int(_status_hint_throttle_sec * 1000.0)
 	var hint_key := "%s|%s|%s|%s" % [str(status_owner), str(stat_type), str(source_id), "gain" if is_gain else "loss"]
@@ -124,10 +132,14 @@ func _emit_status_hint(status_owner: StringName, stat_type: StringName, source_i
 	var prefix_key := "ui.status_hint.gain_prefix" if is_gain else "ui.status_hint.loss_prefix"
 	var prefix_fallback := "Gained" if is_gain else "Lost"
 	var prefix := LocalizationManager.tr_key(prefix_key, prefix_fallback)
-	enqueue_raw_hint(LocalizationManager.tr_format(
+	enqueue_keyed_raw_hint(LocalizationManager.tr_format(
 		"ui.status_hint.message",
 		{"prefix": prefix, "status": status_label},
 		"%s: %s" % [prefix, status_label]
+	), StringName(), 0.0, (
+		CombatFeedbackSpec.FeedbackKind.STATUS_POSITIVE
+		if is_gain and polarity > 0 or not is_gain and polarity < 0
+		else CombatFeedbackSpec.FeedbackKind.STATUS_NEGATIVE
 	))
 
 func _try_play_next_status_hint() -> void:
@@ -145,7 +157,10 @@ func _try_play_next_status_hint() -> void:
 		return
 	_is_status_hint_playing = true
 	_schedule_next_status_hint_slot()
-	_spawn_player_floating_hint(next_text)
+	_spawn_player_floating_hint(
+		next_text,
+		int(next_item.get("feedback_kind", CombatFeedbackSpec.FeedbackKind.STATUS_POSITIVE))
+	)
 
 func _schedule_next_status_hint_slot() -> void:
 	if _host == null or not is_instance_valid(_host):
@@ -163,7 +178,7 @@ func _schedule_next_status_hint_slot() -> void:
 		_try_play_next_status_hint()
 	, CONNECT_ONE_SHOT)
 
-func _spawn_player_floating_hint(text: String) -> void:
+func _spawn_player_floating_hint(text: String, feedback_kind: int) -> void:
 	var message := text.strip_edges()
 	if message == "":
 		_on_status_hint_playback_finished()
@@ -181,7 +196,13 @@ func _spawn_player_floating_hint(text: String) -> void:
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_size_override("font_size", 16)
 	label.z_as_relative = false
-	label.z_index = 200
+	label.z_index = FEEDBACK_SPEC.world_ui_z(CombatFeedbackSpec.Priority.SECONDARY)
+	label.add_theme_color_override(
+		"font_color",
+		FEEDBACK_SPEC.feedback_color(feedback_kind)
+	)
+	label.add_theme_color_override("font_outline_color", FEEDBACK_SPEC.COLOR_OUTLINE)
+	label.add_theme_constant_override("outline_size", 3)
 	var layer := ProjectedUi.ensure_layer(_host.get_tree())
 	layer.add_child(label)
 	_active_hint_labels.append(label)

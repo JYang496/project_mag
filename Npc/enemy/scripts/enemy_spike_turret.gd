@@ -2,6 +2,7 @@ extends BaseEnemy
 class_name EnemySpikeTurret
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
 const PROJECTILE_SCENE := preload("res://Npc/enemy/scenes/enemy_spike_projectile.tscn")
 
 @export var detect_range: float = 760.0
@@ -13,7 +14,7 @@ const PROJECTILE_SCENE := preload("res://Npc/enemy/scenes/enemy_spike_projectile
 @export var projectile_life_time: float = 3.2
 @export var muzzle_offset: float = 22.0
 @export var screen_fire_margin: float = 28.0
-@export var aim_warning_color: Color = Color(PALETTE.ENEMY_PRIMARY, 0.94)
+@export var aim_warning_color: Color = Color(FEEDBACK_SPEC.COLOR_DANGER, 0.94)
 @export var aim_warning_width: float = 2.0
 @export var aim_warning_outline_width: float = 6.0
 @export var release_flash_duration: float = 0.11
@@ -38,9 +39,9 @@ var _warning_lines: Array[Line2D] = []
 func _ready() -> void:
 	super._ready()
 	combat_role = "ranged"
-	_aim_warning_outline = _create_warning_line("AimWarningOutline", aim_warning_outline_width, Color(PALETTE.ENEMY_DARK, 0.72), 7)
-	_aim_warning_line = _create_warning_line("AimWarningLine", aim_warning_width, aim_warning_color, 8)
-	_aim_warning_fill = _create_warning_line("AimWarningProgress", maxf(aim_warning_width - 1.0, 1.0), Color(1.0, 0.86, 0.62, 1.0), 9)
+	_aim_warning_outline = _create_warning_line("AimWarningOutline", aim_warning_outline_width, Color(PALETTE.ENEMY_DARK, 0.72), -3)
+	_aim_warning_line = _create_warning_line("AimWarningLine", aim_warning_width, aim_warning_color, -2)
+	_aim_warning_fill = _create_warning_line("AimWarningProgress", maxf(aim_warning_width - 1.0, 1.0), FEEDBACK_SPEC.COLOR_WARNING, -1)
 	_warning_lines.assign([_aim_warning_outline, _aim_warning_line, _aim_warning_fill])
 	call_deferred("_register_warning_lines_with_hybrid_ground")
 
@@ -210,12 +211,17 @@ func _update_aim_warning_visual() -> void:
 		_aim_warning_fill.default_color = Color(1.0, 0.96, 0.82, flash_alpha)
 		return
 	var lock_progress := clampf(1.0 - (_lock_remaining / maxf(lock_duration, 0.01)), 0.0, 1.0)
-	var final_phase := clampf((lock_progress - 0.77) / 0.23, 0.0, 1.0)
+	var final_phase := clampf(
+		(lock_progress - FEEDBACK_SPEC.WARNING_URGENT_PHASE)
+		/ (1.0 - FEEDBACK_SPEC.WARNING_URGENT_PHASE),
+		0.0,
+		1.0
+	)
 	var pulse := 0.5 + 0.5 * sin(lock_progress * TAU * 9.0)
 	var pulse_strength := lerpf(1.0, lerpf(0.72, 1.0, pulse), final_phase)
 	_aim_warning_outline.default_color = Color(PALETTE.ENEMY_DARK, 0.66)
 	_aim_warning_line.default_color = Color(aim_warning_color.r, aim_warning_color.g, aim_warning_color.b, lerpf(0.46, 0.94, lock_progress) * pulse_strength)
-	_aim_warning_fill.default_color = Color(1.0, lerpf(0.55, 0.90, lock_progress), lerpf(0.28, 0.70, lock_progress), lerpf(0.78, 1.0, lock_progress) * pulse_strength)
+	_aim_warning_fill.default_color = Color(FEEDBACK_SPEC.COLOR_WARNING, lerpf(0.78, 1.0, lock_progress) * pulse_strength)
 	_set_warning_points(_aim_warning_outline, line_start, line_end)
 	_set_warning_points(_aim_warning_line, line_start, line_end)
 	_set_warning_points(_aim_warning_fill, line_start, line_start.lerp(line_end, lock_progress))

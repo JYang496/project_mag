@@ -53,7 +53,7 @@ size_flags_vertical = 3
 theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
 theme_override_font_sizes/font_size = 12
 autowrap_mode = 2
-max_lines_visible = 5
+max_lines_visible = 3
 
 [node name="BranchFusionRecipe" parent="Content" instance=ExtResource("3_recipe")]
 unique_name_in_owner = true

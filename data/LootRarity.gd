@@ -41,6 +41,9 @@ static func get_all() -> Array:
 static func get_count() -> int:
 	return ALL.size()
 
+static func get_rank(rarity: String) -> int:
+	return ALL.find(normalize(rarity))
+
 static func get_weight_summary() -> String:
 	var chunks: PackedStringArray = []
 	for rarity in ALL:

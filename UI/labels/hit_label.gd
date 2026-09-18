@@ -5,6 +5,7 @@ const DamageFeedbackEventType := preload("res://Combat/damage/damage_feedback_ev
 const DigitRendererType := preload("res://UI/labels/damage_digit_renderer.gd")
 const HitLabelMotionType := preload("res://UI/labels/hit_label_motion.gd")
 const HitLabelCrowdingType := preload("res://UI/labels/hit_label_crowding.gd")
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
 
 @export var style_profile: DamageLabelStyleProfile = DEFAULT_STYLE
 @export var fade_duration: float = 0.12
@@ -133,6 +134,13 @@ func _apply_visual_state() -> void:
 		else style_profile.outline_color
 	)
 	_display_text = str(_damage_value) + ("!" if _is_critical else "")
+	z_as_relative = false
+	z_index = FEEDBACK_SPEC.world_ui_z(
+		CombatFeedbackSpec.Priority.IMPORTANT
+		if _is_critical or _is_killing_blow
+		else (CombatFeedbackSpec.Priority.SECONDARY if _is_periodic else CombatFeedbackSpec.Priority.STANDARD)
+	)
+	modulate.a = 0.78 if _is_periodic and not _is_killing_blow else 1.0
 	_apply_layout()
 	queue_redraw()
 

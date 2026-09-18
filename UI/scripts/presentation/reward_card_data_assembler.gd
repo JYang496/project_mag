@@ -724,7 +724,13 @@ func _format_core_usage_display(usages: Variant) -> Dictionary:
 			weapon_name,
 			" / ".join(branches),
 		])
-		entries.append({"weapon_id": weapon_id, "name": weapon_name, "icon": weapon_def.icon if weapon_def != null else null, "branches": branches})
+		entries.append({
+			"weapon_id": weapon_id,
+			"name": weapon_name,
+			"icon": weapon_def.icon if weapon_def != null else null,
+			"branches": branches,
+			"owned": _is_weapon_owned(weapon_id),
+		})
 	return {"lines": lines, "entries": entries, "weapon_count": weapon_order.size(), "branch_count": branch_count}
 
 func _format_core_tag_weapon_map(usages: Variant, core_tags: Variant) -> Dictionary:
@@ -760,7 +766,13 @@ func _format_core_tag_weapon_map(usages: Variant, core_tags: Variant) -> Diction
 					matching_entry = entry
 					break
 			if matching_entry.is_empty():
-				matching_entry = {"weapon_id": weapon_id, "name": LocalizationManager.get_weapon_name_by_id(weapon_id, weapon_id), "icon": weapon_def.icon, "branches": PackedStringArray()}
+				matching_entry = {
+					"weapon_id": weapon_id,
+					"name": LocalizationManager.get_weapon_name_by_id(weapon_id, weapon_id),
+					"icon": weapon_def.icon,
+					"branches": PackedStringArray(),
+					"owned": _is_weapon_owned(weapon_id),
+				}
 				entries.append(matching_entry)
 			var branch_names := matching_entry["branches"] as PackedStringArray
 			var branch_name := LocalizationManager.get_branch_display_name(branch)
@@ -769,6 +781,20 @@ func _format_core_tag_weapon_map(usages: Variant, core_tags: Variant) -> Diction
 				matching_entry["branches"] = branch_names
 			result[key] = entries
 	return result
+
+func _is_weapon_owned(weapon_id: String) -> bool:
+	var normalized_id := weapon_id.strip_edges()
+	if normalized_id == "":
+		return false
+	for weapon_variant in PlayerData.player_weapon_list:
+		var weapon := weapon_variant as Weapon
+		if weapon != null and is_instance_valid(weapon) \
+				and DataHandler.get_weapon_id_from_instance(weapon) == normalized_id:
+			return true
+	for weapon in InventoryData.get_stored_weapons():
+		if DataHandler.get_weapon_id_from_instance(weapon) == normalized_id:
+			return true
+	return false
 
 func _get_reward_action_color(reward: RewardInfo) -> Color:
 	if reward == null:

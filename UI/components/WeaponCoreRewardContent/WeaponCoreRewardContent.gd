@@ -1,5 +1,6 @@
 extends VBoxContainer
 
+const TOKENS := preload("res://UI/themes/ui_design_tokens.gd")
 const MAX_VISIBLE_WEAPON_ROWS := 4
 const WEAPON_TILE_HEIGHT := 38.0
 const WEAPON_ROW_SEPARATION := 5.0
@@ -282,7 +283,10 @@ func _make_weapon_tile(entry: Dictionary, index: int) -> PanelContainer:
 	name_label.name = "SupportedWeaponName"
 	name_label.text = str(entry.get("name", ""))
 	name_label.add_theme_font_size_override("font_size", 13)
-	name_label.add_theme_color_override("font_color", Color(0.91, 0.94, 0.98, 1.0))
+	name_label.add_theme_color_override(
+		"font_color",
+		TOKENS.COLOR_POSITIVE if bool(entry.get("owned", false)) else Color(0.91, 0.94, 0.98, 1.0)
+	)
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_label.clip_text = true
 	copy.add_child(name_label)

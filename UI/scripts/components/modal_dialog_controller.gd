@@ -41,6 +41,7 @@ var custom_action_buttons: Array[Button] = []
 var cancel_dispatched := false
 var suppress_checkbox_callback := false
 var dragging_title := false
+var focus_before_dialog: WeakRef
 
 func bind(owner: Node, root: Control) -> void:
 	owner_ui = owner
@@ -91,6 +92,8 @@ func _show(spec: Dictionary) -> bool:
 	ensure_dialog()
 	if dialog == null:
 		return false
+	var focus_owner := gui_root.get_viewport().gui_get_focus_owner() if gui_root.get_viewport() != null else null
+	focus_before_dialog = weakref(focus_owner) if focus_owner != null else null
 	current_id = StringName(str(spec.get("id", "")))
 	on_confirm = spec.get("on_confirm", Callable()) as Callable
 	on_cancel = spec.get("on_cancel", Callable()) as Callable
@@ -294,6 +297,7 @@ func _apply_close_button_style(button: Button) -> void:
 		button.add_theme_color_override(color_name, Color(0.94, 0.98, 1.0, 1.0))
 
 func _on_confirmed() -> void:
+	_restore_focus_after_dialog()
 	var callback := on_confirm
 	_clear_callbacks()
 	if callback.is_valid():
@@ -304,6 +308,7 @@ func _on_custom_action(action: StringName) -> void:
 		return
 	if dialog != null and is_instance_valid(dialog):
 		dialog.hide()
+	_restore_focus_after_dialog()
 	var callback := on_custom_action
 	_clear_callbacks()
 	if callback.is_valid():
@@ -319,6 +324,7 @@ func _cancel_current_dialog() -> void:
 	dragging_title = false
 	if dialog != null and is_instance_valid(dialog) and dialog.visible:
 		dialog.hide()
+	_restore_focus_after_dialog()
 	var callback := on_cancel
 	_clear_callbacks()
 	if callback.is_valid():
@@ -360,16 +366,23 @@ func _on_close_button_pressed() -> void:
 func _handle_cancel_input(event: InputEvent) -> void:
 	if not is_dialog_visible():
 		return
-	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("CANCEL"):
+	if ModalUiController.is_cancel_input(event):
 		_cancel_current_dialog()
 		if owner_ui != null and owner_ui.has_method("get_viewport"):
 			owner_ui.get_viewport().set_input_as_handled()
 		return
-	var mouse_button := event as InputEventMouseButton
-	if mouse_button != null and mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_RIGHT:
-		_cancel_current_dialog()
-		if owner_ui != null and owner_ui.has_method("get_viewport"):
-			owner_ui.get_viewport().set_input_as_handled()
+
+func _restore_focus_after_dialog() -> void:
+	dragging_title = false
+	if dialog != null and is_instance_valid(dialog) and dialog.get_viewport() != null:
+		var focused := dialog.get_viewport().gui_get_focus_owner()
+		if focused != null and (focused == dialog or dialog.is_ancestor_of(focused)):
+			focused.release_focus()
+	var previous := focus_before_dialog.get_ref() as Control if focus_before_dialog != null else null
+	focus_before_dialog = null
+	if previous != null and is_instance_valid(previous) and previous.is_visible_in_tree() \
+			and previous.focus_mode != Control.FOCUS_NONE:
+		previous.grab_focus.call_deferred()
 
 func _on_checkbox_toggled(pressed: bool) -> void:
 	if suppress_checkbox_callback:

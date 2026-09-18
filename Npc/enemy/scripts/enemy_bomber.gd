@@ -74,10 +74,11 @@ func _spawn_aoe_warning() -> void:
 	if warning == null:
 		return
 	warning.global_position = global_position
-	warning.duration = _fuse_remaining
-	warning.radius = blast_radius
-	warning.visual_preset = TargetWarning.VisualPreset.DODGE_STYLE
-	warning.show_countdown = false
+	warning.configure_enemy_danger(
+		_fuse_remaining,
+		blast_radius,
+		CombatFeedbackSpec.DangerLevel.LETHAL
+	)
 	_active_aoe_warning = warning
 	call_deferred("add_sibling", warning)
 

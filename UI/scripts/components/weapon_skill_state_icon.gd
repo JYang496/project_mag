@@ -8,6 +8,7 @@ var cooldown_progress := 1.0
 var cooling := false
 var energy_blocked := false
 var active := false
+var overheated := false
 
 func set_effect_id(value: String) -> void:
 	if value != effect_id:
@@ -22,6 +23,9 @@ func set_status(status: Dictionary) -> void:
 	var next_progress := 1.0 if bool(status.get("unlock_ready", false)) else clampf(float(status.get("unlock_progress", 0.0)), 0.0, 1.0)
 	var next_cooldown := clampf(float(status.get("cooldown_progress", 1.0)), 0.0, 1.0)
 	var next_active := bool(status.get("active", false))
+	var next_overheated := bool(status.get("overheated", false))
+	if next_overheated:
+		next = "overheat"
 	if available:
 		next = "ready" if bool(status.get("ready", false)) else "building"
 		if not bool(status.get("ready", false)):
@@ -29,7 +33,7 @@ func set_status(status: Dictionary) -> void:
 				next = "cooldown"
 			elif next_energy:
 				next = "energy"
-	if state == next and is_equal_approx(progress, next_progress) and is_equal_approx(cooldown_progress, next_cooldown) and cooling == next_cooling and energy_blocked == next_energy and active == next_active:
+	if state == next and is_equal_approx(progress, next_progress) and is_equal_approx(cooldown_progress, next_cooldown) and cooling == next_cooling and energy_blocked == next_energy and active == next_active and overheated == next_overheated:
 		return
 	state = next
 	progress = next_progress
@@ -37,6 +41,7 @@ func set_status(status: Dictionary) -> void:
 	cooling = next_cooling
 	energy_blocked = next_energy
 	active = next_active
+	overheated = next_overheated
 	queue_redraw()
 
 func _draw() -> void:
@@ -56,7 +61,10 @@ func _draw() -> void:
 			draw_colored_polygon(points, fill)
 	draw_arc(center, 20, 0, TAU, 48, Color("b9e7dc") if active or state == "ready" else Color("71878d"), 2.0 if active else 1.0, true)
 	draw_arc(center, 18.5, PI * 1.1, PI * 1.65, 20, Color(0.83,0.95,1.0,0.13), 1.0, true)
-	PICTOGRAMS.draw_icon(self, effect_id, Vector2(10,10), Color("f2f7f6") if state != "disabled" else Color("6c787d"))
+	PICTOGRAMS.draw_icon(self, effect_id, Vector2(10,10), Color("ffb18a") if overheated else (Color("f2f7f6") if state != "disabled" else Color("6c787d")))
+	if overheated:
+		draw_arc(center, 23, 0, TAU, 48, Color("ff4d32"), 3.0, true)
+		draw_line(Vector2(11,37), Vector2(37,11), Color("fff0d8"), 3.0, true)
 	if cooling:
 		draw_arc(center, 23, 0, TAU, 48, Color("304a56"), 2.0, true)
 		if cooldown_progress > 0.001:

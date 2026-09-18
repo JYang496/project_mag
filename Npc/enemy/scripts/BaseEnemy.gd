@@ -36,6 +36,7 @@ const SHADOW_SIZE_MAX := Vector2(52.0, 24.0)
 @export var ai_mid_distance: float = 1800.0
 @export_range(10.0, 30.0, 1.0) var ai_mid_hz: float = 30.0
 @export_range(5.0, 15.0, 1.0) var ai_far_hz: float = 12.0
+@export_range(15.0, 60.0, 1.0) var far_movement_hz: float = 30.0
 @export var simplify_far_physics: bool = true
 @export_group("")
 signal enemy_death(was_killed: bool)
@@ -67,6 +68,7 @@ var _ai_tick_interval := 0.0
 var _ai_is_far_tier := false
 var _ai_logic_ticks := 0
 var _ai_cached_movement_ticks := 0
+var _far_movement_accumulator := 0.0
 var _far_physics_simplified := false
 var _far_area_monitoring_state: Array[Dictionary] = []
 var _far_body_collision_mask := 0
@@ -420,12 +422,26 @@ func consume_ai_update_delta(delta: float) -> float:
 	return 0.0
 
 func continue_lod_movement(delta: float) -> void:
+	var movement_delta := maxf(delta, 0.0)
+	if _ai_is_far_tier and not is_stunned() and not is_quest_movement_locked():
+		_far_movement_accumulator += movement_delta
+		var movement_interval := 1.0 / maxf(far_movement_hz, 1.0)
+		if _far_movement_accumulator + 0.00001 < movement_interval:
+			return
+		movement_delta = _far_movement_accumulator
+		_far_movement_accumulator = 0.0
+	else:
+		_far_movement_accumulator = 0.0
 	_ai_cached_movement_ticks += 1
-	decay_knockback()
+	# Preserve the old per-physics-frame knockback decay rate when several frames
+	# of far movement are combined into one bounded update.
+	var nominal_ticks := maxi(roundi(movement_delta * float(Engine.physics_ticks_per_second)), 1)
+	for tick in nominal_ticks:
+		decay_knockback()
 	if is_stunned() or is_quest_movement_locked():
-		movement_runtime.move_enemy(Vector2.ZERO, delta)
+		movement_runtime.move_enemy(Vector2.ZERO, movement_delta)
 		return
-	movement_runtime.continue_cached_movement(delta)
+	movement_runtime.continue_cached_movement(movement_delta)
 
 func _resolve_ai_tick_interval() -> float:
 	if self is EliteEnemy or is_boss or is_in_group("boss"):
@@ -489,6 +505,7 @@ func uses_simplified_far_movement() -> bool:
 
 func reset_ai_lod_debug_metrics() -> void:
 	_ai_tick_accumulator = 0.0
+	_far_movement_accumulator = 0.0
 	_ai_tier_refresh_remaining = 0.0
 	_ai_logic_ticks = 0
 	_ai_cached_movement_ticks = 0

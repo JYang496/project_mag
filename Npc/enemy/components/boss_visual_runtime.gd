@@ -3,7 +3,8 @@ class_name BossVisualRuntime
 
 signal attack_confirmed
 
-const WARNING_COLOR := Color(1.0, 0.18, 0.12, 0.92)
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
+const WARNING_COLOR := Color(FEEDBACK_SPEC.COLOR_DANGER, 0.92)
 const PHASE_COLORS := [Color(1.0, 0.38, 0.12, 0.86), Color(0.80, 0.28, 1.0, 0.88), Color(1.0, 0.12, 0.28, 0.94)]
 
 var boss: BaseEnemy
@@ -37,7 +38,7 @@ func _process(delta: float) -> void:
 	if not telegraph_active:
 		return
 	telegraph_elapsed += maxf(delta, 0.0)
-	if not damage_confirmed and telegraph_elapsed >= telegraph_duration * 0.78:
+	if not damage_confirmed and telegraph_elapsed >= telegraph_duration * FEEDBACK_SPEC.WARNING_URGENT_PHASE:
 		damage_confirmed = true
 		attack_confirmed.emit()
 	if telegraph_elapsed >= telegraph_duration:
@@ -72,7 +73,7 @@ func get_hybrid_aura_visual() -> Dictionary:
 	var color := WARNING_COLOR if telegraph_active else _phase_color()
 	var progress := clampf(telegraph_elapsed / maxf(telegraph_duration, 0.01), 0.0, 1.0)
 	if telegraph_active and damage_confirmed:
-		color = Color.WHITE.lerp(WARNING_COLOR, 0.35)
+		color = FEEDBACK_SPEC.COLOR_LETHAL.lerp(WARNING_COLOR, 0.35)
 	return {
 		"visible": boss != null and is_instance_valid(boss),
 		"radius": radius * (1.0 + progress * 0.08 if telegraph_active else 1.0),
@@ -92,7 +93,7 @@ func _phase_color() -> Color:
 func _create_boss_hud() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "BossHudLayer"
-	layer.layer = 80
+	layer.layer = FEEDBACK_SPEC.BOSS_HUD_LAYER
 	add_child(layer)
 	_environment_overlay = ColorRect.new()
 	_environment_overlay.name = "BossEnvironmentOverlay"

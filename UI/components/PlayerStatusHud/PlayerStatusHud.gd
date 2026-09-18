@@ -1,5 +1,7 @@
 extends Control
 
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
+
 const HUD_SIZE := Vector2(344.0, 76.0)
 const BAR_RECT := Rect2(Vector2(29.0, 39.0), Vector2(286.0, 18.0))
 const SHIELD_RECT := Rect2(Vector2(29.0, 61.0), Vector2(286.0, 5.0))
@@ -16,18 +18,18 @@ const HP_VALUE_FADE_SECONDS := 0.25
 const HP_GHOST_HOLD_SECONDS := 0.22
 const HP_GHOST_CATCHUP_SECONDS := 0.65
 const DAMAGE_FLASH_DURATION := 0.32
-const HP_WARNING_RATIO := 0.35
-const HP_CRITICAL_RATIO := 0.18
-const HP_WARNING_PULSE_HZ := 1.8
-const HP_CRITICAL_PULSE_HZ := 3.0
+const HP_WARNING_RATIO := FEEDBACK_SPEC.HP_WARNING_RATIO
+const HP_CRITICAL_RATIO := FEEDBACK_SPEC.HP_CRITICAL_RATIO
+const HP_WARNING_PULSE_HZ := FEEDBACK_SPEC.HP_WARNING_PULSE_HZ
+const HP_CRITICAL_PULSE_HZ := FEEDBACK_SPEC.HP_CRITICAL_PULSE_HZ
 const HP_CRITICAL_CROSS_FLASH_SECONDS := 0.18
 
 const HP_TRACK := Color(0.018, 0.075, 0.070, 0.96)
 const HP_FILL := Color(0.21, 0.81, 0.91, 0.98)
 const HP_DAMAGE_GHOST := Color(1.0, 0.28, 0.20, 0.86)
-const HP_HEAL_GHOST := Color(0.30, 1.0, 0.66, 0.82)
+const HP_HEAL_GHOST := Color(FEEDBACK_SPEC.COLOR_HEAL, 0.82)
 const SHIELD_TRACK := Color(0.025, 0.10, 0.15, 0.96)
-const SHIELD_COLOR := Color(0.20, 0.76, 1.0, 1.0)
+const SHIELD_COLOR := FEEDBACK_SPEC.COLOR_SHIELD
 const ENERGY_EMPTY := Color(0.105, 0.065, 0.018, 0.94)
 const ENERGY_FILL := Color(1.0, 0.55, 0.04, 0.98)
 const ENERGY_EDGE := Color(1.0, 0.76, 0.22, 1.0)
@@ -65,6 +67,9 @@ var _damage_punch_tween: Tween
 var _damage_label_tween: Tween
 var _health_pulse_elapsed := 0.0
 var _critical_cross_flash_elapsed := HP_CRITICAL_CROSS_FLASH_SECONDS
+var _skill_was_ready := false
+var _skill_ready_flash_elapsed := 99.0
+const SKILL_READY_FLASH_SECONDS := 0.42
 
 func _ready() -> void:
 	pivot_offset = HUD_SIZE * 0.5
@@ -78,6 +83,9 @@ func _ready() -> void:
 	queue_redraw()
 
 func set_health(current_hp: int, max_hp: int, current_shield: int = 0, max_shield: int = 0) -> void:
+	var previous_hp := _current_hp
+	var previous_shield := _current_shield
+	var had_sample := _has_health_sample
 	var next_max_hp := maxi(max_hp, 1)
 	var next_current_hp := clampi(current_hp, 0, next_max_hp)
 	var next_ratio := clampf(float(next_current_hp) / float(next_max_hp), 0.0, 1.0)
@@ -100,6 +108,13 @@ func set_health(current_hp: int, max_hp: int, current_shield: int = 0, max_shiel
 	_current_shield = maxi(current_shield, 0)
 	_max_shield = maxi(max_shield, _current_shield)
 	_hp_label.text = "%d / %d" % [_current_hp, _max_hp]
+	if had_sample:
+		if _current_hp > previous_hp:
+			_show_resource_delta(_current_hp - previous_hp, CombatFeedbackSpec.FeedbackKind.HEAL)
+		elif _current_shield > previous_shield:
+			_show_resource_delta(_current_shield - previous_shield, CombatFeedbackSpec.FeedbackKind.SHIELD_GAIN)
+		elif _current_shield < previous_shield and _current_hp >= previous_hp:
+			_show_resource_delta(previous_shield - _current_shield, CombatFeedbackSpec.FeedbackKind.SHIELD_ABSORB)
 	if next_current_hp <= 0 or next_ratio > HP_WARNING_RATIO:
 		_health_pulse_elapsed = 0.0
 		_critical_cross_flash_elapsed = HP_CRITICAL_CROSS_FLASH_SECONDS
@@ -110,6 +125,8 @@ func _process(delta: float) -> void:
 	_update_damage_feedback(safe_delta)
 	_update_hp_value_visibility(safe_delta)
 	_update_health_danger_feedback(safe_delta)
+	_skill_ready_flash_elapsed += safe_delta
+	_track_skill_ready_transition()
 	if _hp_animation_mode == &"none":
 		return
 	_hp_animation_elapsed += safe_delta
@@ -241,6 +258,30 @@ func _show_damage_delta(
 		0.0,
 		0.55 if not is_periodic else 0.38
 	).set_delay(0.16 if not is_periodic else 0.08)
+	_damage_label_tween.chain().tween_callback(_damage_delta_label.hide)
+
+func _show_resource_delta(amount: int, kind: CombatFeedbackSpec.FeedbackKind) -> void:
+	if _damage_delta_label == null or amount <= 0:
+		return
+	if _damage_label_tween != null and is_instance_valid(_damage_label_tween):
+		_damage_label_tween.kill()
+	var prefix := "+"
+	if kind == CombatFeedbackSpec.FeedbackKind.SHIELD_GAIN:
+		prefix = "◇+"
+	elif kind == CombatFeedbackSpec.FeedbackKind.SHIELD_ABSORB:
+		prefix = "◇-"
+	_damage_delta_label.text = "%s%d" % [prefix, amount]
+	_damage_delta_label.add_theme_font_size_override("font_size", 14)
+	_damage_delta_label.add_theme_color_override("font_color", FEEDBACK_SPEC.feedback_color(kind))
+	_damage_delta_label.position = Vector2(BAR_RECT.end.x - 86.0, BAR_RECT.position.y - 23.0)
+	_damage_delta_label.modulate = Color.WHITE
+	_damage_delta_label.visible = true
+	_damage_label_tween = create_tween()
+	_damage_label_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_damage_label_tween.set_parallel(true)
+	_damage_label_tween.tween_property(_damage_delta_label, "position:y", _damage_delta_label.position.y - 18.0, 0.62) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_damage_label_tween.tween_property(_damage_delta_label, "modulate:a", 0.0, 0.62).set_delay(0.18)
 	_damage_label_tween.chain().tween_callback(_damage_delta_label.hide)
 
 func _begin_hp_animation(next_ratio: float) -> void:
@@ -437,7 +478,8 @@ func _draw_skill_rail() -> void:
 		var accent_x := rect.end.x - 2.0
 		draw_line(Vector2(accent_x, rect.position.y + 4.0), Vector2(accent_x, rect.end.y - 4.0), ENERGY_EDGE, 1.0, true)
 	if is_skill_ready():
-		_draw_cut_outline(plate.grow(1.5), ENERGY_READY_EDGE, 2.0, CUT_SIZE)
+		var flash := clampf(1.0 - _skill_ready_flash_elapsed / SKILL_READY_FLASH_SECONDS, 0.0, 1.0)
+		_draw_cut_outline(plate.grow(1.5 + flash * 2.0), Color(ENERGY_READY_EDGE, 0.82 + flash * 0.18), 2.0 + flash, CUT_SIZE)
 	_draw_skill_cooldown()
 
 func _draw_skill_cooldown() -> void:
@@ -577,6 +619,13 @@ func _refresh_skill_state_label() -> void:
 			_skill_state_label.add_theme_color_override("font_color", ENERGY_READY_EDGE)
 		_:
 			_skill_state_label.text = ""
+
+func _track_skill_ready_transition() -> void:
+	var ready := is_skill_ready()
+	if ready and not _skill_was_ready:
+		_skill_ready_flash_elapsed = 0.0
+		queue_redraw()
+	_skill_was_ready = ready
 
 func _format_cooldown_time() -> String:
 	if _cooldown_remaining >= 10.0:

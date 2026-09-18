@@ -2,6 +2,7 @@ extends PanelContainer
 
 @onready var icon_row: HBoxContainer = %BranchDamageTypeIcons
 @onready var name_label: Label = %BranchPreviewName
+@onready var description_label: Label = %BranchPreviewDescription
 @onready var recipe: HBoxContainer = %BranchPreviewFusionRecipe
 @onready var status_label: Label = %BranchPreviewUnlockState
 @onready var accent_strip: Control = %BranchAccentStripOverlay
@@ -13,6 +14,8 @@ func set_data(data: Dictionary) -> void:
 	name_label.text = str(data.get("name", "Branch"))
 	name_label.tooltip_text = name_label.text
 	name_label.add_theme_color_override("font_color", primary)
+	description_label.text = str(data.get("description", ""))
+	description_label.tooltip_text = description_label.text
 	status_label.text = str(data.get("status", ""))
 	icon_row.call("set_data", data.get("icon_items", []) as Array, float(data.get("icon_size", 20.0)), "BranchDamageTypeIcons")
 	recipe.call("set_data", str(data.get("recipe_prefix", "")), data.get("recipe_tags", []) as Array)
@@ -27,6 +30,7 @@ func _resolve_nodes() -> void:
 		return
 	icon_row = get_node("Content/BranchPreviewTitleRow/BranchDamageTypeIcons") as HBoxContainer
 	name_label = get_node("Content/BranchPreviewTitleRow/BranchPreviewName") as Label
+	description_label = get_node("Content/BranchPreviewDescription") as Label
 	recipe = get_node("Content/BranchPreviewFusionRecipe") as HBoxContainer
 	status_label = get_node("Content/BranchPreviewUnlockState") as Label
 	accent_strip = get_node("BranchAccentStripOverlay") as Control

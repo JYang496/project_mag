@@ -47,6 +47,7 @@ static func _get_controls_hint_scene() -> PackedScene:
 var board_edit_panel: Control
 var cell_management_panel: Control
 var _modal_registry: Array = []
+var _focus_before_modal: Dictionary = {}
 
 static func is_cancel_input(event: InputEvent) -> bool:
 	if event == null:
@@ -98,6 +99,7 @@ func ensure_branch_select_panel() -> bool:
 	gui_root.add_child(branch_select_panel)
 	branch_select_panel.visible = false
 	branch_select_panel.visibility_changed.connect(Callable(owner_ui, "_refresh_controls_hint_visibility"))
+	_track_modal_focus(branch_select_panel)
 	var callback := Callable(owner_ui, "_on_branch_selected")
 	if not branch_select_panel.is_connected("branch_selected", callback):
 		branch_select_panel.connect("branch_selected", callback)
@@ -115,6 +117,7 @@ func ensure_module_equip_selection_panel() -> bool:
 	gui_root.add_child(module_equip_selection_panel)
 	module_equip_selection_panel.visible = false
 	module_equip_selection_panel.visibility_changed.connect(Callable(owner_ui, "_refresh_controls_hint_visibility"))
+	_track_modal_focus(module_equip_selection_panel)
 	_sync_public_fields_to_owner()
 	return true
 
@@ -129,6 +132,7 @@ func ensure_reward_selection_panel() -> bool:
 	gui_root.add_child(reward_selection_panel)
 	reward_selection_panel.visible = false
 	reward_selection_panel.visibility_changed.connect(Callable(owner_ui, "_refresh_controls_hint_visibility"))
+	_track_modal_focus(reward_selection_panel)
 	_sync_public_fields_to_owner()
 	return true
 
@@ -143,6 +147,7 @@ func ensure_weapon_replacement_panel() -> bool:
 	gui_root.add_child(weapon_replacement_panel)
 	weapon_replacement_panel.visible = false
 	weapon_replacement_panel.visibility_changed.connect(Callable(owner_ui, "_refresh_controls_hint_visibility"))
+	_track_modal_focus(weapon_replacement_panel)
 	_sync_public_fields_to_owner()
 	return true
 
@@ -155,6 +160,7 @@ func ensure_weapon_warehouse_panel() -> bool:
 		push_warning("Failed to create WeaponWarehousePanel.")
 		return false
 	gui_root.add_child(weapon_warehouse_panel)
+	_track_modal_focus(weapon_warehouse_panel)
 	_sync_public_fields_to_owner()
 	return true
 
@@ -168,6 +174,7 @@ func ensure_board_edit_panel() -> bool:
 		return false
 	gui_root.add_child(board_edit_panel)
 	board_edit_panel.visible = false
+	_track_modal_focus(board_edit_panel)
 	if board_edit_panel.has_signal("close_requested"):
 		var callback := Callable(owner_ui, "_on_board_edit_panel_close_requested")
 		if not board_edit_panel.is_connected("close_requested", callback):
@@ -182,6 +189,7 @@ func ensure_cell_management_panel() -> bool:
 	cell_management_panel.name = "CellManagementPanel"
 	gui_root.add_child(cell_management_panel)
 	cell_management_panel.visible = false
+	_track_modal_focus(cell_management_panel)
 	if cell_management_panel.has_method("bind"):
 		cell_management_panel.call("bind", owner_ui)
 	if cell_management_panel.has_signal("board_management_requested"):
@@ -439,3 +447,27 @@ func _sync_public_fields_to_owner() -> void:
 	owner_ui.controls_hint_view = controls_hint_view
 	owner_ui.board_edit_panel = board_edit_panel
 	owner_ui.cell_management_panel = cell_management_panel
+
+func _track_modal_focus(panel: Control) -> void:
+	if panel == null or panel.visibility_changed.is_connected(_on_modal_visibility_changed.bind(panel)):
+		return
+	panel.visibility_changed.connect(_on_modal_visibility_changed.bind(panel))
+
+func _on_modal_visibility_changed(panel: Control) -> void:
+	if panel == null or not is_instance_valid(panel) or panel.get_viewport() == null:
+		return
+	var viewport := panel.get_viewport()
+	var focus_owner := viewport.gui_get_focus_owner()
+	var panel_id := panel.get_instance_id()
+	if panel.visible:
+		if focus_owner != null and focus_owner != panel and not panel.is_ancestor_of(focus_owner):
+			_focus_before_modal[panel_id] = weakref(focus_owner)
+		return
+	if focus_owner != null and (focus_owner == panel or panel.is_ancestor_of(focus_owner)):
+		focus_owner.release_focus()
+	var previous_ref: WeakRef = _focus_before_modal.get(panel_id, null) as WeakRef
+	_focus_before_modal.erase(panel_id)
+	var previous := previous_ref.get_ref() as Control if previous_ref != null else null
+	if previous != null and is_instance_valid(previous) and previous.is_visible_in_tree() \
+			and previous.focus_mode != Control.FOCUS_NONE:
+		previous.grab_focus.call_deferred()

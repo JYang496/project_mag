@@ -64,7 +64,7 @@ func trigger_action() -> bool:
 	var result := InventoryData.upgrade_module_with_modification_points(selected_module)
 	if not result.get("ok", false):
 		if owner_ui and owner_ui.has_method("show_item_message"):
-			owner_ui.call("show_item_message", str(result.get("reason", "")), 1.6)
+			owner_ui.call("show_item_message", InventoryOperationResultPresenter.reason(result), 1.6)
 		return false
 	if owner_ui and owner_ui.has_method("update_upg"):
 		owner_ui.call("update_upg")

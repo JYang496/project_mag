@@ -145,7 +145,12 @@ func _language_changed(_locale: String) -> void:
 func refresh() -> void:
 	if not is_instance_valid(button):
 		return
-	button.visible = PlayerData.gold_supply_enabled and not ui._reward_modal_hud_hidden and PhaseManager.current_state() in [PhaseManager.BATTLE, PhaseManager.REST, PhaseManager.SETTLEMENT]
+	button.visible = (
+		PlayerData.gold_supply_enabled
+		and not ui._reward_modal_hud_hidden
+		and not ui._is_selection_interface_open()
+		and PhaseManager.current_state() in [PhaseManager.BATTLE, PhaseManager.REST, PhaseManager.SETTLEMENT]
+	)
 	var count := PlayerData.get_pending_gold_supply_count()
 	var threshold := PlayerData.get_next_gold_supply_threshold()
 	var events := InputMap.action_get_events("CLAIM_SUPPLY")

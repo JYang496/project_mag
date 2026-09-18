@@ -45,13 +45,6 @@ const DEFAULT_MECHA_IDLE_TOP_TEXTURE := preload("res://asset/images/characters/p
 const DEFAULT_MECHA_IDLE_BOTTOM_TEXTURE := preload("res://asset/images/characters/pixel/idle_bottom.png")
 const DEFAULT_MECHA_MOVE_SPRITE_FRAMES := preload("res://Player/Mechas/animations/mecha_move_frames.tres")
 var current_mecha_direction := ""
-const ORBIT_RADIUS := Vector2(45, 30)
-const ORBIT_ACCEL := 16.0
-const ORBIT_MAX_SPEED := 8.0
-const ORBIT_FRICTION := 6.0
-const ORBIT_OFFSET := Vector2(0, -25)
-const WEAPON_BEHIND_PLAYER_Z_INDEX := -1
-const WEAPON_IN_FRONT_OF_PLAYER_Z_INDEX := 1
 const SCORCH_DURATION_SEC: float = 6.0
 const SCORCH_DOT_RATIO_PER_STACK: float = 0.10
 const SCORCH_DOT_TICK_SEC: float = 1.0
@@ -70,7 +63,10 @@ const ENERGY_MARK_RATIO: float = 0.10
 const ENERGY_MARK_DURATION_SEC: float = 6.0
 const ENERGY_MARK_MAX_HP_RATIO: float = 0.40
 const ENERGY_MARK_TRIGGER_COOLDOWN_SEC: float = 2.0
-var weapon_orbit_states: Dictionary = {}
+var _weapon_orbit_system: PlayerWeaponOrbitSystem
+var weapon_orbit_states: Dictionary:
+	get:
+		return _get_weapon_orbit_system().weapon_orbit_states
 var _base_detect_shape_size := Vector2.ZERO
 var _base_hurtbox_shape_size := Vector2.ZERO
 var _base_hurtbox_shape_position := Vector2.ZERO
@@ -394,6 +390,22 @@ func _input(event: InputEvent) -> void:
 		_active_skill_runtime.process_input_event(event)
 	_ensure_weapon_command_controller()
 	_weapon_command_controller.process_input_event(event)
+
+func cancel_transient_input_state() -> void:
+	_last_move_input_dir = Vector2.ZERO
+	_last_move_input_msec = -1
+	extra_direction = Vector2.ZERO
+	_suppress_attack_until_released = Input.is_action_pressed("ATTACK")
+	if _movement_system != null:
+		_movement_system.reset_auto_nav_speed_mul()
+	if _weapon_command_controller != null:
+		_weapon_command_controller.clear()
+	if _weapon_auto_fire_runtime != null:
+		_weapon_auto_fire_runtime.clear()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		cancel_transient_input_state()
 
 func _setup_default_active_skill() -> void:
 	_ensure_active_skill_runtime()
@@ -828,7 +840,14 @@ func apply_heat_prepared(
 	_heat_prepared_until_msec = Time.get_ticks_msec() + duration_msec
 	_heat_prepared_fire_damage_bonus_per_stack = maxf(fire_damage_bonus_per_stack, 0.0)
 	_heat_prepared_stack_count = mini(_heat_prepared_stack_count + 1, maxi(max_stacks, 1))
-	_spawn_player_floating_hint("Heat Prepared %d/%d" % [_heat_prepared_stack_count, maxi(max_stacks, 1)])
+	_spawn_player_floating_hint(LocalizationManager.tr_format(
+		"ui.status_hint.heat_prepared",
+		{
+			"current": _heat_prepared_stack_count,
+			"max": maxi(max_stacks, 1),
+		},
+		"Heat Prepared {current}/{max}"
+	))
 	if debug_weapon_passive_trigger_prints:
 		print("[HeatStatus] Heat Prepared duration=", duration_sec, " fire_bonus_per_stack=", _heat_prepared_fire_damage_bonus_per_stack, " stacks=", _heat_prepared_stack_count)
 	return _heat_prepared_stack_count
@@ -1108,7 +1127,13 @@ func configure_auto_nav_speed_mul(speed_mul: float) -> void:
 func get_rest_phase_move_speed_bonus() -> float:
 	return maxf(rest_phase_move_speed_bonus, 0.0)
 
-func request_dash(direction: Vector2, distance: float, duration_sec: float, source_id: StringName = StringName()) -> bool:
+func request_dash(
+	direction: Vector2,
+	distance: float,
+	duration_sec: float,
+	source_id: StringName = StringName(),
+	speed_curve: Curve = null
+) -> bool:
 	if not _require_movement_system_or_halt():
 		return false
 	if direction.length_squared() <= 0.0001:
@@ -1117,7 +1142,7 @@ func request_dash(direction: Vector2, distance: float, duration_sec: float, sour
 		global_position + direction.normalized() * maxf(distance, 0.0)
 	)
 	var start_position := global_position
-	var started := _movement_system.request_dash(start_position, target_position, duration_sec, source_id)
+	var started := _movement_system.request_dash(start_position, target_position, duration_sec, source_id, speed_curve)
 	if started:
 		dash_started.emit({
 			"source_id": source_id,
@@ -1509,123 +1534,6 @@ func _update_mecha_move_animation(direction: Vector2) -> void:
 	if not mecha_move_sprite.is_playing():
 		mecha_move_sprite.play(animation_name)
 
-func _sync_weapon_orbit_states(force_reset := false) -> void:
-	var weapons: Array = PlayerData.player_weapon_list
-	var total: int = max(weapons.size(), 1)
-	var base_angle := _get_mouse_angle()
-	var formations := _get_formation_angle_offsets(weapons.size())
-	for weapon_index in range(weapons.size()):
-		var weapon = weapons[weapon_index]
-		if not is_instance_valid(weapon):
-			continue
-		_attach_weapon_to_equipped_holder(weapon)
-		var offset := TAU * float(weapon_index) / float(total)
-		if weapon_index < formations.size():
-			offset = formations[weapon_index]
-		var state: Dictionary = weapon_orbit_states.get(weapon, {})
-		if state.is_empty():
-			state = {"angle": base_angle + offset, "velocity": 0.0, "offset": offset}
-			weapon_orbit_states[weapon] = state
-		else:
-			if force_reset:
-				state["angle"] = base_angle + offset
-				state["velocity"] = 0.0
-			state["offset"] = offset
-	_remove_missing_weapon_states(weapons)
-
-func _attach_weapon_to_equipped_holder(weapon: Weapon) -> void:
-	if weapon.get_parent() == equppied_weapons:
-		return
-	if weapon.get_parent():
-		weapon.reparent(equppied_weapons)
-	else:
-		equppied_weapons.add_child(weapon)
-
-func _update_weapon_orbits(delta: float) -> void:
-	if PlayerData.player_weapon_list.is_empty():
-		return
-	var base_angle := _get_mouse_angle()
-	for weapon in PlayerData.player_weapon_list:
-		if not is_instance_valid(weapon):
-			continue
-		var state: Dictionary = weapon_orbit_states.get(weapon, {})
-		if state.is_empty():
-			continue
-		var current_angle: float = state.get("angle", base_angle)
-		var angular_velocity: float = state.get("velocity", 0.0)
-		var offset: float = state.get("offset", 0.0)
-		var target_angle := wrapf(base_angle + offset, -PI, PI)
-		var angle_diff := _shortest_angle(current_angle, target_angle)
-		angular_velocity += clamp(angle_diff * ORBIT_ACCEL, -ORBIT_ACCEL, ORBIT_ACCEL) * delta
-		angular_velocity = clamp(angular_velocity, -ORBIT_MAX_SPEED, ORBIT_MAX_SPEED)
-		angular_velocity = lerp(angular_velocity, 0.0, clamp(ORBIT_FRICTION * delta, 0.0, 1.0))
-		current_angle = wrapf(current_angle + angular_velocity * delta, -PI, PI)
-		state["angle"] = current_angle
-		state["velocity"] = angular_velocity
-		weapon.position = _get_orbit_position(current_angle)
-		_update_weapon_orbit_z_index(weapon)
-
-func _update_weapon_orbit_z_index(weapon: CanvasItem) -> void:
-	if weapon == null or not is_instance_valid(weapon):
-		return
-	var weapon_node := weapon as Node2D
-	if weapon_node == null:
-		return
-	# Judge occlusion around the orbit's visual center. ORBIT_OFFSET raises the
-	# whole formation toward the mech's torso and must not make almost the entire
-	# orbit count as being behind the player.
-	var is_behind_player := weapon_node.position.y < ORBIT_OFFSET.y
-	weapon.set_meta(&"orbit_behind_owner", is_behind_player)
-	weapon.z_as_relative = true
-	weapon.z_index = WEAPON_BEHIND_PLAYER_Z_INDEX \
-		if is_behind_player else WEAPON_IN_FRONT_OF_PLAYER_Z_INDEX
-
-func _remove_missing_weapon_states(valid_weapons: Array) -> void:
-	var to_remove: Array = []
-	for weapon in weapon_orbit_states.keys():
-		if not valid_weapons.has(weapon) or not is_instance_valid(weapon):
-			to_remove.append(weapon)
-	for weapon in to_remove:
-		weapon_orbit_states.erase(weapon)
-
-func _get_formation_angle_offsets(count: int) -> Array:
-	match count:
-		1:
-			return [PI]
-		2:
-			return [PI / 2, -PI / 2]
-		3:
-			return [PI / 2, -PI / 2, PI]
-		4:
-			return [
-				PI / 4,         # front left
-				-PI / 4,        # front right
-				PI - PI / 4,    # back left
-				-PI + PI / 4    # back right
-			]
-		_:
-			var offsets: Array = []
-			if count <= 0:
-				return offsets
-			for i in range(count):
-				offsets.append(TAU * float(i) / float(count))
-			return offsets
-
-func _get_mouse_angle() -> float:
-	return global_position.direction_to(get_aim_world_position()).angle()
-
-func _get_orbit_position(angle: float) -> Vector2:
-	var cos_a := cos(angle)
-	var sin_a := sin(angle)
-	var denominator := sqrt(pow(ORBIT_RADIUS.y * cos_a, 2) + pow(ORBIT_RADIUS.x * sin_a, 2))
-	if denominator == 0:
-		return ORBIT_OFFSET
-	var radius := (ORBIT_RADIUS.x * ORBIT_RADIUS.y) / denominator
-	return Vector2(cos_a, sin_a) * radius + ORBIT_OFFSET
-
-func _shortest_angle(from_angle: float, to_angle: float) -> float:
-	return wrapf(to_angle - from_angle, -PI, PI)
-
 func _update_mecha_direction(direction: Vector2) -> void:
 	if direction == Vector2.ZERO:
 		return
@@ -1870,6 +1778,7 @@ func _on_grab_area_area_entered(area):
 
 func _on_phase_changed(new_phase: String) -> void:
 	_last_phase = new_phase
+	cancel_transient_input_state()
 	if new_phase == PhaseManager.BATTLE:
 		clear_global_weapon_energy()
 		var main_weapon := get_main_weapon()
@@ -2259,3 +2168,17 @@ func has_equipped_energy_weapon() -> bool:
 
 func is_global_weapon_energy_ready() -> bool:
 	return get_global_weapon_energy() >= get_global_weapon_energy_max() - 0.001
+
+func _get_weapon_orbit_system() -> PlayerWeaponOrbitSystem:
+	if _weapon_orbit_system == null:
+		_weapon_orbit_system = preload("res://Player/Mechas/scripts/player_weapon_orbit_system.gd").new(self)
+	return _weapon_orbit_system
+
+func _sync_weapon_orbit_states(force_reset := false) -> void:
+	_get_weapon_orbit_system()._sync_weapon_orbit_states(force_reset)
+
+func _attach_weapon_to_equipped_holder(weapon: Weapon) -> void:
+	_get_weapon_orbit_system()._attach_weapon_to_equipped_holder(weapon)
+
+func _update_weapon_orbits(delta: float) -> void:
+	_get_weapon_orbit_system()._update_weapon_orbits(delta)

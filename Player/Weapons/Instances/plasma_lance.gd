@@ -106,17 +106,11 @@ func _get_heat_damage_multiplier() -> float:
 		return 1.0
 	var heat_ratio := clampf(float(player.call("get_total_heat_ratio")), 0.0, 1.0)
 	var overcharge_config := _get_overcharge_lance_config()
-	var overcharge_active_stacks := _get_overcharge_lance_stack_count()
 	var overcharge_bonus := 0.0
 	if not overcharge_config.is_empty():
-		var bonus_per_stack := maxf(float(overcharge_config.get("damage_bonus_per_stack", 0.0)), 0.0)
-		overcharge_bonus = bonus_per_stack * float(overcharge_active_stacks)
-		var threshold := clampf(float(overcharge_config.get("heat_ratio_threshold", 0.7)), 0.0, 1.0)
+		var threshold := clampf(float(overcharge_config.get("heat_ratio_threshold", 0.5)), 0.0, 1.0)
 		if heat_ratio >= threshold:
-			_add_overcharge_lance_stack(
-				float(overcharge_config.get("duration", 5.0)),
-				maxi(int(overcharge_config.get("max_stacks", 3)), 1)
-			)
+			overcharge_bonus = maxf(float(overcharge_config.get("flat_damage_bonus", 0.0)), 0.0)
 	var multiplier := 1.0 + maxf(plasma_heat_damage_bonus_at_full_heat, 0.0) * heat_ratio + overcharge_bonus
 	var heat_prepared_active := false
 	if player.has_method("has_heat_prepared") and bool(player.call("has_heat_prepared")):
@@ -124,9 +118,7 @@ func _get_heat_damage_multiplier() -> float:
 	emit_passive_trigger(&"plasma_lance_heat_power", {
 		"trigger": "shot",
 		"heat_ratio": heat_ratio,
-		"overcharge_active_stacks": overcharge_active_stacks,
 		"overcharge_damage_bonus": overcharge_bonus,
-		"overcharge_stack_count_after": _get_overcharge_lance_stack_count(),
 		"damage_multiplier": multiplier,
 		"heat_prepared_active": heat_prepared_active,
 	}, PASSIVE_SCOPE_GLOBAL)

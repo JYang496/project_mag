@@ -5,6 +5,9 @@ signal pending_transactions_changed
 signal weapon_storage_changed
 signal weapon_cores_changed
 signal weapon_fusion_changed(weapon: Weapon, result: Dictionary)
+signal inventory_changed
+signal notification_requested(message: String, duration: float)
+signal weapon_replacement_requested(weapon: Weapon, on_complete: Callable, request: Dictionary)
 
 const RUNTIME_STATE_PATH := "user://equipment_runtime_state.json"
 
@@ -32,29 +35,11 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		save_runtime_state()
 
-func _get_ui():
-	var ui = GlobalVariables.ui
-	if ui and is_instance_valid(ui):
-		return ui
-	return null
-
-func _refresh_ui() -> void:
-	var ui = _get_ui()
-	if ui == null:
-		return
-	if ui.module_warehouse_controller:
-		ui.module_warehouse_controller.update_modules()
-	if ui.purchase_management_controller:
-		ui.purchase_management_controller.update_shop()
-	if ui.upgrade_management_controller:
-		ui.upgrade_management_controller.update_upg()
-	if ui.has_method("refresh_border"):
-		ui.refresh_border()
+func _emit_inventory_changed() -> void:
+	inventory_changed.emit()
 
 func _notify(message: String, duration: float = 1.8) -> void:
-	var ui = _get_ui()
-	if ui and ui.has_method("show_item_message"):
-		ui.show_item_message(message, duration)
+	notification_requested.emit(message, duration)
 
 func _is_rest_area_module_management_available() -> bool:
 	if PhaseManager.current_state() != PhaseManager.PREPARE:
@@ -235,7 +220,7 @@ func dismantle_duplicate_weapon(weapon_id: String, subject: Weapon = null) -> Di
 		return added
 	PlayerData.record_weapon_progress()
 	save_runtime_state()
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {
 		"ok": true,
 		"result": "dismantled_to_core",
@@ -445,11 +430,11 @@ func obtain_weapon_reward(weapon: Weapon, on_pending_complete: Callable = Callab
 		return equip_incoming_weapon_to_slot(weapon)
 	if PhaseManager.current_state() not in [PhaseManager.SETTLEMENT, PhaseManager.REST]:
 		return store_weapon(weapon)
-	var ui = GlobalVariables.ui
-	if ui and is_instance_valid(ui) and ui.has_method("request_weapon_replacement"):
-		var opened := bool(ui.call("request_weapon_replacement", weapon, false, on_pending_complete))
-		if opened:
-			return {"ok": true, "result": "selection_pending", "weapon": weapon}
+	# Immediate listeners acknowledge opening the selection before storage fallback.
+	var request := {"opened": false}
+	weapon_replacement_requested.emit(weapon, on_pending_complete, request)
+	if bool(request["opened"]):
+		return {"ok": true, "result": "selection_pending", "weapon": weapon}
 	return store_weapon(weapon)
 
 func has_open_weapon_slot() -> bool:
@@ -480,7 +465,7 @@ func store_weapon(weapon: Weapon) -> Dictionary:
 	var weapon_id := DataHandler.get_weapon_id_from_instance(weapon)
 	if PlayerData.player_weapon_list.has(weapon):
 		if PlayerData.player_weapon_list.size() <= 1:
-			return {"ok": false, "reason": "At least one weapon must remain equipped."}
+			return {"ok": false, "error": &"last_weapon"}
 		_transfer_weapon_modules_to_temporary(weapon)
 		_move_weapon_to_parent(weapon, self)
 		PlayerData.player_weapon_list.erase(weapon)
@@ -496,7 +481,7 @@ func store_weapon(weapon: Weapon) -> Dictionary:
 	weapon_storage.append(weapon)
 	weapon_storage_changed.emit()
 	save_runtime_state()
-	_refresh_ui()
+	_emit_inventory_changed()
 	_notify(LocalizationManager.tr_format(
 		"ui.inventory.weapon_stored",
 		{"name": LocalizationManager.get_weapon_name_by_id(weapon_id, weapon.name)},
@@ -507,11 +492,11 @@ func store_weapon(weapon: Weapon) -> Dictionary:
 
 func equip_stored_weapon(weapon: Weapon) -> Dictionary:
 	if not PhaseManager.can_configure_loadout():
-		return {"ok": false, "reason": "Stored weapons can only be equipped during rest."}
+		return {"ok": false, "error": &"stored_equip_rest_only"}
 	if weapon == null or not weapon_storage.has(weapon):
-		return {"ok": false, "reason": "Invalid stored weapon."}
+		return {"ok": false, "error": &"invalid_stored_weapon"}
 	if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num:
-		return {"ok": false, "reason": "No weapon slots available."}
+		return {"ok": false, "error": &"no_weapon_slots"}
 	weapon_storage.erase(weapon)
 	weapon.visible = true
 	weapon.process_mode = Node.PROCESS_MODE_INHERIT
@@ -522,11 +507,11 @@ func equip_stored_weapon(weapon: Weapon) -> Dictionary:
 
 func exchange_stored_weapon(stored_weapon: Weapon, equipped_weapon: Weapon) -> Dictionary:
 	if not PhaseManager.can_configure_loadout():
-		return {"ok": false, "reason": "Stored weapons can only be exchanged during rest."}
+		return {"ok": false, "error": &"stored_exchange_rest_only"}
 	if stored_weapon == null or equipped_weapon == null:
-		return {"ok": false, "reason": "Invalid weapon."}
+		return {"ok": false, "error": &"invalid_weapon"}
 	if not weapon_storage.has(stored_weapon) or not PlayerData.player_weapon_list.has(equipped_weapon):
-		return {"ok": false, "reason": "Invalid weapon."}
+		return {"ok": false, "error": &"invalid_weapon"}
 	var slot_index := PlayerData.player_weapon_list.find(equipped_weapon)
 	var holder := equipped_weapon.get_parent()
 	_transfer_weapon_modules_to_temporary(equipped_weapon)
@@ -545,23 +530,23 @@ func exchange_stored_weapon(stored_weapon: Weapon, equipped_weapon: Weapon) -> D
 	PlayerData.notify_weapon_list_changed()
 	weapon_storage_changed.emit()
 	save_runtime_state()
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {"ok": true, "result": "exchanged", "weapon": stored_weapon, "slot": slot_index}
 
 func equip_incoming_weapon_to_slot(new_weapon: Weapon, old_weapon: Weapon = null, supply_claim: bool = false) -> Dictionary:
 	var battle_pickup_to_empty_slot := PhaseManager.current_state() == PhaseManager.BATTLE and old_weapon == null
 	if PhaseManager.current_state() not in [PhaseManager.SETTLEMENT, PhaseManager.REST] \
 			and not battle_pickup_to_empty_slot and not (supply_claim and PlayerData.gold_supply_rewards.is_applying_battle_claim()):
-		return {"ok": false, "reason": "New weapons can only be installed during settlement or rest."}
+		return {"ok": false, "error": &"incoming_install_phase"}
 	if new_weapon == null or not is_instance_valid(new_weapon):
-		return {"ok": false, "reason": "Invalid weapon."}
+		return {"ok": false, "error": &"invalid_weapon"}
 	if old_weapon == null:
 		if PlayerData.player_weapon_list.size() >= PlayerData.max_weapon_num:
-			return {"ok": false, "reason": "No weapon slots available."}
+			return {"ok": false, "error": &"no_weapon_slots"}
 		PlayerData.player.create_weapon(new_weapon)
 		return {"ok": true, "result": "equipped", "weapon": new_weapon}
 	if not PlayerData.player_weapon_list.has(old_weapon):
-		return {"ok": false, "reason": "Invalid weapon."}
+		return {"ok": false, "error": &"invalid_weapon"}
 	var slot_index := PlayerData.player_weapon_list.find(old_weapon)
 	var holder := old_weapon.get_parent()
 	_transfer_weapon_modules_to_temporary(old_weapon)
@@ -577,7 +562,7 @@ func equip_incoming_weapon_to_slot(new_weapon: Weapon, old_weapon: Weapon = null
 	PlayerData.notify_weapon_list_changed()
 	weapon_storage_changed.emit()
 	save_runtime_state()
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {"ok": true, "result": "exchanged", "weapon": new_weapon, "slot": slot_index}
 
 func _move_weapon_to_parent(weapon: Weapon, target_parent: Node) -> void:
@@ -617,26 +602,26 @@ func get_weapon_module_assignment_feedback(
 	allow_reward_transaction: bool = false
 ) -> Dictionary:
 	if module_instance == null or not is_instance_valid(module_instance):
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	if weapon == null or not is_instance_valid(weapon):
-		return {"ok": false, "reason": "Invalid weapon."}
+		return {"ok": false, "error": &"invalid_weapon"}
 	if not allow_reward_transaction and not _is_rest_area_module_management_available():
-		return {"ok": false, "reason": "Modules can only be managed in the Rest Area."}
+		return {"ok": false, "error": &"module_rest_only"}
 	if weapon.modules == null:
-		return {"ok": false, "reason": "Weapon has no module container."}
+		return {"ok": false, "error": &"no_module_container"}
 	var duplicate_module := find_owned_module_by_scene_path(str(module_instance.scene_file_path), module_instance)
 	if duplicate_module != null and duplicate_module != replaced_module:
-		return {"ok": false, "reason": "Only one module of each type can be owned."}
+		return {"ok": false, "error": &"unique_module"}
 	var projected_count := weapon.get_module_count()
 	if module_instance.get_parent() == weapon.modules and module_instance != replaced_module:
 		projected_count -= 1
 	if replaced_module != null and replaced_module.get_parent() == weapon.modules:
 		projected_count -= 1
 	if projected_count >= weapon.module_slot_capacity:
-		return {"ok": false, "reason": "No module slots available."}
+		return {"ok": false, "error": &"no_module_slots"}
 	var reason := str(module_instance.get_incompatibility_reason(weapon))
 	if reason != "":
-		return {"ok": false, "reason": reason}
+		return {"ok": false, "error": &"module_incompatible", "detail": reason}
 	return {"ok": true, "reason": ""}
 
 func can_assign_module_to_any_equipped_weapon(
@@ -687,7 +672,7 @@ func equip_module_to_weapon(
 	if weapon.has_method("calculate_status"):
 		weapon.calculate_status()
 	temporary_modules_changed.emit()
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {"ok": true, "reason": ""}
 
 func unequip_module_from_weapon(module_instance: Module, weapon: Weapon) -> Dictionary:
@@ -699,11 +684,11 @@ func move_module_to_temporary(
 	allow_reward_transaction: bool = false
 ) -> Dictionary:
 	if module_instance == null or not is_instance_valid(module_instance):
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	if not allow_reward_transaction and not _is_rest_area_module_management_available():
-		return {"ok": false, "reason": "Modules can only be managed in the Rest Area."}
+		return {"ok": false, "error": &"module_rest_only"}
 	if weapon != null and (weapon.modules == null or module_instance.get_parent() != weapon.modules):
-		return {"ok": false, "reason": "Module is not equipped."}
+		return {"ok": false, "error": &"module_not_equipped"}
 	var existing := find_owned_module_by_scene_path(str(module_instance.scene_file_path), module_instance)
 	if existing != null:
 		var merged := _merge_duplicate_module(existing, module_instance)
@@ -720,12 +705,12 @@ func move_module_to_temporary(
 	if weapon and weapon.has_method("calculate_status"):
 		weapon.calculate_status()
 	temporary_modules_changed.emit()
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {"ok": true, "reason": ""}
 
 func obtain_module(module_instance: Module, _ignore_weapon: Weapon = null) -> Dictionary:
 	if module_instance == null or not is_instance_valid(module_instance):
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	module_instance.set_module_level(module_instance.module_level)
 	var existing := find_owned_module_by_scene_path(str(module_instance.scene_file_path), module_instance)
 	if existing != null:
@@ -739,22 +724,22 @@ func obtain_module(module_instance: Module, _ignore_weapon: Weapon = null) -> Di
 
 func purchase_module(module_scene: PackedScene) -> Dictionary:
 	if PlayerData.gold_supply_enabled:
-		return {"ok": false, "reason": LocalizationManager.tr_key("ui.workbench.gold_spend_disabled", "Gold purchases are unavailable in Gold Supply mode.")}
+		return {"ok": false, "error": &"gold_spend_disabled"}
 	if not PhaseManager.can_configure_loadout():
-		return {"ok": false, "reason": "Modules can only be purchased during rest."}
+		return {"ok": false, "error": &"module_purchase_rest_only"}
 	if module_scene == null:
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	var module_instance := module_scene.instantiate() as Module
 	if module_instance == null:
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	module_instance.set_module_level(1)
 	var price := _get_economy_config().get_module_purchase_gold(int(module_instance.cost))
 	if PlayerData.player_gold < price:
 		module_instance.queue_free()
-		return {"ok": false, "reason": "Not enough gold.", "price": price}
+		return {"ok": false, "error": &"insufficient_gold", "price": price}
 	if not PlayerData.spend_gold(price):
 		module_instance.queue_free()
-		return {"ok": false, "reason": "Not enough gold.", "price": price}
+		return {"ok": false, "error": &"insufficient_gold", "price": price}
 	var result := obtain_module(module_instance)
 	if not result.get("ok", false):
 		PlayerData.refund_gold_spending(price)
@@ -762,24 +747,24 @@ func purchase_module(module_scene: PackedScene) -> Dictionary:
 			_discard_module_instance(module_instance)
 		return result
 	result["price"] = price
-	_refresh_ui()
+	_emit_inventory_changed()
 	return result
 
 func upgrade_module_with_modification_points(module_instance: Module) -> Dictionary:
 	if not PhaseManager.can_configure_loadout():
-		return {"ok": false, "reason": "Modules can only be upgraded during rest."}
+		return {"ok": false, "error": &"module_upgrade_rest_only"}
 	if module_instance == null or not is_instance_valid(module_instance):
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	if int(module_instance.module_level) >= Module.MAX_LEVEL:
-		return {"ok": false, "reason": "Module is fully upgraded."}
+		return {"ok": false, "error": &"module_max_level"}
 	var price := PlayerData.get_modification_upgrade_cost(&"module")
 	if PlayerData.modification_points < price:
-		return {"ok": false, "reason": LocalizationManager.tr_key("ui.modification.insufficient", "Not enough modification points."), "price": price}
+		return {"ok": false, "error": &"insufficient_modification_points", "price": price}
 	if not PlayerData.spend_modification_points(price):
-		return {"ok": false, "reason": LocalizationManager.tr_key("ui.modification.insufficient", "Not enough modification points."), "price": price}
+		return {"ok": false, "error": &"insufficient_modification_points", "price": price}
 	if not module_instance.increase_module_level(1):
 		PlayerData.modification_points += price
-		return {"ok": false, "reason": "Module is fully upgraded.", "price": price}
+		return {"ok": false, "error": &"module_max_level", "price": price}
 	var owner_weapon := _resolve_module_owner_weapon(module_instance)
 	if owner_weapon and owner_weapon.has_method("calculate_status"):
 		owner_weapon.calculate_status()
@@ -789,12 +774,8 @@ func upgrade_module_with_modification_points(module_instance: Module) -> Diction
 		{"name": LocalizationManager.get_module_name(module_instance), "level": module_instance.module_level},
 		"Upgraded %s to Lv.%d" % [LocalizationManager.get_module_name(module_instance), module_instance.module_level]
 	))
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {"ok": true, "result": "upgraded", "module": module_instance, "price": price}
-
-# Compatibility entry point; service upgrades now use modification points.
-func upgrade_module_with_gold(module_instance: Module) -> Dictionary:
-	return upgrade_module_with_modification_points(module_instance)
 
 func begin_pending_transaction(transaction: Dictionary) -> void:
 	var transaction_id := str(transaction.get("id", ""))
@@ -820,38 +801,38 @@ func _merge_duplicate_module(existing: Module, incoming: Module) -> Dictionary:
 		if owner_weapon and owner_weapon.has_method("calculate_status"):
 			owner_weapon.calculate_status()
 		temporary_modules_changed.emit()
-		_refresh_ui()
+		_emit_inventory_changed()
 		return {"ok": true, "result": "upgraded", "module": existing}
 	if PlayerData.gold_supply_enabled:
 		_discard_module_instance(incoming, existing)
-		_refresh_ui()
+		_emit_inventory_changed()
 		return {"ok": true, "result": "discarded_duplicate", "gold": 0}
 	var gold := _calculate_module_conversion_coins(incoming)
 	PlayerData.recycle_gold(gold)
 	_discard_module_instance(incoming, existing)
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {"ok": true, "result": "converted_to_gold", "gold": gold}
 
 func sell_temporary_module(module_instance: Module) -> Dictionary:
 	if module_instance == null or not temporary_modules.has(module_instance):
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	var gold := 0 if PlayerData.gold_supply_enabled else _calculate_module_conversion_coins(module_instance)
 	temporary_modules.erase(module_instance)
 	if not PlayerData.gold_supply_enabled:
 		PlayerData.recycle_gold(gold)
 	_discard_module_instance(module_instance)
 	temporary_modules_changed.emit()
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {"ok": true, "result": "discarded" if PlayerData.gold_supply_enabled else "sold", "gold": gold}
 
 func sell_module(module_instance: Module) -> Dictionary:
 	if module_instance == null or not is_instance_valid(module_instance):
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	if temporary_modules.has(module_instance):
 		return sell_temporary_module(module_instance)
 	var owner_weapon := _resolve_module_owner_weapon(module_instance)
 	if owner_weapon == null or owner_weapon.modules == null or module_instance.get_parent() != owner_weapon.modules:
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	var gold := 0 if PlayerData.gold_supply_enabled else _calculate_module_conversion_coins(module_instance)
 	owner_weapon.modules.remove_child(module_instance)
 	if not PlayerData.gold_supply_enabled:
@@ -860,12 +841,12 @@ func sell_module(module_instance: Module) -> Dictionary:
 	if owner_weapon.has_method("calculate_status"):
 		owner_weapon.calculate_status()
 	temporary_modules_changed.emit()
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {"ok": true, "result": "discarded" if PlayerData.gold_supply_enabled else "sold", "gold": gold}
 
 func sell_unclaimed_module(module_instance: Module) -> Dictionary:
 	if module_instance == null or not is_instance_valid(module_instance):
-		return {"ok": false, "reason": "Invalid module."}
+		return {"ok": false, "error": &"invalid_module"}
 	if PlayerData.gold_supply_enabled:
 		return obtain_module(module_instance)
 	var gold := _calculate_module_conversion_coins(module_instance)
@@ -877,7 +858,7 @@ func sell_unclaimed_module(module_instance: Module) -> Dictionary:
 		{"name": module_name, "gold": gold},
 		"Unclaimed %s sold for +%d Gold" % [module_name, gold]
 	))
-	_refresh_ui()
+	_emit_inventory_changed()
 	return {"ok": true, "result": "sold", "gold": gold}
 
 func sell_all_temporary_modules() -> Dictionary:
@@ -895,10 +876,7 @@ func sell_all_temporary_modules() -> Dictionary:
 func sell_equipped_weapon(_weapon: Weapon) -> Dictionary:
 	return {
 		"ok": false,
-		"reason": LocalizationManager.tr_key(
-			"ui.weapon.sell_disabled",
-			"Weapon selling has been replaced by the weapon warehouse."
-		),
+		"error": &"weapon_sell_disabled",
 	}
 
 func replace_equipped_weapon(old_weapon: Weapon, new_weapon: Weapon) -> Dictionary:
@@ -928,26 +906,13 @@ func _remove_equipped_weapon(weapon: Weapon) -> void:
 
 func _sort_temporary_modules() -> void:
 	temporary_modules.sort_custom(func(a: Module, b: Module) -> bool:
-		var rarity_cmp := _rarity_rank(a.get_rarity()) - _rarity_rank(b.get_rarity())
+		var rarity_cmp := LootRarity.get_rank(a.get_rarity()) - LootRarity.get_rank(b.get_rarity())
 		if rarity_cmp != 0:
 			return rarity_cmp > 0
 		return LocalizationManager.get_module_name(a).naturalnocasecmp_to(
 			LocalizationManager.get_module_name(b)
 		) < 0
 	)
-
-func _rarity_rank(rarity: String) -> int:
-	match rarity.to_lower():
-		"legendary":
-			return 4
-		"epic":
-			return 3
-		"rare":
-			return 2
-		"uncommon":
-			return 1
-		_:
-			return 0
 
 func _resolve_module_owner_weapon(module_instance: Module) -> Weapon:
 	var current: Node = module_instance

@@ -194,7 +194,7 @@ func _validate_all_weapon_trigger_groups() -> void:
 		"res://Player/Weapons/Instances/rocket_launcher.tscn": &"rocket_cluster_warhead",
 		"res://Player/Weapons/Instances/glacier_projector.tscn": &"glacier_white_frost_domain",
 		"res://Player/Weapons/Instances/flamethrower.tscn": &"flame_moving_inferno",
-		"res://Player/Weapons/Instances/charged_blaster.tscn": &"charged_blaster_prism_overload",
+		"res://Player/Weapons/Instances/charged_blaster.tscn": &"charged_blaster_phase_echo",
 		"res://Player/Weapons/Instances/plasma_lance.tscn": &"plasma_storm",
 		"res://Player/Weapons/Instances/orbit.tscn": &"orbit_proliferation",
 	}

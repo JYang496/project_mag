@@ -1,8 +1,10 @@
 class_name ProjectedWorldUiService
 extends RefCounted
 
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
+
 const LAYER_NAME := "HybridWorldUi"
-const LAYER_ORDER := 30
+const LAYER_ORDER := FEEDBACK_SPEC.PROJECTED_WORLD_UI_LAYER
 
 static func ensure_layer(tree: SceneTree) -> CanvasLayer:
 	var existing := tree.root.get_node_or_null(LAYER_NAME) as CanvasLayer

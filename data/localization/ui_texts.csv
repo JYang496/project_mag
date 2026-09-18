@@ -689,9 +689,9 @@ ui.controls.switch_weapon_hold,Cycle / Tap: Select,轮换 / 短按：选择
 ui.weapon.skill.overdrive,Weapon Overdrive,武器过载
 ui.weapon.skill.shared.ammo_refill,"If this weapon uses ammo, instantly refill it to full and interrupt any reload in progress.",如果该武器拥有弹药，则立刻填满全部弹药；如果正在换弹，则立刻打断换弹。
 ui.weapon.skill.machine_gun_infinite_chain.name,Infinite Ammo Chain,无限弹链
-ui.weapon.skill.machine_gun_infinite_chain.description,"For 3 seconds, shots consume no ammo and attack speed is multiplied by 5. Every 5 damaging hits grants +8% damage, up to 5 stacks.","3秒内射击不消耗弹药且攻击速度提升至5倍；每造成5次有效命中，伤害提高8%，最多5层。"
-ui.weapon.skill.charged_blaster_prism_overload.name,Prism Overload,棱镜过载
-ui.weapon.skill.charged_blaster_prism_overload.description,The next charged beam splits into 6 homing energy bolts when it ends. Each bolt deals 35% weapon damage.,下一次充能光束结束时分裂为6枚追踪能量弹，每枚造成35%武器伤害。
+ui.weapon.skill.machine_gun_infinite_chain.description,"For 1.5 seconds, shots consume no ammo and attack speed is multiplied by 5. Every 5 damaging hits grants +8% damage, up to 5 stacks.","1.5秒内射击不消耗弹药且攻击速度提升至5倍；每造成5次有效命中，伤害提高8%，最多5层。"
+ui.weapon.skill.charged_blaster_phase_echo.name,Phase Echo,相位回响
+ui.weapon.skill.charged_blaster_phase_echo.description,"The next charged attack repeats in the same direction after a short delay. The echo preserves its branch pattern, deals 65% damage, and lasts 60% as long.","下一次蓄力攻击会在短暂延迟后沿相同方向再次释放。回响保留分支形态，造成65%伤害，持续时间为原攻击的60%。"
 ui.weapon.skill.spear_phalanx.name,Spear Phalanx,长矛方阵
 ui.weapon.skill.spear_phalanx.description,Fire 8 returning spears evenly across a 40-degree spread toward the target. Surviving enemies are knocked back.,朝目标方向在40度范围内均匀发射8根会返回玩家处的长矛；命中后击退仍存活的敌人。
 ui.weapon.skill.shotgun_double_discipline.name,Double-Barrel Discipline,双管戒律
@@ -1060,6 +1060,7 @@ ui.management.reason.not_enough_rarity,Not enough {rarity} cell effects.,{rarity
 ui.status_hint.gain_prefix,Gained,获得
 ui.status_hint.loss_prefix,Lost,失去
 ui.status_hint.message,{prefix}: {status},{prefix}：{status}
+ui.status_hint.heat_prepared,Heat Prepared {current}/{max},热能预备 {current}/{max}
 ui.status_hint.move_speed_up,Movement Speed Up,移速提升
 ui.status_hint.move_speed_down,Movement Speed Down,移速降低
 ui.status_hint.vision_up,Vision Up,视野提升
@@ -1194,3 +1195,15 @@ ui.supply.first_ready,Supply ready! Press {key} to upgrade. Combat pauses while 
 ui.supply.applied,Supply applied: {reward},补给已应用：{reward}
 ui.module.review.pending,Pending modules: {count},待处理模组：{count}
 ui.module.review.store_remaining,Store all {count} pending modules and continue?,还有 {count} 个模组未处理。全部暂存仓库并继续？
+
+ui.inventory.reason.last_weapon,At least one weapon must remain equipped.,必须保留至少一把已装备的武器。
+ui.inventory.reason.stored_equip_rest_only,Stored weapons can only be equipped during rest.,只能在休整时装备仓库武器。
+ui.inventory.reason.invalid_stored_weapon,Invalid stored weapon.,无效的仓库武器。
+ui.inventory.reason.no_weapon_slots,No weapon slots available.,没有可用武器槽。
+ui.inventory.reason.stored_exchange_rest_only,Stored weapons can only be exchanged during rest.,只能在休整时交换仓库武器。
+ui.inventory.reason.incoming_install_phase,New weapons can only be installed during settlement or rest.,只能在结算或休整时安装新武器。
+ui.inventory.reason.module_purchase_rest_only,Modules can only be purchased during rest.,只能在休整时购买模组。
+ui.inventory.reason.module_upgrade_rest_only,Modules can only be upgraded during rest.,只能在休整时升级模组。
+ui.inventory.reason.module_max_level,Module is fully upgraded.,模组已达到最高等级。
+ui.shop.not_enough_gold,Not enough gold.,金币不足。
+ui.modification.insufficient,Not enough modification points.,改装点不足。

@@ -1,6 +1,8 @@
 extends Resource
 class_name DamageLabelStyleProfile
 
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
+
 const TIER_MINOR := 0
 const TIER_NORMAL := 1
 const TIER_HEAVY := 2
@@ -34,8 +36,8 @@ const TIER_BURST := 3
 @export var fire_color := Color(1.0, 0.34, 0.20, 1.0)
 @export var freeze_color := Color(0.36, 0.94, 1.0, 1.0)
 @export var mixed_color := Color(0.82, 0.86, 0.88, 1.0)
-@export var critical_color := Color(1.0, 0.82, 0.22, 1.0)
-@export var outline_color := Color(0.035, 0.045, 0.06, 0.96)
+@export var critical_color := FEEDBACK_SPEC.COLOR_CRITICAL
+@export var outline_color := FEEDBACK_SPEC.COLOR_OUTLINE
 @export var periodic_outline_color := Color(0.12, 0.15, 0.18, 0.92)
 
 func resolve_tier(damage: int, target_max_hp: int) -> int:
@@ -99,7 +101,9 @@ func get_outline_pixels(tier: int, is_critical: bool) -> int:
 	var value := _read_int(tier_outline_pixels, tier, 1)
 	return clampi(value + (1 if is_critical else 0), 1, 2)
 
-func get_color(damage_type: StringName, _is_critical: bool) -> Color:
+func get_color(damage_type: StringName, is_critical: bool) -> Color:
+	if is_critical:
+		return critical_color
 	match damage_type:
 		Attack.TYPE_ENERGY:
 			return energy_color

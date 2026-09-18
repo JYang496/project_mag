@@ -95,7 +95,7 @@ func request_module_unequip_confirmation(module_instance: Module, weapon: Weapon
 func _confirm_module_unequip(module_instance: Module, weapon: Weapon) -> void:
 	var result := InventoryData.unequip_module_from_weapon(module_instance, weapon)
 	if not result.get("ok", false) and owner_ui and owner_ui.has_method("show_item_message"):
-		owner_ui.call("show_item_message", LocalizationManager.localize_module_reason(str(result.get("reason", ""))), 1.8)
+		owner_ui.call("show_item_message", InventoryOperationResultPresenter.reason(result), 1.8)
 
 func request_temporary_module_sell_confirmation(module_instance: Module) -> bool:
 	ensure_dialogs()
@@ -155,7 +155,7 @@ func _confirm_temporary_module_sell(module_instance: Module) -> void:
 	_clear_sold_module_selection(module_instance)
 	var result := InventoryData.sell_module(module_instance)
 	if not result.get("ok", false) and owner_ui and owner_ui.has_method("show_item_message"):
-		owner_ui.call("show_item_message", str(result.get("reason", "")), 1.8)
+		owner_ui.call("show_item_message", InventoryOperationResultPresenter.reason(result), 1.8)
 	if owner_ui:
 		var warehouse_controller = owner_ui.get("module_warehouse_controller")
 		if warehouse_controller:

@@ -1,8 +1,6 @@
 // One capsule union per surface: no segment seams, no overlap brightness buildup.
 // Positions and texture sampling share a fixed two-world-pixel grid.
 uniform sampler2D surface_noise : filter_nearest, repeat_enable;
-uniform bool player_range = false;
-uniform vec4 range_color : source_color;
 uniform int trail_style = 0; // fire, rift, frost
 uniform int segment_total = 0;
 uniform vec4 segments[64]; // from.xy, to.xy
@@ -57,10 +55,6 @@ vec4 trail_surface(vec2 world) {
 		color = mix(vec3(0.12, 0.25, 0.33), vec3(0.46, 0.69, 0.80), fine * activity);
 		color = mix(color, vec3(0.78, 0.92, 1.0), branch * 0.85);
 		alpha = coverage * (0.12 + activity * 0.18 + branch * 0.38);
-	}
-	if (player_range) {
-		color = mix(range_color.rgb, color, 0.12);
-		alpha = min(alpha * 0.15, range_color.a);
 	}
 	return vec4(color, clamp(alpha, 0.0, 0.95));
 }

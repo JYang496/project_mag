@@ -10,7 +10,7 @@ class_name CombatVisualPalette
 # Shared subdued style for all player attack range previews.
 const PLAYER_RANGE_COLOR := Color("#78949E")
 const PLAYER_RANGE_FILL := Color(PLAYER_RANGE_COLOR, 0.05)
-const PLAYER_RANGE_OUTLINE := Color(PLAYER_RANGE_COLOR, 0.30)
+const PLAYER_RANGE_OUTLINE := Color(PLAYER_RANGE_COLOR, 0.42)
 const PLAYER_RANGE_LINE_WIDTH := 1.0
 
 const PLAYER_PRIMARY := Color("#35D7FF")
@@ -35,6 +35,8 @@ const HEAL := Color("#62DF91")
 const SHIELD := Color("#55BCEB")
 const SPEED := Color("#A8E85C")
 const WARNING := Color("#FF762E")
+const CRITICAL := Color("#FFD34D")
+const STATUS_NEGATIVE := Color("#C88BFF")
 const REWARD := Color("#F4C542")
 
 const FIELD_BOUNDARY := Color("#708895")

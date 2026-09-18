@@ -398,7 +398,7 @@ func _try_upgrade_module(item_data: Dictionary) -> bool:
 		return false
 	var result := InventoryData.upgrade_module_with_modification_points(module_instance)
 	if not result.get("ok", false):
-		_show_message(str(result.get("reason", "")), 1.6)
+		_show_message(InventoryOperationResultPresenter.reason(result), 1.6)
 		return false
 	if controller != null:
 		controller.update_upg()

@@ -1,6 +1,8 @@
 extends Control
 class_name PlayerDamageScreenOverlay
 
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
+
 var _strength: float = 0.0
 var _direction := Vector2.ZERO
 var _damage_color := Color(1.0, 0.08, 0.04, 1.0)
@@ -70,6 +72,31 @@ func _draw() -> void:
 		_draw_edge_band(Rect2(Vector2(viewport_size.x - inset - band, 0.0), Vector2(band, viewport_size.y)), band_alpha * right_weight)
 		_draw_edge_band(Rect2(Vector2(0.0, inset), Vector2(viewport_size.x, band)), band_alpha * top_weight)
 		_draw_edge_band(Rect2(Vector2(0.0, viewport_size.y - inset - band), Vector2(viewport_size.x, band)), band_alpha * bottom_weight)
+	if _direction != Vector2.ZERO:
+		_draw_direction_wedge(viewport_size)
+
+func _draw_direction_wedge(viewport_size: Vector2) -> void:
+	var center := viewport_size * 0.5
+	var direction := _direction.normalized()
+	var tangent := Vector2(-direction.y, direction.x)
+	var half_extent := viewport_size * 0.5 - Vector2(18.0, 18.0)
+	var distance_x := INF if absf(direction.x) <= 0.0001 else half_extent.x / absf(direction.x)
+	var distance_y := INF if absf(direction.y) <= 0.0001 else half_extent.y / absf(direction.y)
+	var tip := center + direction * minf(distance_x, distance_y)
+	var base := tip - direction * 24.0
+	var half_width := 14.0
+	var wedge_color := Color(_damage_color, clampf(_strength * 0.82, 0.0, 0.88))
+	draw_colored_polygon(PackedVector2Array([
+		tip,
+		base + tangent * half_width,
+		base - tangent * half_width,
+	]), wedge_color)
+	draw_polyline(PackedVector2Array([
+		tip,
+		base + tangent * half_width,
+		base - tangent * half_width,
+		tip,
+	]), Color(FEEDBACK_SPEC.COLOR_LETHAL, _strength * 0.72), 2.0, false)
 
 
 func _draw_edge_band(rect: Rect2, alpha: float) -> void:

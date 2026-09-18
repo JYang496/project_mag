@@ -6,9 +6,7 @@ const GATLING_TEXTURE: Texture2D = preload("res://asset/images/weapons/mg2.png")
 
 @export var projectile_count: int = 2
 @export var spread_deg: float = 7.0
-@export_range(0.0, 1.0, 0.05) var extra_heat_shot_multiplier: float = 0.25
-@export_range(0.05, 2.0, 0.01) var base_damage_multiplier: float = 0.80
-@export_range(0.0, 1.0, 0.01) var fire_mode_heat_ratio: float = 0.50
+@export_range(0.05, 2.0, 0.01) var base_damage_multiplier: float = 0.65
 
 func on_weapon_ready() -> void:
 	_apply_gatling_visual()
@@ -27,7 +25,7 @@ func _apply_gatling_visual() -> void:
 	weapon.sprite.texture = GATLING_TEXTURE
 
 func get_added_weapon_traits() -> Array[StringName]:
-	return [WeaponTrait.FIRE]
+	return []
 
 func get_shot_directions(base_direction: Vector2, shot_count: int = -1) -> Array[Vector2]:
 	var count := projectile_count if shot_count < 0 else shot_count
@@ -40,23 +38,10 @@ func get_cooldown_multiplier() -> float:
 	return 1.0
 
 func get_extra_heat_shot_multiplier() -> float:
-	return clampf(extra_heat_shot_multiplier, 0.0, 1.0)
+	return 0.0
 
 func get_projectile_damage_multiplier() -> float:
-	if weapon == null or not is_instance_valid(weapon):
-		return maxf(base_damage_multiplier, 0.05)
-	if not weapon.has_method("get_heat_ratio"):
-		return maxf(base_damage_multiplier, 0.05)
-	var base_mul := maxf(base_damage_multiplier, 0.05)
-	# Remove high-heat damage scaling: gatling keeps a fixed base multiplier.
-	return base_mul
+	return maxf(base_damage_multiplier, 0.05)
 
 func get_damage_type_override() -> StringName:
-	if weapon == null or not is_instance_valid(weapon):
-		return Attack.TYPE_PHYSICAL
-	if not weapon.has_method("get_heat_ratio"):
-		return Attack.TYPE_PHYSICAL
-	var heat_ratio: float = float(weapon.call("get_heat_ratio"))
-	if heat_ratio >= fire_mode_heat_ratio:
-		return Attack.TYPE_FIRE
 	return Attack.TYPE_PHYSICAL

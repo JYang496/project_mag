@@ -17,9 +17,9 @@ const BLOCKABLE_ENEMY_PROJECTILE_GROUP: StringName = &"blockable_enemy_projectil
 var weapon: Weapon
 @onready var shield_sprite: Sprite2D = $ShieldSprite
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
-var max_charges: int = 2
-var current_charges: int = 2
-var recharge_interval_seconds: float = 10.0
+var max_charges: int = 1
+var current_charges: int = 1
+var recharge_interval_seconds: float = 8.0
 var _recharge_elapsed: float = 0.0
 var _charge_consumed_frame: int = -1
 var _consumed_target_ids: Dictionary = {}
@@ -207,15 +207,8 @@ func _exit_tree() -> void:
 		PhaseManager.disconnect("phase_changed", Callable(self, "_on_phase_changed"))
 
 func _refresh_capacity_from_weapon() -> void:
-	var fuse_level: int = 2
-	if weapon and is_instance_valid(weapon):
-		fuse_level = max(1, int(weapon.fuse))
-	if fuse_level >= 3:
-		max_charges = 4
-		recharge_interval_seconds = 8.0
-	else:
-		max_charges = 2
-		recharge_interval_seconds = 10.0
+	max_charges = 1
+	recharge_interval_seconds = 8.0
 	current_charges = clampi(current_charges, 0, max_charges)
 	_refresh_shield_visual_state()
 

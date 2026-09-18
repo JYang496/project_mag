@@ -4,7 +4,7 @@ class_name SniperImpactBurstBranch
 func get_added_delivery_types() -> Array[StringName]:
 	return [DamageDeliveryType.AREA]
 
-@export var cooldown_multiplier: float = 1.12
+@export var cooldown_multiplier: float = 1.0
 @export var projectile_damage_multiplier: float = 1.0
 @export var burst_radius: float = 58.0
 @export var burst_damage_ratio: float = 0.55

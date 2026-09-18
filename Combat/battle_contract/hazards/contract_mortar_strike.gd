@@ -7,7 +7,7 @@ const AREA_EFFECT_SCENE := preload("res://Combat/area_effect/area_effect.tscn")
 const IMPACT_VISUAL_FRAMES := preload("res://asset/images/effects/mortar_impact/mortar_impact_frames.tres")
 
 var warning_duration_sec := 1.5
-var blast_radius := 62.0
+var blast_radius := 40.0
 var damage := 1
 var _remaining := 1.5
 var _warning: Node2D
@@ -17,9 +17,7 @@ func _ready() -> void:
 	_remaining = maxf(warning_duration_sec, 0.1)
 	_warning = WARNING_SCENE.instantiate() as Node2D
 	if _warning != null:
-		_warning.set("duration", _remaining)
-		_warning.set("radius", blast_radius)
-		_warning.set("show_countdown", false)
+		_warning.call("configure_enemy_danger", _remaining, blast_radius)
 		add_child(_warning)
 	_descent = DESCENT_VFX_SCENE.instantiate() as Node2D
 	if _descent != null:
@@ -53,4 +51,3 @@ func _impact() -> void:
 	area.apply_once_per_target = true
 	area.source_node = self
 	get_parent().add_child(area)
-

@@ -321,6 +321,7 @@ func cleanup_for_battle_end() -> void:
 
 func _on_before_pooled() -> void:
 	_spawn_generation += 1
+	_disconnect_runtime_signal_connections()
 	presentation_tint = Color.WHITE
 	presentation_empowered = false
 	expire_timer.stop()
@@ -378,6 +379,14 @@ func _on_before_pooled() -> void:
 	_reset_runtime_meta_flags()
 	_remove_debug_overlay()
 	_reset_projectile_visual_state()
+
+func _disconnect_runtime_signal_connections() -> void:
+	# Effects and weapon modules attach callbacks for the lifetime of one shot.
+	# A pooled projectile must never deliver the next shot's overlap to them.
+	for connection: Dictionary in overlapping_signal.get_connections():
+		var callback := connection.get("callable", Callable()) as Callable
+		if overlapping_signal.is_connected(callback):
+			overlapping_signal.disconnect(callback)
 
 func _notify_source_weapon_before_despawn() -> void:
 	if bool(get_meta(&"_source_weapon_despawn_notified", false)):

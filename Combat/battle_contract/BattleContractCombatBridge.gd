@@ -190,7 +190,7 @@ func request_spawn_mortar_barrage(options: Dictionary) -> int:
 		var strike := CONTRACT_MORTAR_STRIKE.new()
 		strike.global_position = player_position + Vector2.from_angle(angle) * radius
 		strike.warning_duration_sec = maxf(float(options.get("warning_duration_sec", 1.5)), 0.1)
-		strike.blast_radius = maxf(float(options.get("blast_radius", 62.0)), 8.0)
+		strike.blast_radius = maxf(float(options.get("blast_radius", 40.0)), 8.0)
 		strike.damage = maxi(int(round(float(PlayerData.player_max_hp) * float(options.get("player_max_hp_ratio", 0.12)))), 1)
 		_spawner.get_parent().add_child(strike)
 		_contract_hazards.append(strike)

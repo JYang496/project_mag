@@ -1,7 +1,7 @@
 extends WeaponBranchBehavior
 class_name SniperDeepPierceBranch
 
-@export var cooldown_multiplier: float = 1.05
+@export var cooldown_multiplier: float = 1.0
 @export var projectile_damage_multiplier: float = 1.0
 @export var pierce_damage_gain_per_hit: int = 14
 @export var max_pierce_damage_stacks: int = 10

@@ -138,7 +138,7 @@ func try_purchase() -> bool:
 		return true
 	var ui := GlobalVariables.ui
 	if ui and is_instance_valid(ui) and ui.has_method("show_item_message"):
-		ui.show_item_message(str(result.get("reason", "")), 1.6)
+		ui.show_item_message(InventoryOperationResultPresenter.reason(result), 1.6)
 	return false
 
 func _on_background_mouse_entered() -> void:

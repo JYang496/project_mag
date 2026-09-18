@@ -3,11 +3,9 @@ extends Ranger
 # Projectile
 @onready var beam_blast = preload("res://Player/Weapons/Projectiles/beam_blast.tscn")
 const TETHER_CHAIN_NETWORK := preload("res://Player/Weapons/Geometry/tether_chain_network.gd")
-const SKILL_BOLT_SCENE := preload("res://Player/Weapons/Projectiles/projectile.tscn")
-const SKILL_BOLT_TEXTURE := preload("res://asset/images/weapons/projectiles/energy_bolt_a.png")
-const SKILL_BOLT_FRAMES := preload("res://Player/Weapons/Projectiles/energy_bolt_frames.tres")
-const HOMING_EFFECT := preload("res://Player/Weapons/Effects/homing_projectile_effect.gd")
-const SKILL_BOLT_SPEED := 460.0
+const PHASE_ECHO_DELAY_SEC := 0.35
+const PHASE_ECHO_DAMAGE_MULTIPLIER := 0.65
+const PHASE_ECHO_DURATION_MULTIPLIER := 0.6
 
 # Weapon
 var ITEM_NAME = "Charged Blaster"
@@ -28,7 +26,9 @@ var beam_local_forward := Vector2.UP
 var is_firing_beam := false
 var firing_turn_timer: Timer
 var _feedback_refund_accum_sec: float = 0.0
-var _prism_overload_armed := false
+var _phase_echo_armed := false
+var _phase_echo_timer: Timer
+var _pending_phase_echo_profiles: Array[Dictionary] = []
 var weapon_data = {
 	"1": {"damage": "6", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "3", "duration": "1.0"},
 	"2": {"damage": "8", "hit_cd": "0.2", "fire_interval_sec": "4", "ammo": "3", "duration": "1.2"},
@@ -93,15 +93,25 @@ func _on_shoot():
 	for behavior in branch_runtime.get_branch_behaviors():
 		if behavior != null and is_instance_valid(behavior) and behavior.has_method("modify_charged_network_profile"):
 			behavior.call("modify_charged_network_profile", network_profile)
-	var network := TETHER_CHAIN_NETWORK.new().setup(self, network_profile)
-	apply_energy_release_marker(network)
-	apply_heat_snapshot_marker(network)
-	if _prism_overload_armed:
-		_prism_overload_armed = false
+	var profiles := _get_charged_beam_profiles(network_profile)
+	var echo_pending := _phase_echo_armed
+	_phase_echo_armed = false
+	if echo_pending:
 		set_active_skill_visual_armed(false)
-		network.set_meta(&"prism_overload", true)
-		network.tree_exiting.connect(Callable(self, "_on_prism_beam_finished").bind(network), CONNECT_ONE_SHOT)
-	get_projectile_spawn_parent().add_child(network)
+	var resolved_profiles: Array[Dictionary] = []
+	for profile in profiles:
+		var resolved_profile := profile.duplicate(true)
+		var direction: Vector2 = resolved_profile.get("direction", beam_local_forward.normalized())
+		direction = direction.rotated(deg_to_rad(float(resolved_profile.get("angle_offset_deg", 0.0))))
+		resolved_profile["direction"] = direction
+		resolved_profile["damage"] = maxi(1, int(round(
+			float(resolved_profile.get("damage", get_runtime_damage()))
+			* maxf(float(resolved_profile.get("damage_multiplier", 1.0)), 0.05)
+		)))
+		resolved_profiles.append(resolved_profile)
+		_spawn_charged_network(resolved_profile, true)
+	if echo_pending:
+		_schedule_phase_echo(resolved_profiles, float(network_profile["duration"]))
 	_start_firing_turn_slowdown(float(network_profile["duration"]))
 	start_weapon_cooldown(0.05)
 
@@ -267,54 +277,56 @@ func _spawn_beam_from_profile(profile: Dictionary) -> float:
 		beam_blast_ins.set_meta(&"_energy_resonance_hit_count", 0)
 		beam_blast_ins.set_meta(&"_energy_resonance_target_id", 0)
 	beam_blast_ins.global_position = global_position
-	if _prism_overload_armed:
-		_prism_overload_armed = false
-		set_active_skill_visual_armed(false)
-		beam_blast_ins.set_meta(&"prism_overload", true)
-		beam_blast_ins.tree_exiting.connect(
-			Callable(self, "_on_prism_beam_finished").bind(beam_blast_ins), CONNECT_ONE_SHOT
-		)
 	get_projectile_spawn_parent().call_deferred("add_child", beam_blast_ins)
 	return beam_duration
 
 func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
-	_prism_overload_armed = true
+	_phase_echo_armed = true
 	set_active_skill_visual_armed(true, Color(0.76, 0.48, 1.0, 1.0))
 	return true
 
-func _on_prism_beam_finished(beam_node: Node2D) -> void:
+func _spawn_charged_network(profile: Dictionary, apply_attack_snapshot: bool) -> void:
+	var network := TETHER_CHAIN_NETWORK.new().setup(self, profile)
+	if apply_attack_snapshot:
+		apply_energy_release_marker(network)
+		apply_heat_snapshot_marker(network)
+	get_projectile_spawn_parent().add_child(network)
+
+func _schedule_phase_echo(profiles: Array[Dictionary], base_duration: float) -> void:
+	_pending_phase_echo_profiles.clear()
+	for profile in profiles:
+		var echo_profile := profile.duplicate(true)
+		echo_profile["damage"] = maxi(1, int(round(
+			float(echo_profile.get("damage", 1)) * PHASE_ECHO_DAMAGE_MULTIPLIER
+		)))
+		echo_profile["duration"] = maxf(
+			float(echo_profile.get("duration", base_duration)) * PHASE_ECHO_DURATION_MULTIPLIER,
+			minimum_committed_fire_sec
+		)
+		echo_profile["beam_tag"] = "%s_phase_echo" % str(echo_profile.get("beam_tag", "main"))
+		_pending_phase_echo_profiles.append(echo_profile)
+	if _phase_echo_timer == null:
+		_phase_echo_timer = Timer.new()
+		_phase_echo_timer.one_shot = true
+		_phase_echo_timer.timeout.connect(_on_phase_echo_timer_timeout)
+		add_child(_phase_echo_timer)
+	_phase_echo_timer.start(maxf(base_duration, minimum_committed_fire_sec) + PHASE_ECHO_DELAY_SEC)
+
+func _on_phase_echo_timer_timeout() -> void:
 	if not is_inside_tree() or not is_attack_phase_allowed():
+		_pending_phase_echo_profiles.clear()
 		return
-	# Prism bolts launch from the same weapon muzzle position as the charged beam,
-	# rather than appearing at the beam endpoint.
-	var launch_position := get_muzzle_global_position()
-	for index in range(6):
-		var bolt := spawn_projectile_from_scene(SKILL_BOLT_SCENE) as Projectile
-		if bolt == null:
-			continue
-		projectile_direction = Vector2.RIGHT.rotated(TAU * float(index) / 6.0)
-		bolt.damage = max(1, int(round(float(get_runtime_damage()) * 0.35)))
-		bolt.damage_type = Attack.TYPE_ENERGY
-		bolt.hp = 1
-		bolt.global_position = launch_position
-		bolt.projectile_texture = SKILL_BOLT_TEXTURE
-		bolt.projectile_frames = SKILL_BOLT_FRAMES
-		bolt.desired_pixel_size = Vector2(16, 16)
-		bolt.size = size
-		bolt.expire_time = 1.6
-		apply_effects_on_projectile(bolt)
-		# Charged Blaster is a beam weapon and intentionally has no ordinary
-		# projectile speed stat. Give Prism Overload bolts their own launch speed
-		# so the homing effect has velocity to steer.
-		bolt.base_displacement = projectile_direction * SKILL_BOLT_SPEED
-		var homing := HOMING_EFFECT.new().setup(bolt, 7.0, 500.0)
-		bolt.add_child(homing)
-		bolt.module_list.append(homing)
-		get_projectile_spawn_parent().call_deferred("add_child", bolt)
+	var profiles := _pending_phase_echo_profiles.duplicate(true)
+	_pending_phase_echo_profiles.clear()
+	for profile in profiles:
+		_spawn_charged_network(profile, false)
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
-	_prism_overload_armed = false
+	_phase_echo_armed = false
+	_pending_phase_echo_profiles.clear()
+	if _phase_echo_timer != null:
+		_phase_echo_timer.stop()
 	set_active_skill_visual_armed(false)
 
 func _update_energy_resonance_ramp(target: Node, profile: Dictionary, beam_node: Node) -> void:

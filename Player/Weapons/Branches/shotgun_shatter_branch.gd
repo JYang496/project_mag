@@ -9,12 +9,10 @@ func get_suppressed_weapon_traits() -> Array[StringName]:
 
 @export var shatter_damage_ratio: float = 0.25
 @export var shatter_required_hits: int = 3
-@export var shatter_window_sec: float = 0.12
-
-var _target_window_hits: Dictionary = {}
+var _target_hits: Dictionary = {}
 
 func on_removed() -> void:
-	_target_window_hits.clear()
+	_target_hits.clear()
 
 func get_damage_type_override() -> StringName:
 	return Attack.TYPE_FREEZE
@@ -25,29 +23,11 @@ func on_target_hit(target: Node) -> void:
 	if target == null or not is_instance_valid(target):
 		return
 	var target_id: int = target.get_instance_id()
-	var now_sec: float = Time.get_ticks_msec() / 1000.0
-	var entry: Dictionary = _target_window_hits.get(target_id, {
-		"window_start": now_sec,
-		"hits": 0,
-		"last_proc": -999.0,
-	})
-	var window_start: float = float(entry.get("window_start", now_sec))
-	var hits: int = int(entry.get("hits", 0))
-	var window_sec := maxf(shatter_window_sec, 0.01)
-	if now_sec - window_start > window_sec:
-		window_start = now_sec
+	var hits := int(_target_hits.get(target_id, 0)) + 1
+	if hits >= maxi(shatter_required_hits, 1):
 		hits = 0
-	hits += 1
-	entry["window_start"] = window_start
-	entry["hits"] = hits
-	if hits >= max(1, shatter_required_hits):
-		var last_proc: float = float(entry.get("last_proc", -999.0))
-		if now_sec - last_proc >= window_sec:
-			entry["last_proc"] = now_sec
-			entry["hits"] = 0
-			entry["window_start"] = now_sec
-			_trigger_shatter(target)
-	_target_window_hits[target_id] = entry
+		_trigger_shatter(target)
+	_target_hits[target_id] = hits
 
 func _trigger_shatter(target: Node) -> void:
 	if target == null or not is_instance_valid(target):

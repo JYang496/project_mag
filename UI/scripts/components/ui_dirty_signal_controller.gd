@@ -3,14 +3,20 @@ class_name UiDirtySignalController
 
 var owner_ui: UI
 var passive_status_signal_weapons: Array[Node] = []
+var _inventory_refresh_queued := false
 
 func bind(ui: UI) -> void:
 	owner_ui = ui
-	sync_state_from_owner()
 
 func connect_ui_dirty_signals() -> void:
 	if owner_ui == null:
 		return
+	if not InventoryData.inventory_changed.is_connected(_on_inventory_changed):
+		InventoryData.inventory_changed.connect(_on_inventory_changed)
+	if not InventoryData.notification_requested.is_connected(_on_inventory_notification):
+		InventoryData.notification_requested.connect(_on_inventory_notification)
+	if not InventoryData.weapon_replacement_requested.is_connected(_on_weapon_replacement_requested):
+		InventoryData.weapon_replacement_requested.connect(_on_weapon_replacement_requested)
 	var weapon_list_changed := Callable(self, "_on_player_weapon_list_changed")
 	if not PlayerData.weapon_list_changed.is_connected(weapon_list_changed):
 		PlayerData.weapon_list_changed.connect(weapon_list_changed)
@@ -32,6 +38,13 @@ func connect_ui_dirty_signals() -> void:
 	rebind_weapon_passive_status_signals()
 
 func disconnect_ui_dirty_signals() -> void:
+	for binding in [
+		[InventoryData.inventory_changed, _on_inventory_changed],
+		[InventoryData.notification_requested, _on_inventory_notification],
+		[InventoryData.weapon_replacement_requested, _on_weapon_replacement_requested],
+	]:
+		if binding[0].is_connected(binding[1]):
+			binding[0].disconnect(binding[1])
 	var weapon_list_changed := Callable(self, "_on_player_weapon_list_changed")
 	if PlayerData.weapon_list_changed.is_connected(weapon_list_changed):
 		PlayerData.weapon_list_changed.disconnect(weapon_list_changed)
@@ -62,7 +75,6 @@ func rebind_weapon_passive_status_signals() -> void:
 		_connect_weapon_passive_status_signal(weapon, "weapon_role_changed")
 		_connect_weapon_passive_status_signal(weapon, "shoot")
 		passive_status_signal_weapons.append(weapon)
-	_sync_public_fields_to_owner()
 
 func disconnect_weapon_passive_status_signals() -> void:
 	var callback := Callable(self, "_on_weapon_passive_status_signal")
@@ -73,16 +85,9 @@ func disconnect_weapon_passive_status_signals() -> void:
 			if weapon.has_signal(signal_name) and weapon.is_connected(signal_name, callback):
 				weapon.disconnect(signal_name, callback)
 	passive_status_signal_weapons.clear()
-	_sync_public_fields_to_owner()
 
 func connect_weapon_passive_status_signal(weapon: Node, signal_name: String) -> void:
 	_connect_weapon_passive_status_signal(weapon, signal_name)
-	_sync_public_fields_to_owner()
-
-func sync_state_from_owner() -> void:
-	if owner_ui == null:
-		return
-	passive_status_signal_weapons = owner_ui._passive_status_signal_weapons
 
 func _connect_weapon_passive_status_signal(weapon: Node, signal_name: String) -> void:
 	if not weapon.has_signal(signal_name):
@@ -141,7 +146,28 @@ func _on_weapon_passive_status_signal(_arg1: Variant = null, _arg2: Variant = nu
 	owner_ui._mark_weapon_passive_panel_dirty()
 	owner_ui._mark_hud_weapon_dirty()
 
-func _sync_public_fields_to_owner() -> void:
-	if owner_ui == null:
+func _on_inventory_changed() -> void:
+	if _inventory_refresh_queued:
 		return
-	owner_ui._passive_status_signal_weapons = passive_status_signal_weapons
+	_inventory_refresh_queued = true
+	_refresh_inventory_views.call_deferred()
+
+func _refresh_inventory_views() -> void:
+	_inventory_refresh_queued = false
+	if not is_instance_valid(owner_ui) or not owner_ui.is_inside_tree():
+		return
+	if owner_ui.module_warehouse_controller:
+		owner_ui.module_warehouse_controller.update_modules()
+	if owner_ui.purchase_management_controller:
+		owner_ui.purchase_management_controller.update_shop()
+	if owner_ui.upgrade_management_controller:
+		owner_ui.upgrade_management_controller.update_upg()
+	owner_ui.refresh_border()
+
+func _on_inventory_notification(message: String, duration: float) -> void:
+	if is_instance_valid(owner_ui):
+		owner_ui.show_item_message(message, duration)
+
+func _on_weapon_replacement_requested(weapon: Weapon, on_complete: Callable, request: Dictionary) -> void:
+	if is_instance_valid(owner_ui) and not bool(request["opened"]):
+		request["opened"] = owner_ui.request_weapon_replacement(weapon, false, on_complete)

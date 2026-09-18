@@ -51,7 +51,7 @@ func start(combat_port, parameters: Dictionary) -> void:
 		"strike_count_min": parameters.get("mortar_strike_count_min", 2),
 		"strike_count_max": parameters.get("mortar_strike_count_max", 3),
 		"spread_radius": parameters.get("mortar_spread_radius", 110.0),
-		"blast_radius": parameters.get("mortar_blast_radius", 62.0),
+		"blast_radius": parameters.get("mortar_blast_radius", 40.0),
 		"player_max_hp_ratio": parameters.get("mortar_player_max_hp_ratio", 0.12),
 	}
 	port.request_configure_duration(float(rift_count) * seal_duration_sec + duration_buffer_sec)

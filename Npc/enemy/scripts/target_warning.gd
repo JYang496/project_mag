@@ -2,6 +2,7 @@ extends Node2D
 class_name TargetWarning
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
 
 enum VisualPreset {
 	BASIC = 0,
@@ -16,6 +17,7 @@ enum VisualPreset {
 @export var line_width: float = 4.0
 @export var show_countdown: bool = true
 @export var reveal_from_center: bool = true
+@export var danger_level: CombatFeedbackSpec.DangerLevel = CombatFeedbackSpec.DangerLevel.DANGER
 
 var _elapsed: float = 0.0
 var _fill_polygon: Polygon2D = null
@@ -25,6 +27,8 @@ var _countdown_label: Label = null
 func _ready() -> void:
 	add_to_group("enemy_runtime_cleanup")
 	add_to_group(&"hybrid_ground_warning_circle")
+	z_as_relative = true
+	z_index = -2
 	if visual_preset == VisualPreset.DODGE_STYLE:
 		_build_dodge_style_visuals()
 	set_process(true)
@@ -58,6 +62,61 @@ func get_warning_progress() -> float:
 		return 1.0
 	return clampf(_elapsed / maxf(duration, 0.01), 0.0, 1.0)
 
+func get_warning_phase_progress() -> float:
+	return clampf(_elapsed / maxf(duration, 0.01), 0.0, 1.0)
+
+func get_warning_fill_alpha_multiplier() -> float:
+	var progress := get_warning_phase_progress()
+	if get_meta(&"player_attack_range", false):
+		return 0.78
+	if progress < FEEDBACK_SPEC.WARNING_CONFIRM_PHASE:
+		return lerpf(0.72, 0.90, progress / FEEDBACK_SPEC.WARNING_CONFIRM_PHASE)
+	if progress < FEEDBACK_SPEC.WARNING_URGENT_PHASE:
+		return 0.82
+	var urgent := inverse_lerp(FEEDBACK_SPEC.WARNING_URGENT_PHASE, 1.0, progress)
+	return lerpf(0.88, 1.0, sin(urgent * PI * 3.0) * 0.5 + 0.5)
+
+func get_warning_outline_alpha_multiplier() -> float:
+	if get_meta(&"player_attack_range", false):
+		return 0.62
+	var progress := get_warning_phase_progress()
+	if progress < FEEDBACK_SPEC.WARNING_URGENT_PHASE:
+		return 0.88
+	var urgent := inverse_lerp(FEEDBACK_SPEC.WARNING_URGENT_PHASE, 1.0, progress)
+	return lerpf(0.82, 1.0, sin(urgent * PI * 4.0) * 0.5 + 0.5)
+
+func configure_enemy_danger(
+	requested_duration: float,
+	requested_radius: float,
+	requested_level: CombatFeedbackSpec.DangerLevel = CombatFeedbackSpec.DangerLevel.DANGER
+) -> void:
+	# Match the owning attack exactly; the shared phase ratios normalize cadence
+	# without moving the gameplay impact frame.
+	duration = maxf(requested_duration, 0.05)
+	radius = maxf(requested_radius, 8.0)
+	danger_level = requested_level
+	visual_preset = VisualPreset.DODGE_STYLE
+	reveal_from_center = false
+	show_countdown = false
+	var semantic_color := FEEDBACK_SPEC.danger_color(danger_level)
+	fill_color = Color(semantic_color, 0.16)
+	line_color = Color(
+		FEEDBACK_SPEC.COLOR_WARNING if danger_level == CombatFeedbackSpec.DangerLevel.DANGER else semantic_color,
+		0.98
+	)
+	line_width = 3.0 if danger_level == CombatFeedbackSpec.DangerLevel.CAUTION else 4.0
+
+func configure_player_preview(requested_duration: float, requested_radius: float) -> void:
+	duration = maxf(requested_duration, 0.05)
+	radius = maxf(requested_radius, 1.0)
+	set_meta(&"player_attack_range", true)
+	visual_preset = VisualPreset.BASIC
+	reveal_from_center = false
+	show_countdown = false
+	fill_color = PALETTE.PLAYER_RANGE_FILL
+	line_color = PALETTE.PLAYER_RANGE_OUTLINE
+	line_width = PALETTE.PLAYER_RANGE_LINE_WIDTH
+
 func get_warning_remaining() -> float:
 	return maxf(duration - _elapsed, 0.0)
 
@@ -68,8 +127,22 @@ func get_warning_countdown_text() -> String:
 func _draw() -> void:
 	if visual_preset != VisualPreset.BASIC:
 		return
-	draw_circle(Vector2.ZERO, radius * get_warning_progress(), fill_color)
-	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, line_color, maxf(roundf(line_width), 1.0), false)
+	var phase_progress := get_warning_phase_progress()
+	var alpha_fill := Color(fill_color, fill_color.a * get_warning_fill_alpha_multiplier())
+	var alpha_line := Color(line_color, line_color.a * get_warning_outline_alpha_multiplier())
+	draw_circle(Vector2.ZERO, radius * get_warning_progress(), alpha_fill)
+	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 32, alpha_line, maxf(roundf(line_width), 1.0), false)
+	if not get_meta(&"player_attack_range", false):
+		var sweep_radius := lerpf(radius * 0.82, radius * 0.16, phase_progress)
+		draw_arc(Vector2.ZERO, sweep_radius, 0.0, TAU, 24, alpha_line, 2.0, false)
+		_draw_danger_ticks(alpha_line, phase_progress)
+
+func _draw_danger_ticks(color: Color, progress: float) -> void:
+	var tick_length := 7.0 if progress < FEEDBACK_SPEC.WARNING_URGENT_PHASE else 11.0
+	for index in range(4):
+		var direction := Vector2.from_angle(float(index) * PI * 0.5)
+		var outer := direction * (radius + 2.0)
+		draw_line(outer - direction * tick_length, outer, color, 2.0, false)
 
 func _build_dodge_style_visuals() -> void:
 	var safe_radius := maxf(radius, 8.0)
@@ -110,7 +183,12 @@ func _update_dodge_style_progress() -> void:
 	if _fill_polygon == null:
 		return
 	var progress := get_warning_progress()
+	var phase_progress := get_warning_phase_progress()
 	_fill_polygon.scale = Vector2.ONE * progress
+	_fill_polygon.color = Color(fill_color, fill_color.a * get_warning_fill_alpha_multiplier())
+	if _outline_line != null:
+		_outline_line.default_color = Color(line_color, line_color.a * get_warning_outline_alpha_multiplier())
+		_outline_line.width = line_width + (1.0 if phase_progress >= FEEDBACK_SPEC.WARNING_URGENT_PHASE else 0.0)
 
 func _update_countdown_label() -> void:
 	if _countdown_label != null:

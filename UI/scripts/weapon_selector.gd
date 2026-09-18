@@ -84,6 +84,7 @@ var _slot_passive_icon_tweens: Dictionary = {}
 var _last_trigger_feedback_msec: Dictionary = {}
 var _passive_visual_state_by_weapon: Dictionary = {}
 var _skill_active_state_by_weapon: Dictionary = {}
+var _skill_ready_state_by_weapon: Dictionary = {}
 var _selector_reload_total_by_weapon: Dictionary = {}
 var _connected_reload_weapon_ids: Dictionary = {}
 var _connected_passive_weapon_ids: Dictionary = {}
@@ -510,7 +511,13 @@ func _update_slot_weapon_skill_progress() -> void:
 			continue
 		var weapon := weapons[weapon_idx] as Weapon
 		var status: Dictionary = weapon.get_weapon_skill_status()
+		var overheated := bool(weapon.call("is_weapon_overheated")) if weapon.has_method("is_weapon_overheated") else false
+		if overheated:
+			status = status.duplicate()
+			status["ready"] = false
+			status["overheated"] = true
 		_track_weapon_skill_activation(slot_idx, weapon, status)
+		_track_weapon_skill_readiness(slot_idx, weapon, status)
 		skill_bar.visible = false
 		hold_bar.visible = false
 		var ready := bool(status.get("ready", false)) and bool(status.get("available", false))
@@ -536,6 +543,25 @@ func _track_weapon_skill_activation(
 	_skill_active_state_by_weapon[weapon_id] = is_active
 	if is_active and not was_active:
 		# Keep skill confirmation on the skill disk instead of outlining the weapon slot.
+		_pulse_skill_icon(slot_idx)
+
+func _track_weapon_skill_readiness(
+	slot_idx: int,
+	weapon: Weapon,
+	status: Dictionary
+) -> void:
+	if weapon == null or not is_instance_valid(weapon):
+		return
+	var weapon_id := int(weapon.get_instance_id())
+	var is_ready := bool(status.get("ready", false)) \
+		and bool(status.get("available", false)) \
+		and not bool(status.get("overheated", false))
+	if not _skill_ready_state_by_weapon.has(weapon_id):
+		_skill_ready_state_by_weapon[weapon_id] = is_ready
+		return
+	var was_ready := bool(_skill_ready_state_by_weapon.get(weapon_id, false))
+	_skill_ready_state_by_weapon[weapon_id] = is_ready
+	if is_ready and not was_ready:
 		_pulse_skill_icon(slot_idx)
 
 func _get_slot_cooldown_node(slot_node: Control) -> Control:
@@ -948,6 +974,7 @@ func _disconnect_stale_reload_signals(active_weapon_ids: Dictionary) -> void:
 		_connected_reload_weapon_ids.erase(weapon_id)
 		_selector_reload_total_by_weapon.erase(weapon_id)
 		_skill_active_state_by_weapon.erase(weapon_id)
+		_skill_ready_state_by_weapon.erase(weapon_id)
 
 func _ensure_weapon_passive_signal_connected(weapon: Variant) -> void:
 	if weapon == null or not is_instance_valid(weapon):

@@ -16,7 +16,7 @@ func get_energy_release_bonus_at_full() -> float:
 func get_energy_deployment_config() -> Dictionary:
 	return {
 		"extra_satellites": 2,
-		"lifetime_multiplier": 1.5,
+		"lifetime_multiplier": 1.0,
 	}
 
 func get_added_delivery_types() -> Array[StringName]:

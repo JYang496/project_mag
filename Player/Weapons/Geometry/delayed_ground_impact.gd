@@ -66,14 +66,8 @@ func _create_projected_visuals() -> void:
 	var warning := TARGET_WARNING_SCENE.instantiate() as TargetWarning
 	warning.name = "ImpactWarning"
 	warning.global_position = impact_position
-	warning.duration = impact_delay_sec
-	warning.radius = impact_radius
-	warning.set_meta(&"player_attack_range", true)
-	warning.fill_color = PALETTE.PLAYER_RANGE_FILL
+	warning.configure_player_preview(impact_delay_sec, impact_radius)
 	warning.line_color = telegraph_color
-	warning.line_width = PALETTE.PLAYER_RANGE_LINE_WIDTH
-	warning.show_countdown = false
-	warning.reveal_from_center = false
 	add_child(warning)
 	_projected_visuals_created = true
 

@@ -20,6 +20,7 @@ const WEAPONS: Array[Dictionary] = [
 	{"label": "13 冰川投射器", "scene": preload("res://Player/Weapons/Instances/glacier_projector.tscn")},
 	{"label": "14 加农炮", "scene": preload("res://Player/Weapons/Instances/cannon.tscn")},
 	{"label": "15 狙击枪", "scene": preload("res://Player/Weapons/Instances/sniper.tscn")},
+	{"label": "16 追踪能量弹", "scene": preload("res://Player/Weapons/Instances/energy_bolts.tscn"), "basic_only": true},
 ]
 const TARGET_OFFSETS: Array[Vector2] = [
 	Vector2(-300, -190), Vector2(-100, -220), Vector2(110, -220), Vector2(310, -185),
@@ -94,8 +95,8 @@ func _process(_delta: float) -> void:
 	_current_weapon.skill_runtime.force_ready()
 	_player.add_energy(_player.player_max_energy)
 	var status := _current_weapon.get_weapon_skill_status()
-	var active_text := "技能就绪"
-	if bool(status.get("active", false)):
+	var active_text := "无主动技能（左键测试追踪齐射）" if _is_current_weapon_basic_only() else "技能就绪"
+	if not _is_current_weapon_basic_only() and bool(status.get("active", false)):
 		active_text = "生效中 %.1fs" % float(status.get("active_remaining", 0.0))
 	_status_label.text = "%s  |  靶机 %d/%d  |  F2 隐藏面板" % [
 		active_text,
@@ -231,8 +232,16 @@ func _refresh_panel() -> void:
 		_weapon_buttons[index].disabled = index == _current_index
 		_weapon_buttons[index].modulate = Color("#86e7ff") if index == _current_index else Color.WHITE
 	var effect_id := _current_weapon.active_skill_effect_id
-	_title_label.text = "%s · %s" % [WEAPONS[_current_index]["label"], SKILL_CATALOG.get_skill_name(effect_id)]
-	_description_label.text = "%s\n技能条件在测试场中始终就绪。" % SKILL_CATALOG.get_skill_description(effect_id)
+	if _is_current_weapon_basic_only():
+		_title_label.text = "%s · 普通攻击测试" % WEAPONS[_current_index]["label"]
+		_description_label.text = "扇形发射随等级增加的多枚能量弹，并自动追踪飞行路线附近的敌人。\n该武器没有主动技能，请用鼠标左键测试。"
+	else:
+		_title_label.text = "%s · %s" % [WEAPONS[_current_index]["label"], SKILL_CATALOG.get_skill_name(effect_id)]
+		_description_label.text = "%s\n技能条件在测试场中始终就绪。" % SKILL_CATALOG.get_skill_description(effect_id)
+
+
+func _is_current_weapon_basic_only() -> bool:
+	return bool(WEAPONS[_current_index].get("basic_only", false))
 
 
 func _return_to_main_menu() -> void:
@@ -252,6 +261,7 @@ func _run_contract_validation() -> void:
 		failures.append("default ready coordinator was not suppressed")
 	if get_tree().get_nodes_in_group(&"skill_gameplay_lab_dummy").size() != TARGET_OFFSETS.size():
 		failures.append("fixed target count mismatch")
+	var basic_only_count := 0
 	for index in range(WEAPONS.size()):
 		_select_weapon(index)
 		await get_tree().process_frame
@@ -261,8 +271,16 @@ func _run_contract_validation() -> void:
 				equipped_count += 1
 		if equipped_count != 1:
 			failures.append("selection %d left %d weapon nodes" % [index + 1, equipped_count])
+		var basic_only := bool(WEAPONS[index].get("basic_only", false))
+		if basic_only:
+			basic_only_count += 1
+			if _current_weapon == null or _current_weapon.active_skill_effect_id != StringName():
+				failures.append("selection %d basic-only contract is invalid" % (index + 1))
+			continue
 		if _current_weapon == null or _current_weapon.active_skill_effect_id == StringName():
 			failures.append("selection %d has no active skill" % (index + 1))
+	if basic_only_count != 1:
+		failures.append("expected one explicitly basic-only weapon")
 	if failures.is_empty():
 		print("WEAPON_ACTIVE_SKILL_GAMEPLAY_LAB: PASS")
 		await TEST_TEARDOWN.finish(_world, 0, _reset_validation_state)

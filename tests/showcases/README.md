@@ -81,9 +81,20 @@ these review scenes because those approved components are outside this change.
 - Use the 15 buttons or `Q`/`E` to select every production weapon in sequence.
 - Press `C` to force-ready and cast the selected weapon skill, left-click to fire,
   and `R` to restore the twelve fixed one-million-HP target dummies.
+- `追踪能量弹` is marked as a basic-attack-only entry: use left-click to review
+  its level-scaled fan and homing behavior; `C` intentionally has no effect.
 - Pass `-- --validate-weapon-skill-lab` for the headless scene contract check.
 - Pass `-- --capture-weapon-skill-lab` to save a deterministic visual review image
   under `output/showcases/weapon/` and exit.
+
+## Player dash curve lab
+
+- Scene: `res://tests/showcases/player/jet_dash_showcase.tscn`
+- Uses the production HeavyAssault player and active skill in an isolated arena.
+- Keeps the camera fixed at the center of the review arena while the player moves.
+- Adjust duration, distance, curve endpoints, peak time, and peak speed live; the
+  plotted curve and subsequent automatic or manual dashes update immediately.
+- Press `TAB` for automatic eight-direction playback, or use `WASD + Space`.
 
 ## Production-world weapon active-skill lab
 
@@ -92,5 +103,6 @@ these review scenes because those approved components are outside this change.
   ground, player/mecha spawn path, camera projection, battle HUD, and registries.
 - It suppresses only the normal world-entry coordinator and enemy waves, then
   overlays the 15-weapon selector and twelve fixed one-million-HP targets.
+- The selector includes `追踪能量弹` as a basic-attack-only review entry.
 - The main menu exposes this scene as `Weapon Skill Test Lab`; entering it does
   not clear, create, or commit a save.

@@ -1,7 +1,7 @@
 extends WeaponBranchBehavior
 class_name GlacierSubzeroBatteryBranch
 
-@export var cold_snap_ammo_refund: int = 6
-
 func get_glacier_cold_snap_ammo_refund() -> int:
-	return maxi(cold_snap_ammo_refund, 0)
+	if weapon == null or not is_instance_valid(weapon):
+		return 0
+	return maxi(weapon.get_effective_magazine_capacity(), 0)

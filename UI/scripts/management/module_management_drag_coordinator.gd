@@ -37,18 +37,18 @@ func build_drag_data(payload: Dictionary, source_control: Control = null) -> Dic
 
 func can_drop_payload(target: Dictionary, data: Variant) -> bool:
 	var result := get_drop_feedback(target, data)
-	_set_status_text(str(result.get("reason", "")))
+	_set_status_text(InventoryOperationResultPresenter.reason(result))
 	return bool(result.get("ok", false))
 
 func drop_payload(target: Dictionary, data: Variant) -> bool:
 	var result := get_drop_feedback(target, data)
 	if not bool(result.get("ok", false)):
-		_set_status_text(str(result.get("reason", "")))
+		_set_status_text(InventoryOperationResultPresenter.reason(result))
 		return false
 	var payload: Dictionary = data.get("payload", {})
 	var action_result := perform_drop_action(target, payload)
 	if not bool(action_result.get("ok", false)):
-		_set_status_text(str(action_result.get("reason", "")))
+		_set_status_text(InventoryOperationResultPresenter.reason(action_result))
 		return false
 	clear_drag_selection(payload)
 	active_drag_module = null

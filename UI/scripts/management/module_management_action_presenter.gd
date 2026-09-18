@@ -99,7 +99,7 @@ func perform_weapon_action() -> bool:
 		else:
 			return false
 		if not result.get("ok", false):
-			_show_message(str(result.get("reason", "")), 1.6)
+			_show_message(InventoryOperationResultPresenter.reason(result), 1.6)
 			return false
 		owner_view.set("selected_stored_weapon", null)
 		owner_view.set("selected_equipped_weapon", null)
@@ -108,7 +108,7 @@ func perform_weapon_action() -> bool:
 	if selected_equipped_weapon != null and is_instance_valid(selected_equipped_weapon):
 		var store_result := InventoryData.store_weapon(selected_equipped_weapon)
 		if not store_result.get("ok", false):
-			_show_message(str(store_result.get("reason", "")), 1.6)
+			_show_message(InventoryOperationResultPresenter.reason(store_result), 1.6)
 			return false
 		owner_view.set("selected_equipped_weapon", null)
 		_refresh_view()
@@ -122,7 +122,7 @@ func perform_module_unequip() -> bool:
 	var selected_equipped_module_weapon := _get_selected_equipped_module_weapon()
 	var result := InventoryData.unequip_module_from_weapon(selected_equipped_module, selected_equipped_module_weapon)
 	if not result.get("ok", false):
-		_show_message(str(result.get("reason", "")), 1.6)
+		_show_message(InventoryOperationResultPresenter.reason(result), 1.6)
 		return false
 	owner_view.set("selected_equipped_module", null)
 	owner_view.set("selected_equipped_module_weapon", null)

@@ -20,6 +20,7 @@ const WEAPONS: Array[Dictionary] = [
 	{"label": "13 冰川投射器", "scene": preload("res://Player/Weapons/Instances/glacier_projector.tscn")},
 	{"label": "14 加农炮", "scene": preload("res://Player/Weapons/Instances/cannon.tscn")},
 	{"label": "15 狙击枪", "scene": preload("res://Player/Weapons/Instances/sniper.tscn")},
+	{"label": "16 追踪能量弹", "scene": preload("res://Player/Weapons/Instances/energy_bolts.tscn"), "basic_only": true},
 ]
 const DUMMY_POSITIONS: Array[Vector2] = [
 	Vector2(-250, -130), Vector2(-70, -150), Vector2(120, -145), Vector2(300, -125), Vector2(455, -95),
@@ -76,10 +77,10 @@ func _process(_delta: float) -> void:
 	if _current_weapon == null or not is_instance_valid(_current_weapon):
 		return
 	var status := _current_weapon.get_weapon_skill_status()
-	var state := "技能就绪"
-	if bool(status.get("active", false)):
+	var state := "无主动技能（左键测试追踪齐射）" if _is_current_weapon_basic_only() else "技能就绪"
+	if not _is_current_weapon_basic_only() and bool(status.get("active", false)):
 		state = "技能生效中 %.1fs" % float(status.get("active_remaining", 0.0))
-	elif float(status.get("cooldown_remaining", 0.0)) > 0.0:
+	elif not _is_current_weapon_basic_only() and float(status.get("cooldown_remaining", 0.0)) > 0.0:
 		state = "冷却 %.1fs（按 C 可在演练场强制重置）" % float(status.get("cooldown_remaining", 0.0))
 	_status_label.text = "%s  |  靶机 %d/%d  |  鼠标左键普通攻击" % [state, get_tree().get_nodes_in_group(&"skill_lab_dummy").size(), DUMMY_POSITIONS.size()]
 
@@ -115,6 +116,9 @@ func _select_weapon(index: int) -> void:
 func _activate_current_skill() -> void:
 	if _current_weapon == null or not is_instance_valid(_current_weapon):
 		return
+	if _is_current_weapon_basic_only():
+		_status_label.text = "追踪能量弹没有主动技能；请按鼠标左键检查三弹扇射与追踪。"
+		return
 	_current_weapon.skill_runtime.force_ready()
 	_player.add_energy(_player.player_max_energy)
 	var activated := _current_weapon.request_weapon_skill()
@@ -127,8 +131,16 @@ func _refresh_selection_ui() -> void:
 		button.disabled = index == _current_index
 		button.modulate = Color("#86e7ff") if index == _current_index else Color.WHITE
 	var effect_id := _current_weapon.active_skill_effect_id
-	_title_label.text = "%s  ·  %s" % [WEAPONS[_current_index]["label"], SKILL_CATALOG.get_skill_name(effect_id)]
-	_description_label.text = "%s\n触发：C（演练场会自动补能量、解除冷却及解锁条件）" % SKILL_CATALOG.get_skill_description(effect_id)
+	if _is_current_weapon_basic_only():
+		_title_label.text = "%s  ·  普通攻击测试" % WEAPONS[_current_index]["label"]
+		_description_label.text = "扇形发射随等级增加的多枚能量弹，并自动追踪飞行路线附近的敌人。\n触发：鼠标左键；C 对该武器无作用。"
+	else:
+		_title_label.text = "%s  ·  %s" % [WEAPONS[_current_index]["label"], SKILL_CATALOG.get_skill_name(effect_id)]
+		_description_label.text = "%s\n触发：C（演练场会自动补能量、解除冷却及解锁条件）" % SKILL_CATALOG.get_skill_description(effect_id)
+
+
+func _is_current_weapon_basic_only() -> bool:
+	return bool(WEAPONS[_current_index].get("basic_only", false))
 
 
 func _spawn_dummies() -> void:
@@ -232,6 +244,7 @@ func _run_headless_contract() -> void:
 	if get_tree().get_nodes_in_group(&"skill_lab_dummy").size() != DUMMY_POSITIONS.size():
 		failures.append("dummy target count mismatch")
 	var effect_ids: Dictionary = {}
+	var basic_only_count := 0
 	for index in range(WEAPONS.size()):
 		_select_weapon(index)
 		await get_tree().process_frame
@@ -241,6 +254,12 @@ func _run_headless_contract() -> void:
 				equipped_count += 1
 		if equipped_count != 1:
 			failures.append("weapon %d selection left %d equipped weapon nodes" % [index + 1, equipped_count])
+		var basic_only := bool(WEAPONS[index].get("basic_only", false))
+		if basic_only:
+			basic_only_count += 1
+			if _current_weapon == null or _current_weapon.active_skill_effect_id != StringName():
+				failures.append("weapon %d basic-only contract is invalid" % (index + 1))
+			continue
 		if _current_weapon == null or _current_weapon.active_skill_effect_id == StringName():
 			failures.append("weapon %d has no active skill effect" % (index + 1))
 			continue
@@ -249,7 +268,9 @@ func _run_headless_contract() -> void:
 		_player.add_energy(_player.player_max_energy)
 		if not _current_weapon.request_weapon_skill():
 			failures.append("weapon %d active skill request failed" % (index + 1))
-	if effect_ids.size() != WEAPONS.size():
+	if basic_only_count != 1:
+		failures.append("expected one explicitly basic-only weapon")
+	if effect_ids.size() != WEAPONS.size() - basic_only_count:
 		failures.append("active skill effect ids are not unique")
 	if failures.is_empty():
 		print("WEAPON_ACTIVE_SKILL_LAB: PASS")

@@ -13,7 +13,7 @@ const IMPACT_LEAD_FRAMES := 2.0
 @export_range(0.1, 1.0, 0.01) var stationary_enter_range_ratio: float = 0.8
 @export var cast_delay: float = 1.25
 @export var cooldown_duration: float = 2.9
-@export var aoe_radius: float = 62.0
+@export var aoe_radius: float = 40.0
 @export var aoe_damage_multiplier: float = 1.0
 @export var screen_fire_margin: float = 28.0
 
@@ -122,10 +122,7 @@ func _spawn_warning(world_pos: Vector2) -> void:
 	if warning == null:
 		return
 	warning.global_position = world_pos
-	warning.duration = cast_delay
-	warning.radius = aoe_radius
-	warning.visual_preset = TargetWarning.VisualPreset.DODGE_STYLE
-	warning.show_countdown = false
+	warning.configure_enemy_danger(cast_delay, aoe_radius)
 	_active_aoe_warning = warning
 	call_deferred("add_sibling", warning)
 

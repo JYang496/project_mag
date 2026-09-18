@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/showcases/player/jet_dash_showcase.gd" id="1"]
+
+[node name="JetDashShowcase" type="Node2D"]
+script = ExtResource("1")

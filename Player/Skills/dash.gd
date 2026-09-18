@@ -1,15 +1,25 @@
 extends Skills
 
-@export var dash_distance: float = 220.0
-@export var dash_duration: float = 0.12
+const DASH_VISUAL := preload("res://Player/Skills/jet_dash_visual.gd")
+const DASH_SPEED_PROFILE := preload("res://Player/Skills/dash_speed_profile.gd")
+
+@export var dash_distance: float = 100.0
+@export var dash_duration: float = 0.40
 @export var default_cooldown: float = 5.0
+@export var dash_speed_curve: Curve
+
+var _dash_visual: Node2D
 
 func on_skill_ready() -> void:
+	if dash_speed_curve == null:
+		dash_speed_curve = DASH_SPEED_PROFILE.create_default_curve()
 	var data_cooldown := float(PlayerData.dash_cooldown)
 	if data_cooldown > 0.0:
 		cooldown = data_cooldown
 	elif cooldown <= 0.0:
 		cooldown = default_cooldown
+	_dash_visual = DASH_VISUAL.new()
+	_player.add_child(_dash_visual)
 
 func can_activate() -> bool:
 	var direction := _get_dash_direction()
@@ -25,16 +35,30 @@ func activate_skill(context: SkillActionContext) -> bool:
 		return false
 	var callback := _on_dash_finished.bind(context)
 	_player.dash_finished.connect(callback, CONNECT_ONE_SHOT)
-	var started := _player.request_dash(dash_direction, dash_distance, dash_duration, &"active_skill_dash")
+	var started := _player.request_dash(
+		dash_direction,
+		dash_distance,
+		dash_duration,
+		&"active_skill_dash",
+		dash_speed_curve
+	)
 	if not started:
 		_player.dash_finished.disconnect(callback)
+	elif is_instance_valid(_dash_visual):
+		_dash_visual.start_jet(dash_direction, dash_duration)
 	return started
 
 func get_skill_tags() -> Array[StringName]:
 	return [&"movement"]
 
 func _on_dash_finished(_data: Dictionary, context: SkillActionContext) -> void:
+	if is_instance_valid(_dash_visual):
+		_dash_visual.release_jet()
 	finish_skill_action(context, _player.global_position)
+
+func _exit_tree() -> void:
+	if is_instance_valid(_dash_visual):
+		_dash_visual.queue_free()
 
 func _get_dash_direction() -> Vector2:
 	if _player == null or not is_instance_valid(_player):

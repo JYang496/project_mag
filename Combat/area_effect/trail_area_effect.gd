@@ -27,9 +27,9 @@ enum TargetGroup {
 @export var stack_damage_per_segment: bool = false
 @export var auto_process: bool = true
 @export var draw_enabled: bool = true
-@export var fill_color: Color = PALETTE.PLAYER_RANGE_FILL
-@export var line_color: Color = PALETTE.PLAYER_RANGE_OUTLINE
-@export var line_width: float = PALETTE.PLAYER_RANGE_LINE_WIDTH
+@export var fill_color: Color = Color(PALETTE.FREEZE, 0.14)
+@export var line_color: Color = Color(PALETTE.PLAYER_PRIMARY, 0.48)
+@export var line_width: float = 1.5
 @export var chainsaw_visual: bool = false
 @export var surface_style: SurfaceStyle = SurfaceStyle.FROST
 
@@ -74,7 +74,7 @@ func step(delta: float) -> void:
 			_surface = SURFACE_VISUAL.new()
 			_surface.name = "TrailSurface"
 			add_child(_surface)
-		_surface.update_surface(_segments, _retired_segments, surface_style, draw_enabled, source_category == DamageData.SOURCE_PLAYER_WEAPON)
+		_surface.update_surface(_segments, _retired_segments, surface_style, draw_enabled)
 	if _finishing and _segments.is_empty() and _retired_segments.is_empty():
 		queue_free()
 

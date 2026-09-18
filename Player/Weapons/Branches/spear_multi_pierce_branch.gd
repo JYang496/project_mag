@@ -1,8 +1,8 @@
 extends WeaponBranchBehavior
 class_name SpearMultiPierceBranch
 
-@export var cooldown_multiplier: float = 1.3
-@export var projectile_damage_multiplier: float = 0.55
+@export var cooldown_multiplier: float = 1.0
+@export var projectile_damage_multiplier: float = 0.65
 @export var projectile_count: int = 4
 @export var spread_deg: float = 15.0
 

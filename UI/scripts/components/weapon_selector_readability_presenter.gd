@@ -57,17 +57,43 @@ func _ensure_slot_decorations(slot_index: int) -> void:
 
 func update_passive(slot_index: int, status: Dictionary) -> void:
 	var badge := _passive_icons[slot_index]
-	var symbols := {
-		"machine_gun_heat_expansion": "heat",
-		"cannon_idle_fire_triggered": "blast",
-		"sniper_far_hit_triggered": "range",
-		"shotgun_close_hit_triggered": "blast",
-		"glacier_cold_snap_triggered": "cold",
-	}
 	var id := str(status.get("id", ""))
-	var symbol := str(symbols.get(id, ""))
-	if str(status.get("trigger_hint", "")) == "reload_started" and symbol.is_empty():
-		symbol = "pierce"
-	badge.visible = not symbol.is_empty() and bool(status.get("ready", false))
-	if badge.visible:
-		badge.call("configure", symbol, int(status.get("charge_current", status.get("charges_current", 1))))
+	var supported_ids := [
+		"machine_gun_heat_expansion",
+		"cannon_idle_fire_triggered",
+		"sniper_far_hit_triggered",
+		"shotgun_close_hit_triggered",
+		"glacier_cold_snap_triggered",
+	]
+	badge.visible = id in supported_ids
+	if not badge.visible:
+		return
+
+	var ready := bool(status.get("ready", false))
+	var symbol := "fire"
+	var amount := 0
+	var color := Color("f4bc53")
+	if id == "machine_gun_heat_expansion":
+		symbol = "reload"
+		amount = int(status.get("charge_current", status.get("charges_current", 0)))
+		badge.visible = amount > 0
+	elif not ready:
+		color = Color("83a9b8")
+		if str(status.get("trigger_hint", "")) == "weapon_entered_main":
+			symbol = "swap"
+		else:
+			var remaining_sec := _remaining_condition_seconds(status)
+			symbol = "timer"
+			amount = remaining_sec
+	badge.call("configure", symbol, amount, color)
+
+
+func _remaining_condition_seconds(status: Dictionary) -> int:
+	var explicit_remaining := maxf(float(status.get("cooldown_remaining", 0.0)), 0.0)
+	if explicit_remaining > 0.001:
+		return maxi(int(ceil(explicit_remaining)), 1)
+	var required := maxf(float(status.get("required", 0.0)), 0.0)
+	var current := maxf(float(status.get("current", 0.0)), 0.0)
+	if required <= current + 0.001:
+		return 0
+	return maxi(int(ceil(required - current)), 1)

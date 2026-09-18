@@ -36,8 +36,6 @@ func get_energy_release_bonus_at_full() -> float:
 
 @export var zero_burst_radius: float = 90.0
 @export var zero_burst_damage_ratio: float = 0.50
-@export var zero_burst_execute_threshold: float = 0.30
-@export var zero_burst_execute_multiplier: float = 1.50
 
 func apply_zero_release_impact(
 	direct_target: Node,
@@ -70,9 +68,6 @@ func apply_zero_release_ground_impact(
 		if enemy.global_position.distance_to(impact_position) > maxf(zero_burst_radius, 1.0):
 			continue
 		var ratio := maxf(zero_burst_damage_ratio, 0.0)
-		if enemy.has_method("get_health_ratio") \
-				and float(enemy.call("get_health_ratio")) <= clampf(zero_burst_execute_threshold, 0.0, 1.0):
-			ratio *= maxf(zero_burst_execute_multiplier, 1.0)
 		var pulse_damage := maxi(1, int(round(float(direct_damage) * ratio)))
 		strongest_pulse_damage = maxi(strongest_pulse_damage, pulse_damage)
 		var data := DamageData.new().setup(

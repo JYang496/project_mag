@@ -19,6 +19,8 @@ var _dash_target_position: Vector2 = Vector2.ZERO
 var _dash_duration_sec: float = 0.0
 var _dash_remaining_sec: float = 0.0
 var _dash_speed: float = 0.0
+var _dash_distance: float = 0.0
+var _dash_curve_cdf := PackedFloat32Array()
 var _dash_source_id: StringName = StringName()
 var _status := {
 	"mode": MODE_IDLE,
@@ -48,7 +50,13 @@ func reset_auto_nav_speed_mul() -> void:
 func configure_auto_nav_speed_mul(speed_mul: float) -> void:
 	_auto_nav_speed_mul = maxf(speed_mul, 0.05)
 
-func request_dash(start_position: Vector2, target_position: Vector2, duration_sec: float, source_id: StringName = StringName()) -> bool:
+func request_dash(
+	start_position: Vector2,
+	target_position: Vector2,
+	duration_sec: float,
+	source_id: StringName = StringName(),
+	speed_curve: Curve = null
+) -> bool:
 	if _dash_active:
 		return false
 	var delta := target_position - start_position
@@ -60,7 +68,9 @@ func request_dash(start_position: Vector2, target_position: Vector2, duration_se
 	_dash_target_position = target_position
 	_dash_duration_sec = maxf(duration_sec, 0.01)
 	_dash_remaining_sec = _dash_duration_sec
+	_dash_distance = distance
 	_dash_speed = distance / _dash_duration_sec
+	_dash_curve_cdf = _build_normalized_curve_cdf(speed_curve)
 	_dash_source_id = source_id
 	_status["mode"] = MODE_DASH
 	_status["action_source_id"] = source_id
@@ -74,6 +84,8 @@ func cancel_dash() -> void:
 	_dash_duration_sec = 0.0
 	_dash_remaining_sec = 0.0
 	_dash_speed = 0.0
+	_dash_distance = 0.0
+	_dash_curve_cdf = PackedFloat32Array()
 	_dash_source_id = StringName()
 	_status["mode"] = MODE_IDLE
 	_status["action_source_id"] = StringName()
@@ -138,16 +150,77 @@ func _decelerate(frame_input: MovementFrameInputType) -> Vector2:
 	)
 
 func _update_dash(frame_input: MovementFrameInputType, frame_result: MovementFrameResultType) -> void:
+	var frame_sec := maxf(frame_input.delta, 0.0)
+	var step_sec := minf(frame_sec, _dash_remaining_sec)
+	var elapsed_sec := _dash_duration_sec - _dash_remaining_sec
+	var start_progress := clampf(elapsed_sec / _dash_duration_sec, 0.0, 1.0)
+	var end_progress := clampf((elapsed_sec + step_sec) / _dash_duration_sec, 0.0, 1.0)
+	var distance_fraction := _sample_curve_cdf(end_progress) - _sample_curve_cdf(start_progress)
+	var dash_displacement := _dash_direction * _dash_distance * distance_fraction
+	var step_velocity := dash_displacement / maxf(frame_sec, 0.00001)
 	_dash_remaining_sec -= maxf(frame_input.delta, 0.0)
 	if _dash_remaining_sec <= 0.0:
-		frame_result.next_velocity = Vector2.ZERO
-		frame_result.should_snap_position = true
-		frame_result.snap_position = _dash_target_position
+		# Finish through the body's collision movement, never teleport past a wall.
+		var post_dash_sec := maxf(frame_sec - step_sec, 0.0)
+		var continuing_manual_move := frame_input.manual_input_allowed \
+			and frame_input.manual_direction.length_squared() > 0.0001
+		if continuing_manual_move:
+			var manual_velocity := frame_input.manual_direction.normalized() * frame_input.move_speed
+			# A fractional final dash step can leave almost the entire physics frame
+			# available. Blend both displacements into the one velocity consumed by
+			# move_and_slide(), so held movement never passes through an idle frame.
+			frame_result.next_velocity = (
+				dash_displacement + manual_velocity * post_dash_sec
+			) / maxf(frame_sec, 0.00001)
+		else:
+			frame_result.next_velocity = step_velocity
 		cancel_dash()
-		_set_status(MODE_IDLE, frame_result.next_velocity, frame_input, false, StringName())
+		_set_status(
+			MODE_MANUAL_MOVE if continuing_manual_move else MODE_IDLE,
+			frame_result.next_velocity,
+			frame_input,
+			false,
+			StringName()
+		)
 		return
-	frame_result.next_velocity = _dash_direction * _dash_speed
+	frame_result.next_velocity = step_velocity
 	_set_status(MODE_DASH, frame_result.next_velocity, frame_input, false, _dash_source_id)
+
+
+func _build_normalized_curve_cdf(speed_curve: Curve) -> PackedFloat32Array:
+	const SAMPLE_COUNT := 128
+	var cdf := PackedFloat32Array()
+	cdf.resize(SAMPLE_COUNT + 1)
+	cdf[0] = 0.0
+	var previous_value := _sample_nonnegative_curve(speed_curve, 0.0)
+	for index in range(1, SAMPLE_COUNT + 1):
+		var progress := float(index) / float(SAMPLE_COUNT)
+		var value := _sample_nonnegative_curve(speed_curve, progress)
+		cdf[index] = cdf[index - 1] + (previous_value + value) * 0.5 / float(SAMPLE_COUNT)
+		previous_value = value
+	var total_area := cdf[SAMPLE_COUNT]
+	if total_area <= 0.00001:
+		for index in range(SAMPLE_COUNT + 1):
+			cdf[index] = float(index) / float(SAMPLE_COUNT)
+		return cdf
+	for index in range(1, SAMPLE_COUNT + 1):
+		cdf[index] /= total_area
+	return cdf
+
+
+func _sample_nonnegative_curve(speed_curve: Curve, progress: float) -> float:
+	if speed_curve == null:
+		return 1.0
+	return maxf(speed_curve.sample_baked(clampf(progress, 0.0, 1.0)), 0.0)
+
+
+func _sample_curve_cdf(progress: float) -> float:
+	if _dash_curve_cdf.size() < 2:
+		return clampf(progress, 0.0, 1.0)
+	var scaled := clampf(progress, 0.0, 1.0) * float(_dash_curve_cdf.size() - 1)
+	var lower := mini(floori(scaled), _dash_curve_cdf.size() - 1)
+	var upper := mini(lower + 1, _dash_curve_cdf.size() - 1)
+	return lerpf(_dash_curve_cdf[lower], _dash_curve_cdf[upper], scaled - float(lower))
 
 func _set_status(mode: StringName, next_velocity: Vector2, frame_input: MovementFrameInputType, is_turning: bool, action_source_id: StringName) -> void:
 	var move_speed := maxf(frame_input.move_speed, 1.0)

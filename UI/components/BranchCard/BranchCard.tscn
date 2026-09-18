@@ -45,7 +45,7 @@ corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
 [node name="BranchCard" type="Button"]
-custom_minimum_size = Vector2(260, 300)
+custom_minimum_size = Vector2(260, 238)
 size_flags_horizontal = 3
 size_flags_vertical = 3
 focus_mode = 2
@@ -96,7 +96,7 @@ vertical_alignment = 1
 
 [node name="IconFrame" type="PanelContainer" parent="Margin/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 116)
+custom_minimum_size = Vector2(0, 82)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -112,7 +112,7 @@ theme_override_constants/margin_bottom = 10
 
 [node name="Icon" type="TextureRect" parent="Margin/Content/IconFrame/IconMargin"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(118, 88)
+custom_minimum_size = Vector2(96, 62)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -125,9 +125,10 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.72, 0.82, 0.88, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.91, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
+max_lines_visible = 4
 
 [node name="Fuse" type="Label" parent="Margin/Content"]
 unique_name_in_owner = true

@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://UI/components/WeaponBranchPreviewSection/WeaponBranchPreviewSection.gd" id="1_script"]
 
 [node name="WeaponBuildPreview" type="VBoxContainer"]
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 136)
 size_flags_vertical = 3
 theme_override_constants/separation = 3
 script = ExtResource("1_script")

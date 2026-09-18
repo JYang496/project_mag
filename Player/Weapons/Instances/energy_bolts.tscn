@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" uid="uid://3tk3c1iyfr24" path="res://Player/Weapons/weapon_ranger.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Player/Weapons/Instances/energy_bolts.gd" id="2_script"]
+[ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/energy_bolt_a.png" id="3_texture"]
+[ext_resource type="Resource" path="res://Player/Weapons/Feedback/special_pulse_feedback.tres" id="4_feedback"]
+
+[node name="EnergyBolts" instance=ExtResource("1_base")]
+base_trait_flags = 2
+script = ExtResource("2_script")
+turn_speed_degrees_per_second = 420.0
+fire_feedback_profile = ExtResource("4_feedback")
+range_mode = 1
+configured_attack_range = 780.0
+delivery_type_flags = 1
+
+[node name="Modules" parent="." index="0"]
+
+[node name="Sprite" parent="." index="3"]
+texture = ExtResource("3_texture")
+
+[node name="FuseSprites" parent="." index="4"]
+fuse_texture_1 = ExtResource("3_texture")
+fuse_texture_2 = ExtResource("3_texture")
+fuse_texture_3 = ExtResource("3_texture")
+
+[node name="Muzzle" type="Marker2D" parent="." index="5"]
+position = Vector2(0, -18)
+
+[connection signal="shoot" from="." to="." method="_on_shoot"]

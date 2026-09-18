@@ -2,6 +2,7 @@ extends Control
 class_name WeaponSlot
 
 const LEGACY_VIEW_SCRIPT := preload("res://UI/scripts/components/weapon_slot_view.gd")
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
 const WEAPON_DISK_CENTER := Vector2(38.0, 111.0)
 
 @onready var icon: TextureRect = $Icon
@@ -13,6 +14,7 @@ const WEAPON_DISK_CENTER := Vector2(38.0, 111.0)
 @onready var locked_overlay: Control = get_node_or_null("Locked") as Control
 @onready var cooldown_overlay: ColorRect = get_node_or_null("CooldownOverlay") as ColorRect
 @onready var overheat_overlay: ColorRect = get_node_or_null("OverheatOverlay") as ColorRect
+@onready var heat_state_label: Label = get_node_or_null("HeatState") as Label
 
 var frame: Control:
 	get:
@@ -23,6 +25,7 @@ var _weapon: Variant = null
 var _selected := false
 var _locked := false
 var _overheated := false
+var _heat_ratio := 0.0
 var _selection_tween: Tween
 var _overheat_tween: Tween
 
@@ -56,6 +59,7 @@ func set_level(level: int) -> void:
 		level_label.visible = _weapon != null
 
 func set_heat(value: float, maximum: float = 1.0, overheated: bool = false) -> void:
+	_heat_ratio = clampf(value / maximum, 0.0, 1.0) if maximum > 0.0 else 0.0
 	if heat_bar != null:
 		heat_bar.max_value = maxf(maximum, 0.001)
 		heat_bar.value = clampf(value, 0.0, heat_bar.max_value)
@@ -130,8 +134,22 @@ func _update_visual_state() -> void:
 		locked_overlay.visible = _locked
 	if overheat_overlay != null:
 		overheat_overlay.visible = _weapon != null and _overheated
+	if heat_state_label != null:
+		heat_state_label.visible = _weapon != null and (_overheated or _heat_ratio >= 0.80)
+		heat_state_label.text = _heat_state_text()
+		heat_state_label.add_theme_color_override(
+			"font_color",
+			FEEDBACK_SPEC.COLOR_LETHAL if _overheated else FEEDBACK_SPEC.COLOR_WARNING
+		)
 	icon.modulate.a = 0.35 if _locked else 1.0
 	mouse_filter = Control.MOUSE_FILTER_IGNORE if _locked else Control.MOUSE_FILTER_STOP
+
+func _heat_state_text() -> String:
+	if not _overheated:
+		return "≥80%"
+	return LocalizationManager.tr_key("ui.hud.heat_overheat", "(OVERHEAT)") \
+		.replace("(", "").replace(")", "") \
+		.replace("（", "").replace("）", "").strip_edges()
 
 func _resolve_weapon_name(weapon: Variant) -> String:
 	if weapon == null:

@@ -255,6 +255,7 @@ var ui_layout_controller
 var pause_ui_controller
 var _pause_menu_tween: Tween
 var _pause_menu_rest_x := 0.0
+var _focus_before_pause: WeakRef
 var localization_refresh_controller
 var ui_bootstrap_controller
 var hint_presenter
@@ -273,7 +274,12 @@ var _rest_area_purchase_prewarm_generation := 0
 var _initial_rest_area_entry_prepared := false
 var _management_action_refresh_scheduled := false
 @warning_ignore("unused_private_class_variable")
-var _passive_status_signal_weapons: Array[Node] = []
+# Compatibility view; signal bindings are owned by the dirty-signal controller.
+var _passive_status_signal_weapons: Array[Node]:
+	get:
+		if ui_dirty_signal_controller != null:
+			return ui_dirty_signal_controller.passive_status_signal_weapons
+		return []
 var _upgrade_action_dirty := true
 var _warehouse_action_dirty := true
 
@@ -1610,6 +1616,9 @@ func _set_pause_menu_open(open: bool) -> void:
 	if _pause_menu_tween != null and _pause_menu_tween.is_valid():
 		_pause_menu_tween.kill()
 	if open:
+		var focus_owner := get_viewport().gui_get_focus_owner()
+		_focus_before_pause = weakref(focus_owner) if focus_owner != null else null
+		_cancel_player_transient_input()
 		# Keep the blocker last inside the reserved modal CanvasLayer so its
 		# input order matches its globally topmost visual priority.
 		var pause_parent := pause_menu_root.get_parent()
@@ -1628,6 +1637,7 @@ func _set_pause_menu_open(open: bool) -> void:
 		_pause_menu_tween.tween_property(pause_menu_panel, "position:x", _pause_menu_rest_x, 0.20)
 		resume_button.grab_focus()
 	else:
+		_release_focus_inside(pause_menu_root)
 		_pause_menu_tween = create_tween().set_parallel(true)
 		_pause_menu_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 		_pause_menu_tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
@@ -1643,6 +1653,33 @@ func _finish_pause_menu_close(completed_tween: Tween) -> void:
 	pause_menu_panel.modulate.a = 1.0
 	pause_menu_root.visible = false
 	set_owned_pause(&"menu", false)
+	_restore_focus_after_pause()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_cancel_player_transient_input()
+
+func _cancel_player_transient_input() -> void:
+	var player: Node = PlayerData.player as Node if PlayerData != null else null
+	if player != null and is_instance_valid(player) and player.has_method("cancel_transient_input_state"):
+		player.call("cancel_transient_input_state")
+	if module_management_view != null and is_instance_valid(module_management_view) \
+			and module_management_view.has_method("cancel_transient_drag_state"):
+		module_management_view.call("cancel_transient_drag_state")
+
+func _release_focus_inside(root: Control) -> void:
+	if root == null or root.get_viewport() == null:
+		return
+	var focused := root.get_viewport().gui_get_focus_owner()
+	if focused != null and (focused == root or root.is_ancestor_of(focused)):
+		focused.release_focus()
+
+func _restore_focus_after_pause() -> void:
+	var previous := _focus_before_pause.get_ref() as Control if _focus_before_pause != null else null
+	_focus_before_pause = null
+	if previous != null and is_instance_valid(previous) and previous.is_visible_in_tree() \
+			and previous.focus_mode != Control.FOCUS_NONE:
+		previous.grab_focus.call_deferred()
 	_pause_menu_tween = null
 	_update_cursor_presentation()
 
@@ -1783,6 +1820,8 @@ func _refresh_controls_hint_visibility() -> void:
 	var selection_modal_open := _is_selection_interface_open()
 	if hud_phase_controller != null:
 		hud_phase_controller.set_selection_modal_focus(selection_modal_open)
+	if gold_supply_controller != null:
+		gold_supply_controller.refresh()
 	if _is_secondary_menu_open() \
 			or _is_rest_area_service_transition_active() \
 			or modal_ui_controller.is_modal_open() \

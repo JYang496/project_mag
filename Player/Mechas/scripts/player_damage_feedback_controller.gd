@@ -4,6 +4,7 @@ class_name PlayerDamageFeedbackController
 const SCREEN_OVERLAY_SCRIPT := preload("res://Player/Mechas/scripts/player_damage_screen_overlay.gd")
 const IMPACT_RING_SCRIPT := preload("res://Player/Mechas/scripts/player_damage_impact_ring.gd")
 const PROJECTED_UI := preload("res://Visual/Oblique/projected_world_ui_service.gd")
+const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
 const HIT_TINY_SFX := preload("res://asset/sounds/01_enemy_hit_tiny.wav")
 const HIT_LIGHT_SFX := preload("res://asset/sounds/02_enemy_hit_light.wav")
 const HIT_MEDIUM_SFX := preload("res://asset/sounds/03_enemy_hit_medium.wav")
@@ -28,6 +29,11 @@ var _invulnerable: bool = false
 var _invuln_elapsed: float = 0.0
 var _cached_self_modulates: Dictionary = {}
 var _cached_extra_scales: Dictionary = {}
+const TRANSIENT_FEEDBACK_MERGE_WINDOW_SEC := 0.05
+var _pending_transient_feedback: Dictionary = {}
+var _transient_feedback_scheduled := false
+var _transient_feedback_generation := 0
+var _next_transient_feedback_msec := 0
 
 
 func setup(player) -> void:
@@ -59,11 +65,9 @@ func play_damage(result: DamageResult, attack: Attack) -> Dictionary:
 	_recoil_direction = -screen_direction
 	_recoil_pixels = (1.5 if result.is_periodic else lerpf(2.5, 6.0, severity))
 	_severity = severity
-	_spawn_impact_ring(result.damage_type, severity, result.is_periodic)
-	_spawn_world_damage_label(displayed_damage, result.damage_type, result.is_periodic, is_heavy)
+	_queue_transient_feedback(displayed_damage, result.damage_type, severity, result.is_periodic, is_heavy)
 	if _screen_overlay != null:
 		_screen_overlay.play_hit(screen_direction, 0.45 + severity * 0.55, result.damage_type, result.is_periodic)
-	_play_damage_audio(result.damage_type, severity, result.is_periodic, is_heavy)
 	if crossed_warning or crossed_critical:
 		_play_low_health_warning(crossed_critical)
 	if is_heavy and _player.has_method("request_camera_shake"):
@@ -85,6 +89,81 @@ func play_damage(result: DamageResult, attack: Attack) -> Dictionary:
 		"max_hp": max_hp,
 		"previous_hp": previous_hp,
 	}
+
+
+func _queue_transient_feedback(
+	damage: int,
+	damage_type: StringName,
+	severity: float,
+	is_periodic: bool,
+	is_heavy: bool
+) -> void:
+	var normalized_type := Attack.normalize_damage_type(damage_type)
+	var now_msec := Time.get_ticks_msec()
+	if _pending_transient_feedback.is_empty() and now_msec >= _next_transient_feedback_msec:
+		_emit_transient_feedback(damage, normalized_type, severity, is_periodic, is_heavy)
+		_next_transient_feedback_msec = now_msec + int(TRANSIENT_FEEDBACK_MERGE_WINDOW_SEC * 1000.0)
+		return
+	if _pending_transient_feedback.is_empty():
+		_pending_transient_feedback = {
+			"damage": maxi(damage, 0),
+			"severity": clampf(severity, 0.0, 1.0),
+			"all_periodic": is_periodic,
+			"is_heavy": is_heavy,
+			"damage_by_type": {normalized_type: maxi(damage, 1)},
+		}
+	else:
+		_pending_transient_feedback.damage = int(_pending_transient_feedback.damage) + maxi(damage, 0)
+		_pending_transient_feedback.severity = maxf(float(_pending_transient_feedback.severity), severity)
+		_pending_transient_feedback.all_periodic = bool(_pending_transient_feedback.all_periodic) and is_periodic
+		_pending_transient_feedback.is_heavy = bool(_pending_transient_feedback.is_heavy) or is_heavy
+		var damage_by_type := _pending_transient_feedback.damage_by_type as Dictionary
+		damage_by_type[normalized_type] = int(damage_by_type.get(normalized_type, 0)) + maxi(damage, 1)
+	if _transient_feedback_scheduled:
+		return
+	_transient_feedback_scheduled = true
+	var generation := _transient_feedback_generation
+	var remaining_sec := maxf(float(_next_transient_feedback_msec - now_msec) / 1000.0, 0.001)
+	_flush_transient_feedback_after_delay(generation, remaining_sec)
+
+
+func _flush_transient_feedback_after_delay(generation: int, delay_sec: float) -> void:
+	if _player == null or not is_instance_valid(_player) or _player.get_tree() == null:
+		_transient_feedback_scheduled = false
+		_pending_transient_feedback.clear()
+		return
+	await _player.get_tree().create_timer(delay_sec).timeout
+	if generation != _transient_feedback_generation or _player == null or not is_instance_valid(_player):
+		return
+	_transient_feedback_scheduled = false
+	var feedback := _pending_transient_feedback
+	_pending_transient_feedback = {}
+	if feedback.is_empty():
+		return
+	var damage_type := _dominant_pending_damage_type(feedback.damage_by_type as Dictionary)
+	var damage := int(feedback.damage)
+	var severity := float(feedback.severity)
+	var is_periodic := bool(feedback.all_periodic)
+	var is_heavy := bool(feedback.is_heavy)
+	_emit_transient_feedback(damage, damage_type, severity, is_periodic, is_heavy)
+	_next_transient_feedback_msec = Time.get_ticks_msec() + int(TRANSIENT_FEEDBACK_MERGE_WINDOW_SEC * 1000.0)
+
+
+func _emit_transient_feedback(damage: int, damage_type: StringName, severity: float, is_periodic: bool, is_heavy: bool) -> void:
+	_spawn_impact_ring(damage_type, severity, is_periodic)
+	_spawn_world_damage_label(damage, damage_type, is_periodic, is_heavy)
+	_play_damage_audio(damage_type, severity, is_periodic, is_heavy)
+
+
+func _dominant_pending_damage_type(damage_by_type: Dictionary) -> StringName:
+	var dominant := Attack.TYPE_PHYSICAL
+	var dominant_damage := -1
+	for type_variant in damage_by_type:
+		var type_damage := int(damage_by_type[type_variant])
+		if type_damage > dominant_damage:
+			dominant = StringName(str(type_variant))
+			dominant_damage = type_damage
+	return dominant
 
 
 func set_invulnerable(active: bool) -> void:
@@ -175,7 +254,7 @@ func _ensure_screen_overlay() -> void:
 		return
 	_screen_layer = CanvasLayer.new()
 	_screen_layer.name = "PlayerDamageScreenLayer"
-	_screen_layer.layer = 80
+	_screen_layer.layer = FEEDBACK_SPEC.SURVIVAL_OVERLAY_LAYER
 	add_child(_screen_layer)
 	_screen_overlay = SCREEN_OVERLAY_SCRIPT.new() as Control
 	_screen_overlay.name = "DamageVignette"
@@ -259,13 +338,15 @@ func _spawn_world_damage_label(
 	label.name = "PlayerDamageNumber"
 	label.text = "-%d%s" % [damage, "!" if is_heavy else ""]
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.z_as_relative = false
+	label.z_index = FEEDBACK_SPEC.world_ui_z(CombatFeedbackSpec.Priority.SURVIVAL)
 	label.size = Vector2(86.0, 26.0)
 	label.pivot_offset = label.size * 0.5
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 17 if is_heavy else (12 if is_periodic else 14))
 	label.add_theme_color_override("font_color", _label_color(damage_type, is_periodic))
-	label.add_theme_color_override("font_outline_color", Color(0.04, 0.01, 0.01, 0.96))
+	label.add_theme_color_override("font_outline_color", FEEDBACK_SPEC.COLOR_OUTLINE)
 	label.add_theme_constant_override("outline_size", 3)
 	var fallback: Vector2 = _player.get_viewport().get_canvas_transform() * _player.global_position
 	var screen_position: Vector2 = PROJECTED_UI.project_to_screen(
@@ -285,7 +366,7 @@ func _spawn_world_damage_label(
 
 
 func _label_color(damage_type: StringName, is_periodic: bool) -> Color:
-	var color := Color(1.0, 0.32, 0.22, 1.0)
+	var color := FEEDBACK_SPEC.COLOR_DAMAGE
 	match Attack.normalize_damage_type(damage_type):
 		Attack.TYPE_FIRE:
 			color = Color(1.0, 0.48, 0.10, 1.0)
@@ -349,6 +430,10 @@ func _is_attack_from_elite_or_boss(attack: Attack) -> bool:
 
 
 func shutdown() -> void:
+	_transient_feedback_generation += 1
+	_transient_feedback_scheduled = false
+	_pending_transient_feedback.clear()
+	_next_transient_feedback_msec = 0
 	_restore_visuals()
 	set_process(false)
 	if _screen_overlay != null and is_instance_valid(_screen_overlay) and _screen_overlay.has_method("shutdown"):
