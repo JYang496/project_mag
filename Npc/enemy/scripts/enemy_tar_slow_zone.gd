@@ -24,6 +24,8 @@ const TAR_SLOW_ZONE_TEXTURE: Texture2D = preload("res://asset/images/effects/slo
 	set(value):
 		draw_enabled = value
 		queue_redraw()
+		if is_node_ready():
+			_schedule_fallback_redraw()
 @export var ground_detail_texture: Texture2D
 @export var ground_height_offset: float = 0.002
 @export_group("")
@@ -34,6 +36,7 @@ const TAR_SLOW_ZONE_TEXTURE: Texture2D = preload("res://asset/images/effects/slo
 var _field_source_id: StringName
 var _slowed_players: Dictionary = {}
 var _slowed_enemies: Array[BaseEnemy] = []
+var _fade_start_timer: Timer
 
 
 func get_visual_alpha_multiplier() -> float:
@@ -57,6 +60,7 @@ func _ready() -> void:
 		circle.radius = maxf(radius, 1.0)
 	life_timer.wait_time = maxf(duration, 0.1)
 	life_timer.start()
+	_schedule_fallback_redraw()
 
 func _on_area_entered(area: Area2D) -> void:
 	if not (area is HurtBox):
@@ -75,8 +79,33 @@ func _on_area_entered(area: Area2D) -> void:
 			_slowed_enemies.append(enemy)
 
 func _process(_delta: float) -> void:
-	if draw_enabled:
+	# The fallback circle is static until its final fade. Redrawing throughout
+	# the whole lifetime multiplies tessellation work by the number of tar zones.
+	if draw_enabled and draw_zone:
 		queue_redraw()
+
+func _schedule_fallback_redraw() -> void:
+	set_process(false)
+	if _fade_start_timer != null:
+		_fade_start_timer.stop()
+	if not draw_enabled or not draw_zone or fade_out_duration <= 0.0:
+		return
+	var remaining := life_timer.time_left
+	var fade_delay := maxf(remaining - minf(fade_out_duration, life_timer.wait_time), 0.0)
+	if fade_delay <= 0.0:
+		set_process(true)
+		return
+	if _fade_start_timer == null:
+		_fade_start_timer = Timer.new()
+		_fade_start_timer.one_shot = true
+		_fade_start_timer.timeout.connect(_begin_fallback_fade)
+		add_child(_fade_start_timer)
+	_fade_start_timer.wait_time = fade_delay
+	_fade_start_timer.start()
+
+func _begin_fallback_fade() -> void:
+	if draw_enabled and draw_zone:
+		set_process(true)
 
 func _on_area_exited(area: Area2D) -> void:
 	if not (area is HurtBox):

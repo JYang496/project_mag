@@ -1,6 +1,29 @@
 extends Control
-## Skill identity, condition fill, and cooldown are independent visual channels.
-const PICTOGRAMS := preload("res://UI/scripts/components/weapon_skill_pictograms.gd")
+
+const ICON_ATLAS := preload("res://UI/assets/hud_icons/weapon_skill_pictograms_atlas.png")
+const ICON_SIZE := 32
+const ICON_COLUMNS := 8
+const ICON_INDEX := {
+	"default": 0,
+	"machine_gun_infinite_chain": 1,
+	"charged_blaster_phase_echo": 2,
+	"spear_phalanx": 3,
+	"shotgun_double_discipline": 4,
+	"orbit_proliferation": 5,
+	"rocket_cluster_warhead": 6,
+	"laser_refraction_matrix": 7,
+	"chainsaw_cage": 8,
+	"dash_rift": 9,
+	"flame_moving_inferno": 10,
+	"plasma_storm": 11,
+	"glacier_white_frost_domain": 12,
+	"cannon_siege_trajectory": 13,
+	"sniper_lethal_aim": 14,
+}
+
+@onready var _disk: ColorRect = $Disk
+@onready var _glyph: TextureRect = $Glyph
+
 var state := "disabled"
 var effect_id := ""
 var progress := 0.0
@@ -10,10 +33,18 @@ var energy_blocked := false
 var active := false
 var overheated := false
 
+func _ready() -> void:
+	_disk.material = _disk.material.duplicate()
+	_glyph.material = _glyph.material.duplicate()
+	_update_glyph_texture()
+	_apply_shader_state()
+
 func set_effect_id(value: String) -> void:
-	if value != effect_id:
-		effect_id = value
-		queue_redraw()
+	if value == effect_id:
+		return
+	effect_id = value
+	if is_node_ready():
+		_update_glyph_texture()
 
 func set_status(status: Dictionary) -> void:
 	var next := "disabled"
@@ -26,14 +57,17 @@ func set_status(status: Dictionary) -> void:
 	var next_overheated := bool(status.get("overheated", false))
 	if next_overheated:
 		next = "overheat"
-	if available:
+	elif available:
 		next = "ready" if bool(status.get("ready", false)) else "building"
 		if not bool(status.get("ready", false)):
 			if next_cooling:
 				next = "cooldown"
 			elif next_energy:
 				next = "energy"
-	if state == next and is_equal_approx(progress, next_progress) and is_equal_approx(cooldown_progress, next_cooldown) and cooling == next_cooling and energy_blocked == next_energy and active == next_active and overheated == next_overheated:
+	if state == next and is_equal_approx(progress, next_progress) \
+			and is_equal_approx(cooldown_progress, next_cooldown) \
+			and cooling == next_cooling and energy_blocked == next_energy \
+			and active == next_active and overheated == next_overheated:
 		return
 	state = next
 	progress = next_progress
@@ -42,37 +76,30 @@ func set_status(status: Dictionary) -> void:
 	energy_blocked = next_energy
 	active = next_active
 	overheated = next_overheated
-	queue_redraw()
+	if is_node_ready():
+		_apply_shader_state()
 
-func _draw() -> void:
-	var center := Vector2(24,24)
-	draw_circle(center + Vector2(0,1), 23, Color(0.005,0.015,0.02,0.45))
-	draw_circle(center, 21, Color(0.015,0.035,0.045,0.96))
-	if state != "disabled" and progress > 0.001:
-		var fill := Color("326858") if state == "ready" else Color("655432")
-		if progress >= 0.999:
-			draw_circle(center, 19, fill)
-		else:
-			var theta := asin(1.0 - 2.0 * progress)
-			var points := PackedVector2Array()
-			for i in range(49):
-				var angle := theta + (PI - 2.0 * theta) * i / 48.0
-				points.append(center + Vector2(cos(angle),sin(angle)) * 19)
-			draw_colored_polygon(points, fill)
-	draw_arc(center, 20, 0, TAU, 48, Color("b9e7dc") if active or state == "ready" else Color("71878d"), 2.0 if active else 1.0, true)
-	draw_arc(center, 18.5, PI * 1.1, PI * 1.65, 20, Color(0.83,0.95,1.0,0.13), 1.0, true)
-	PICTOGRAMS.draw_icon(self, effect_id, Vector2(10,10), Color("ffb18a") if overheated else (Color("f2f7f6") if state != "disabled" else Color("6c787d")))
-	if overheated:
-		draw_arc(center, 23, 0, TAU, 48, Color("ff4d32"), 3.0, true)
-		draw_line(Vector2(11,37), Vector2(37,11), Color("fff0d8"), 3.0, true)
-	if cooling:
-		draw_arc(center, 23, 0, TAU, 48, Color("304a56"), 2.0, true)
-		if cooldown_progress > 0.001:
-			draw_arc(center, 23, -PI/2, -PI/2 + TAU * cooldown_progress, 48, Color("72c9f5"), 2.0, true)
-			var tip := center + Vector2.from_angle(-PI/2 + TAU * cooldown_progress) * 23
-			draw_circle(tip, 1.5, Color("d3f3ff"))
-	if energy_blocked and state != "disabled":
-		draw_circle(Vector2(43,8), 7, Color("192c33"))
-		draw_colored_polygon(PackedVector2Array([Vector2(44,1),Vector2(38,9),Vector2(42,9),Vector2(40,15),Vector2(48,6),Vector2(44,6)]), Color("f4bc53"))
-	if state == "disabled":
-		draw_line(Vector2(10,38), Vector2(38,10), Color("95a4ab"), 2.0, true)
+func _update_glyph_texture() -> void:
+	var index := int(ICON_INDEX.get(effect_id, ICON_INDEX["default"]))
+	var atlas := AtlasTexture.new()
+	atlas.atlas = ICON_ATLAS
+	atlas.region = Rect2(
+		float(index % ICON_COLUMNS) * ICON_SIZE,
+		float(index / ICON_COLUMNS) * ICON_SIZE,
+		ICON_SIZE,
+		ICON_SIZE
+	)
+	_glyph.texture = atlas
+
+func _apply_shader_state() -> void:
+	var disk_material := _disk.material as ShaderMaterial
+	disk_material.set_shader_parameter("unlock_progress", progress)
+	disk_material.set_shader_parameter("cooldown_progress", cooldown_progress)
+	disk_material.set_shader_parameter("state", 2 if state == "ready" else (0 if state == "disabled" else 1))
+	disk_material.set_shader_parameter("cooling", cooling)
+	disk_material.set_shader_parameter("energy_blocked", energy_blocked)
+	disk_material.set_shader_parameter("active", active)
+	disk_material.set_shader_parameter("overheated", overheated)
+	var glyph_material := _glyph.material as ShaderMaterial
+	var glyph_color := Color("ffb18a") if overheated else (Color("f2f7f6") if state != "disabled" else Color("6c787d"))
+	glyph_material.set_shader_parameter("icon_color", glyph_color)

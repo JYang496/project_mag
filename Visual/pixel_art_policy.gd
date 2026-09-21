@@ -40,6 +40,11 @@ const EFFECT_LARGE_FRAME_SIZE := Vector2i(128, 128)
 const EFFECT_FLAME_SPRAY_FRAME_SIZE := Vector2i(256, 80)
 const EFFECT_GLACIER_SPRAY_FRAME_SIZE := Vector2i(256, 90)
 const MODULE_ICON_SIZE := Vector2i(32, 32)
+## Image-driven protocol UI: authored logical grids, rendered with nearest filtering.
+const PROTOCOL_ILLUSTRATION_SIZE := Vector2i(240, 80)
+const PROTOCOL_FRAME_SIZE := Vector2i(128, 128)
+const PROTOCOL_ICON_SIZE := Vector2i(32, 32)
+const PROTOCOL_BUTTON_SIZE := Vector2i(192, 64)
 
 
 static func snap_logical_position(value: Vector2) -> Vector2:

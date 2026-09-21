@@ -76,7 +76,8 @@ func _ready() -> void:
 	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	HYBRID_GROUND_REGISTRATION.register(self, &"register_warning_circle")
-	queue_redraw()
+	if not bool(get_meta(&"hybrid_ground_registered", false)):
+		queue_redraw()
 
 func cleanup_for_battle_end() -> void:
 	_cleanup_player_boost()
@@ -180,7 +181,8 @@ func _process(delta: float) -> void:
 	while _tick_accum >= tick_interval_sec:
 		_tick_accum -= tick_interval_sec
 		_apply_tick()
-	queue_redraw()
+	if not bool(get_meta(&"hybrid_ground_registered", false)):
+		queue_redraw()
 
 func _apply_tick() -> void:
 	var inside_ids: Dictionary = {}

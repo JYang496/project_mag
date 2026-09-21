@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://World/world.tscn" id="1_world"]
+[ext_resource type="Script" path="res://tests/showcases/enemy/enemy_performance_lab.gd" id="2_lab"]
+
+[node name="EnemyPerformanceLab" instance=ExtResource("1_world")]
+external_ready_coordinator = true
+
+[node name="EnemyPerformanceController" type="Node" parent="."]
+script = ExtResource("2_lab")

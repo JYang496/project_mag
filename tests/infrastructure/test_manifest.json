@@ -352,6 +352,16 @@
       "parallel_safe": false,
       "writes_user_data": true,
       "timeout_seconds": 90
+    },
+    {
+      "id": "performance.weapon_lab_contract",
+      "entry_type": "scene",
+      "path": "res://tests/scenes/performance/weapon_performance_lab_contract_test.tscn",
+      "domain": "performance",
+      "dependency_domains": ["weapon", "player", "combat", "world"],
+      "parallel_safe": true,
+      "writes_user_data": false,
+      "timeout_seconds": 20
     }
   ]
 }

@@ -43,7 +43,6 @@ func _process(delta: float) -> void:
 		attack_confirmed.emit()
 	if telegraph_elapsed >= telegraph_duration:
 		telegraph_active = false
-	queue_redraw()
 
 
 func begin_attack_telegraph(duration_sec: float = 0.9) -> void:
@@ -141,9 +140,14 @@ func _sync_hud() -> void:
 	if boss == null or not is_instance_valid(boss) or _hp_bar == null:
 		return
 	var max_hp := maxi(maxi(int(boss.get("_incoming_damage_max_hp")), int(boss.hp)), 1)
-	_hp_bar.max_value = max_hp
-	_hp_bar.value = maxi(int(boss.hp), 0)
-	_hp_label.text = "BOSS  ·  PHASE %d/%d" % [phase_index + 1, phase_count]
+	var current_hp := maxi(int(boss.hp), 0)
+	if not is_equal_approx(_hp_bar.max_value, float(max_hp)):
+		_hp_bar.max_value = max_hp
+	if not is_equal_approx(_hp_bar.value, float(current_hp)):
+		_hp_bar.value = current_hp
+	var phase_text := "BOSS  ·  PHASE %d/%d" % [phase_index + 1, phase_count]
+	if _hp_label.text != phase_text:
+		_hp_label.text = phase_text
 
 
 func _register_ground_visual() -> void:

@@ -18,7 +18,11 @@ const WEAPONS: Array[Dictionary] = [
 	{"label": "11 喷火器", "scene": preload("res://Player/Weapons/Instances/flamethrower.tscn")},
 	{"label": "12 等离子矛", "scene": preload("res://Player/Weapons/Instances/plasma_lance.tscn")},
 	{"label": "13 冰川投射器", "scene": preload("res://Player/Weapons/Instances/glacier_projector.tscn")},
-	{"label": "14 加农炮", "scene": preload("res://Player/Weapons/Instances/cannon.tscn")},
+	{
+		"label": "14 迫击炮",
+		"scene": preload("res://Player/Weapons/Instances/cannon.tscn"),
+		"review_hint": "将鼠标指向一列靶机，检查四个落点是否由近及远、左右交错地推进。",
+	},
 	{"label": "15 狙击枪", "scene": preload("res://Player/Weapons/Instances/sniper.tscn")},
 	{"label": "16 追踪能量弹", "scene": preload("res://Player/Weapons/Instances/energy_bolts.tscn"), "basic_only": true},
 ]
@@ -136,7 +140,11 @@ func _refresh_selection_ui() -> void:
 		_description_label.text = "扇形发射随等级增加的多枚能量弹，并自动追踪飞行路线附近的敌人。\n触发：鼠标左键；C 对该武器无作用。"
 	else:
 		_title_label.text = "%s  ·  %s" % [WEAPONS[_current_index]["label"], SKILL_CATALOG.get_skill_name(effect_id)]
-		_description_label.text = "%s\n触发：C（演练场会自动补能量、解除冷却及解锁条件）" % SKILL_CATALOG.get_skill_description(effect_id)
+		var review_hint := str(WEAPONS[_current_index].get("review_hint", ""))
+		var hint_line := "\n检查：%s" % review_hint if not review_hint.is_empty() else ""
+		_description_label.text = "%s%s\n触发：C（演练场会自动补能量、解除冷却及解锁条件）" % [
+			SKILL_CATALOG.get_skill_description(effect_id), hint_line,
+		]
 
 
 func _is_current_weapon_basic_only() -> bool:

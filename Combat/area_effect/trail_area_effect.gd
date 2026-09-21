@@ -137,7 +137,39 @@ func clear_segments() -> void:
 		queue_redraw()
 
 func add_point(world_position: Vector2, segment_radius: float) -> void:
-	_add_segment(world_position, world_position, segment_radius)
+	_add_segment(world_position, world_position, segment_radius, null, &"impact")
+
+## Adds impact fire points without snapping their final positions. Nearby hits
+## are represented by the real hit position closest to each cluster centroid;
+## existing impact points are refreshed, and any remaining creation budget is
+## distributed with farthest-point sampling for broad crowd coverage.
+func add_merged_impact_points(
+	world_positions: Array[Vector2],
+	segment_radius: float,
+	merge_distance: float,
+	max_new_points: int
+) -> int:
+	if world_positions.is_empty():
+		return 0
+	var representatives := _cluster_position_medoids(world_positions, maxf(merge_distance, 1.0))
+	var unmatched: Array[Vector2] = []
+	var refreshed := 0
+	var now_msec := Time.get_ticks_msec()
+	var expiry_msec := now_msec + int(maxf(duration, 0.05) * 1000.0)
+	var merge_distance_sq := merge_distance * merge_distance
+	for position in representatives:
+		var closest_index := _find_nearby_impact_segment(position, merge_distance_sq)
+		if closest_index < 0:
+			unmatched.append(position)
+			continue
+		var segment := _segments[closest_index]
+		segment["expires_at_msec"] = maxi(int(segment.get("expires_at_msec", 0)), expiry_msec)
+		_segments[closest_index] = segment
+		refreshed += 1
+	var selected := _select_farthest_positions(unmatched, maxi(max_new_points, 0))
+	for position in selected:
+		_add_segment(position, position, segment_radius, null, &"impact")
+	return refreshed + selected.size()
 
 func add_segment(from_world: Vector2, to_world: Vector2, segment_radius: float) -> void:
 	_add_segment(from_world, to_world, segment_radius)
@@ -184,7 +216,13 @@ func _update_emitters(delta: float) -> void:
 		payload["sample_accum"] = sample_accum
 		_emitters[emitter_id] = payload
 
-func _add_segment(from_pos: Vector2, to_pos: Vector2, segment_radius: float, heat_snapshot: Variant = null) -> void:
+func _add_segment(
+	from_pos: Vector2,
+	to_pos: Vector2,
+	segment_radius: float,
+	heat_snapshot: Variant = null,
+	source_kind: StringName = &"path"
+) -> void:
 	var segment := {
 		"id": _next_segment_id,
 		"from": from_pos,
@@ -193,6 +231,7 @@ func _add_segment(from_pos: Vector2, to_pos: Vector2, segment_radius: float, hea
 		"born_at_msec": Time.get_ticks_msec(),
 		"expires_at_msec": Time.get_ticks_msec() + int(maxf(duration, 0.05) * 1000.0),
 		"heat_snapshot": heat_snapshot,
+		"source_kind": source_kind,
 	}
 	_next_segment_id += 1
 	segment["visual"] = _create_segment_visual(segment)
@@ -200,6 +239,84 @@ func _add_segment(from_pos: Vector2, to_pos: Vector2, segment_radius: float, hea
 	while _segments.size() > max(1, max_segments):
 		_retire_segment(_segments[0])
 		_segments.remove_at(0)
+
+func _cluster_position_medoids(positions: Array[Vector2], merge_distance: float) -> Array[Vector2]:
+	var clusters: Array[Dictionary] = []
+	var merge_distance_sq := merge_distance * merge_distance
+	for position in positions:
+		var closest_index := -1
+		var closest_distance_sq := INF
+		for index in range(clusters.size()):
+			var center := clusters[index].get("center", position) as Vector2
+			var distance_sq := center.distance_squared_to(position)
+			if distance_sq <= merge_distance_sq and distance_sq < closest_distance_sq:
+				closest_index = index
+				closest_distance_sq = distance_sq
+		if closest_index < 0:
+			clusters.append({"positions": [position], "center": position})
+			continue
+		var cluster := clusters[closest_index]
+		var cluster_positions := cluster.get("positions", []) as Array
+		cluster_positions.append(position)
+		cluster["positions"] = cluster_positions
+		var center := Vector2.ZERO
+		for member in cluster_positions:
+			center += member as Vector2
+		cluster["center"] = center / float(cluster_positions.size())
+		clusters[closest_index] = cluster
+	var medoids: Array[Vector2] = []
+	for cluster in clusters:
+		var members := cluster.get("positions", []) as Array
+		var center := cluster.get("center", Vector2.ZERO) as Vector2
+		var medoid := center
+		var nearest_distance_sq := INF
+		for member in members:
+			var candidate := member as Vector2
+			var distance_sq := candidate.distance_squared_to(center)
+			if distance_sq < nearest_distance_sq:
+				nearest_distance_sq = distance_sq
+				medoid = candidate
+		medoids.append(medoid)
+	return medoids
+
+func _find_nearby_impact_segment(position: Vector2, merge_distance_sq: float) -> int:
+	var closest_index := -1
+	var closest_distance_sq := INF
+	for index in range(_segments.size()):
+		var segment := _segments[index]
+		if StringName(segment.get("source_kind", &"path")) != &"impact":
+			continue
+		var segment_position := segment.get("from", Vector2.ZERO) as Vector2
+		var distance_sq := segment_position.distance_squared_to(position)
+		if distance_sq <= merge_distance_sq and distance_sq < closest_distance_sq:
+			closest_index = index
+			closest_distance_sq = distance_sq
+	return closest_index
+
+func _select_farthest_positions(candidates: Array[Vector2], limit: int) -> Array[Vector2]:
+	var selected: Array[Vector2] = []
+	var remaining := candidates.duplicate()
+	var anchors: Array[Vector2] = []
+	for segment in _segments:
+		anchors.append(segment.get("from", Vector2.ZERO) as Vector2)
+	while not remaining.is_empty() and selected.size() < limit:
+		var best_index := 0
+		var best_distance_sq := -1.0
+		for index in range(remaining.size()):
+			var candidate: Vector2 = remaining[index]
+			var nearest_distance_sq := INF
+			for anchor in anchors:
+				nearest_distance_sq = minf(nearest_distance_sq, candidate.distance_squared_to(anchor))
+			if anchors.is_empty():
+				nearest_distance_sq = candidate.length_squared()
+			if nearest_distance_sq > best_distance_sq:
+				best_distance_sq = nearest_distance_sq
+				best_index = index
+		var chosen: Vector2 = remaining[best_index]
+		selected.append(chosen)
+		anchors.append(chosen)
+		remaining.remove_at(best_index)
+	return selected
 
 func _cleanup_segments() -> void:
 	if _segments.is_empty():
@@ -286,6 +403,10 @@ func _apply_tick_damage() -> void:
 			DamageDeliveryType.AREA,
 			hit_info.get("heat_snapshot", null)
 		)
+		# Trail surfaces are time-based hazards. Treat each cadence sample as
+		# periodic damage so it does not fan out direct-hit presentation and
+		# reactive effects across every overlapping target.
+		damage_data.configure_periodic_damage()
 		DamageManager.apply_to_target(target, damage_data)
 
 func _collect_targets(tree: SceneTree) -> Array[Node]:

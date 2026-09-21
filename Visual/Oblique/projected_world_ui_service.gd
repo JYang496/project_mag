@@ -7,12 +7,15 @@ const LAYER_NAME := "HybridWorldUi"
 const LAYER_ORDER := FEEDBACK_SPEC.PROJECTED_WORLD_UI_LAYER
 
 static func ensure_layer(tree: SceneTree) -> CanvasLayer:
+	if tree == null or tree.root == null or PhaseManager.current_state() != PhaseManager.BATTLE:
+		return null
 	var existing := tree.root.get_node_or_null(LAYER_NAME) as CanvasLayer
-	if existing != null:
+	if existing != null and not existing.is_queued_for_deletion():
 		return existing
 	var layer := CanvasLayer.new()
 	layer.name = LAYER_NAME
 	layer.layer = LAYER_ORDER
+	layer.add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	tree.root.add_child(layer)
 	return layer
 

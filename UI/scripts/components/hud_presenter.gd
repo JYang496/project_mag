@@ -24,8 +24,6 @@ var character_hud_root: Control
 const HUD_MARGIN := 16.0
 const CONTINUOUS_REFRESH_INTERVAL := 0.1
 const COMBAT_RESOURCE_ORIGIN := Vector2(104.0, 18.0)
-const STATUS_DOCK_WIDTH := 420.0
-const STATUS_RESOURCE_GAP := 16.0
 const SPECIAL_RESOURCE_OPACITY := 0.62
 const HEALTH_METER_ORIGIN := Vector2.ZERO
 const COMBAT_RESOURCE_METER_SCENE := preload("res://UI/components/CombatResourceMeter/CombatResourceMeter.tscn")
@@ -516,22 +514,13 @@ func _ensure_special_resource_slot_container() -> void:
 	special_resource_slot_container.position = _special_resource_position(character_hud_root.get_viewport_rect().size)
 
 func _special_resource_position(viewport_size: Vector2) -> Vector2:
-	# Align the resource meter's actual visual bottom with the health dock and
-	# weapon-control hint baseline instead of positioning a 152 px reserve box.
+	# Keep the lower-right resource stack on one screen-edge datum. Other HUD
+	# cards (such as Gold Supply) use the same right edge and vertical rhythm.
 	var resource_size := Vector2(250.0, 20.0)
 	if primary_resource_meter != null and is_instance_valid(primary_resource_meter) \
 			and primary_resource_meter.has_method("get_visual_footprint_size"):
 		resource_size = primary_resource_meter.call("get_visual_footprint_size") as Vector2
-	var status_right := (viewport_size.x + STATUS_DOCK_WIDTH) * 0.5
-	var center_safe_right := viewport_size.x * 0.72
-	var preferred_x := maxf(
-		status_right + STATUS_RESOURCE_GAP,
-		center_safe_right + STATUS_RESOURCE_GAP
-	)
-	var maximum_x := viewport_size.x - HUD_MARGIN - resource_size.x
-	var x := minf(preferred_x, maximum_x)
-	if x < HUD_MARGIN:
-		x = HUD_MARGIN
+	var x := maxf(HUD_MARGIN, viewport_size.x - HUD_MARGIN - resource_size.x)
 	return Vector2(
 		roundf(x),
 		roundf(maxf(HUD_MARGIN, viewport_size.y - HUD_MARGIN - resource_size.y))

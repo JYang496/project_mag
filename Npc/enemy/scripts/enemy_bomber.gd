@@ -79,6 +79,10 @@ func _spawn_aoe_warning() -> void:
 		blast_radius,
 		CombatFeedbackSpec.DangerLevel.LETHAL
 	)
+	# Match the spike turret's hostile aim line instead of the near-white
+	# lethal preset, which can read as a friendly effect.
+	warning.fill_color = Color(PALETTE.ENEMY_PRIMARY, 0.16)
+	warning.line_color = Color(PALETTE.ENEMY_PRIMARY, 0.98)
 	_active_aoe_warning = warning
 	call_deferred("add_sibling", warning)
 

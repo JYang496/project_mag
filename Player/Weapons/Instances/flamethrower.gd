@@ -17,12 +17,14 @@ var ITEM_NAME := "Flamethrower"
 @export var heat_prepared_duration_sec: float = 10.0
 @export_range(0.0, 2.0, 0.01) var heat_prepared_fire_damage_bonus_per_stack: float = 0.10
 @export_range(1, 10, 1) var heat_prepared_max_stacks: int = 2
-@export_range(0.04, 0.25, 0.01) var damage_tick_sec: float = 0.10
+@export_range(0.04, 0.25, 0.01) var damage_tick_sec: float = 0.20
 @export_range(0.05, 0.5, 0.01) var stream_ramp_sec: float = 0.16
 @export_range(0.0, 0.5, 0.01) var contact_grace_sec: float = 0.15
 @export_range(0.1, 3.0, 0.05) var ignition_contact_sec: float = 0.75
 @export_range(1, 8, 1) var ignition_ticks: int = 3
 @export_range(0.0, 1.0, 0.01) var ignition_damage_ratio: float = 0.12
+@export_range(8.0, 128.0, 1.0) var inferno_impact_merge_distance: float = 44.0
+@export_range(1, 24, 1) var inferno_max_new_impact_points_per_tick: int = 8
 
 ## Debug mode: 显示攻击范围扇形
 @export var debug_mode: bool = false
@@ -137,13 +139,13 @@ func _begin_or_refresh_flame_stream() -> void:
 	if forward != Vector2.ZERO:
 		_refresh_flame_vfx(forward, _get_current_stream_range())
 
-func _apply_fire_damage(target: Node, tick_duration_sec: float) -> void:
+func _apply_fire_damage(target: Node, tick_duration_sec: float) -> bool:
 	if target == null or not is_instance_valid(target):
-		return
+		return false
 	if not target.has_method("damaged"):
-		return
+		return false
 	if _attacked_target_ids.has(target.get_instance_id()):
-		return
+		return false
 	_attacked_target_ids[target.get_instance_id()] = true
 
 	var target_id := target.get_instance_id()
@@ -161,7 +163,7 @@ func _apply_fire_damage(target: Node, tick_duration_sec: float) -> void:
 	var runtime_damage := int(floor(accumulated))
 	_target_fractional_damage[target_id] = accumulated - float(runtime_damage)
 	if runtime_damage <= 0:
-		return
+		return false
 	var knock_back := {
 		"amount": 0,
 		"angle": Vector2.ZERO
@@ -174,10 +176,13 @@ func _apply_fire_damage(target: Node, tick_duration_sec: float) -> void:
 		DamageData.SOURCE_PLAYER_WEAPON,
 		DamageDeliveryType.BEAM
 	)
+	# The held stream applies small cadence ticks, not discrete impact shots.
+	# Marking them periodic keeps target-local labels in the slower merge lane
+	# and prevents the weapon feedback path from spawning impact presentation
+	# for every enemy on every damage sample.
+	damage_data.configure_periodic_damage()
 	if not DamageManager.apply_to_target(target, damage_data):
-		return
-	if _moving_inferno != null and is_instance_valid(_moving_inferno) and target is Node2D:
-		_moving_inferno.add_point((target as Node2D).global_position, 38.0)
+		return false
 
 	# Damage samples are more frequent than the legacy firing pulse. Keep module
 	# proc frequency on the old cadence so continuous damage does not multiply
@@ -188,6 +193,7 @@ func _apply_fire_damage(target: Node, tick_duration_sec: float) -> void:
 		on_hit_target_with_damage_type(target, Attack.TYPE_FIRE)
 	_target_proc_elapsed_sec[target_id] = proc_elapsed
 	_try_apply_ignition(target, damage_per_second)
+	return true
 
 func _try_apply_ignition(target: Node, damage_per_second: float) -> void:
 	if ignition_ticks <= 0 or ignition_damage_ratio <= 0.0:
@@ -540,6 +546,7 @@ func _apply_continuous_damage_tick(tick_duration_sec: float) -> void:
 		return
 	var current_range := _get_current_stream_range()
 	var targets := _collect_targets_in_cone(forward, current_range)
+	var inferno_hit_positions: Array[Vector2] = []
 	_attacked_target_ids.clear()
 	for target in targets:
 		var target_id := target.get_instance_id()
@@ -548,7 +555,15 @@ func _apply_continuous_damage_tick(tick_duration_sec: float) -> void:
 			_target_contact_sec[target_id] = 0.0
 		_target_last_contact_time_sec[target_id] = _stream_elapsed_sec
 		_target_contact_sec[target_id] = float(_target_contact_sec.get(target_id, 0.0)) + tick_duration_sec
-		_apply_fire_damage(target, tick_duration_sec)
+		if _apply_fire_damage(target, tick_duration_sec) and target is Node2D:
+			inferno_hit_positions.append((target as Node2D).global_position)
+	if _moving_inferno != null and is_instance_valid(_moving_inferno) and not inferno_hit_positions.is_empty():
+		_moving_inferno.add_merged_impact_points(
+			inferno_hit_positions,
+			38.0,
+			maxf(inferno_impact_merge_distance, 1.0),
+			maxi(inferno_max_new_impact_points_per_tick, 1)
+		)
 	_prune_contact_ledgers()
 
 func _prune_contact_ledgers() -> void:

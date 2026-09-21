@@ -86,10 +86,13 @@ func _flush_hit_label_batch(batch_id: StringName) -> void:
 	if batch == null or batch.final_damage <= 0:
 		return
 	var tree: SceneTree = npc.get_tree()
-	if tree == null or tree.root == null:
+	if tree == null or tree.root == null or PhaseManager.current_state() != PhaseManager.BATTLE:
 		return
 	var hit_label_ins = HIT_LABEL_SCENE.instantiate()
 	var ui_parent := _get_hit_label_parent(tree)
+	if ui_parent == null or ui_parent.is_queued_for_deletion():
+		hit_label_ins.queue_free()
+		return
 	var target_id: int = int(npc.get_instance_id())
 	var label_position: Vector2 = npc.global_position
 	label_position = ProjectedUi.project_to_screen(tree, npc.global_position, label_position)
@@ -98,7 +101,7 @@ func _flush_hit_label_batch(batch_id: StringName) -> void:
 	batch.target_instance_id = target_id
 	batch.target_max_hp = max(1, npc.get_incoming_damage_max_hp())
 	hit_label_ins.configure(batch)
-	ui_parent.call_deferred("add_child", hit_label_ins)
+	ui_parent.add_child(hit_label_ins)
 
 func _get_hit_label_parent(tree: SceneTree) -> Node:
 	return ProjectedUi.ensure_layer(tree)
@@ -121,6 +124,12 @@ func play_hit_flash() -> void:
 
 func play_hit_feedback(result: DamageResult, attack: Attack = null) -> void:
 	if npc == null or result == null:
+		return
+	if result.is_periodic:
+		# Sustained beams, hazards and status ticks already communicate contact
+		# through their persistent visual plus the periodic damage-label lane.
+		# Spawning a target flash tween and pooled impact for every cadence sample
+		# duplicates that feedback and scales with target count.
 		return
 	var profile := CombatHitVfxProfileType.from_damage_result(result, npc.get_incoming_damage_max_hp())
 	var flash_duration := 0.07 if profile.hit_type == CombatHitVfxProfileType.HitType.KINETIC_LIGHT else 0.10

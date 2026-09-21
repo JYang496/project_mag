@@ -117,6 +117,7 @@ func build_stat_snapshot() -> Dictionary:
 		"dash_speed",
 		"return_speed",
 		"attack_range",
+		"reload_duration_sec",
 		"heat_per_shot",
 		"heat_max_value",
 		"heat_cool_rate",

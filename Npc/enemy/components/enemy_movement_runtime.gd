@@ -12,6 +12,7 @@ var cached_separation_neighbor_count := 0
 var cached_separation_coherence := 0.0
 var cached_separation_nearest_distance := INF
 var cached_separation_total_strength := 0.0
+var _registry: Node
 
 const SEPARATION_RATE_SPARSE := 0.22
 const SEPARATION_RATE_LIGHT := 0.36
@@ -26,6 +27,7 @@ const SEPARATION_COMPRESSION_FULL_DISTANCE := 12.0
 
 func setup(source_enemy) -> void:
 	enemy = source_enemy
+	_registry = null
 	separation_time_left = float(source_enemy.get_instance_id() % 5) * 0.01
 
 func get_stun_remaining() -> float:
@@ -63,12 +65,15 @@ func apply_slow(multiplier: float, duration: float) -> void:
 	set_slow_remaining(maxf(get_slow_remaining(), duration))
 
 func move_enemy(desired_velocity: Vector2, _delta: float) -> void:
+	var profile := EnemySimulationSystem.detailed_profiling_enabled
+	var phase_started := Time.get_ticks_usec() if profile else 0
 	last_desired_velocity = desired_velocity
 	var knockback_velocity: Vector2 = enemy.knockback.amount * enemy.knockback.angle
 	var crowd_drift := Vector2.ZERO
 	if desired_velocity.length_squared() > 0.01:
 		cached_separation = _get_cached_separation(desired_velocity, maxf(_delta, 0.0))
 		crowd_drift += cached_separation
+	var separation_usec := Time.get_ticks_usec() - phase_started if profile else 0
 	if desired_velocity.length_squared() > 0.01 and enemy.crowd_lateral_speed > 0.0:
 		var direction := desired_velocity.normalized()
 		var tangent := Vector2(-direction.y, direction.x)
@@ -78,16 +83,33 @@ func move_enemy(desired_velocity: Vector2, _delta: float) -> void:
 	if enemy.velocity.length_squared() <= 0.0001:
 		return
 	var previous_position: Vector2 = enemy.global_position
+	if profile:
+		phase_started = Time.get_ticks_usec()
 	if enemy.uses_simplified_far_movement():
 		enemy.global_position += enemy.velocity * maxf(_delta, 0.0)
 	else:
 		enemy.move_and_slide()
+	var slide_usec := Time.get_ticks_usec() - phase_started if profile else 0
+	if profile:
+		phase_started = Time.get_ticks_usec()
 	var registry := _get_registry()
-	if registry != null and registry.has_method("can_accept_position") and not registry.call("can_accept_position", enemy.global_position, enemy):
-		enemy.global_position = previous_position
-		enemy.velocity = Vector2.ZERO
-	if enemy.global_position != previous_position:
+	var position_committed := false
+	if registry != null and registry.has_method("try_commit_enemy_position"):
+		position_committed = bool(registry.call("try_commit_enemy_position", enemy, previous_position))
+		if not position_committed:
+			enemy.velocity = Vector2.ZERO
+	elif registry != null:
+		position_committed = not registry.has_method("can_accept_position") or bool(registry.call("can_accept_position", enemy.global_position, enemy))
+		if not position_committed:
+			enemy.global_position = previous_position
+			enemy.velocity = Vector2.ZERO
+	var accept_usec := Time.get_ticks_usec() - phase_started if profile else 0
+	if profile:
+		phase_started = Time.get_ticks_usec()
+	if position_committed and registry != null and not registry.has_method("try_commit_enemy_position") and enemy.global_position != previous_position:
 		_sync_spatial_position()
+	if profile:
+		EnemySimulationSystem.record_movement_timing(separation_usec, slide_usec, accept_usec, Time.get_ticks_usec() - phase_started)
 
 func continue_cached_movement(delta: float) -> void:
 	move_enemy(last_desired_velocity, delta)
@@ -102,6 +124,10 @@ func _get_cached_separation(desired_velocity: Vector2, delta: float) -> Vector2:
 	if separation_time_left > 0.0:
 		return cached_separation
 	var interval := maxf(enemy.separation_update_interval, 0.02)
+	if EnemySimulationSystem.get_registered_enemy_count() >= EnemySimulationSystem.DENSE_CROWD_THRESHOLD:
+		# Dense crowds move at a bounded cadence and do not need to rebuild the
+		# same local separation neighborhood on every movement sample.
+		interval = maxf(interval, 0.10)
 	if cached_separation_neighbor_count <= 3:
 		interval = maxf(interval, 0.10)
 	elif cached_separation_neighbor_count <= 6:
@@ -188,5 +214,8 @@ func get_separation_debug_metrics() -> Dictionary:
 	}
 
 func _get_registry() -> Node:
+	if _registry != null and is_instance_valid(_registry):
+		return _registry
 	var tree: SceneTree = enemy.get_tree()
-	return tree.root.get_node_or_null("EnemyRegistry") if tree != null else null
+	_registry = tree.root.get_node_or_null("EnemyRegistry") if tree != null else null
+	return _registry

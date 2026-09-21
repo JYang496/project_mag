@@ -142,6 +142,12 @@ layout_mode = 2
 text = "武器技能测试场"
 alignment = 0
 
+[node name="EnemyPerformanceLab" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation"]
+custom_minimum_size = Vector2(392, 48)
+layout_mode = 2
+text = "全敌人生成器性能测试"
+alignment = 0
+
 [node name="Settings" type="Button" parent="CanvasLayer/GUI/SafeArea/MainColumn/Navigation" unique_id=2020538336]
 custom_minimum_size = Vector2(392, 48)
 layout_mode = 2

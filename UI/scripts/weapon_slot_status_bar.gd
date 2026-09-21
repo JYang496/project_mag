@@ -5,30 +5,45 @@ enum Placement { TOP, BOTTOM }
 
 @export_range(0.0, 1.0, 0.01) var progress := 0.0:
 	set(value):
-		progress = clampf(value, 0.0, 1.0)
+		var next := clampf(value, 0.0, 1.0)
+		if is_equal_approx(progress, next):
+			return
+		progress = next
 		queue_redraw()
 @export var fill_color := Color(0.98, 0.78, 0.28, 0.95):
 	set(value):
+		if fill_color == value:
+			return
 		fill_color = value
 		queue_redraw()
 @export var base_color := Color(0.12, 0.14, 0.16, 0.9):
 	set(value):
+		if base_color == value:
+			return
 		base_color = value
 		queue_redraw()
 @export var placement: Placement = Placement.BOTTOM:
 	set(value):
+		if placement == value:
+			return
 		placement = value
 		queue_redraw()
 @export_range(2.0, 8.0, 0.5) var bar_height := 5.0:
 	set(value):
+		if is_equal_approx(bar_height, value):
+			return
 		bar_height = value
 		queue_redraw()
 @export_range(4.0, 16.0, 1.0) var top_offset := 8.0:
 	set(value):
+		if is_equal_approx(top_offset, value):
+			return
 		top_offset = value
 		queue_redraw()
 @export var ready_edge_color := Color(0.58, 0.86, 1.0, 0.0):
 	set(value):
+		if ready_edge_color == value:
+			return
 		ready_edge_color = value
 		queue_redraw()
 

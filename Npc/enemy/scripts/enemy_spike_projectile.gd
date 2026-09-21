@@ -34,7 +34,6 @@ func on_shield_blocked(_shield: Area2D) -> void:
 	queue_free()
 
 func _physics_process(delta: float) -> void:
-	_sync_directional_visuals()
 	global_position += direction * speed * maxf(delta, 0.0)
 	_life_remaining -= maxf(delta, 0.0)
 	if _life_remaining <= 0.0:

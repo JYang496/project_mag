@@ -117,6 +117,9 @@ var _rest_arrival_progress := 1.0
 var _rest_arrival_pulse := 0.0
 var _affiliation_marker_quad: QuadMesh
 var _affiliation_marker_material: ShaderMaterial
+var _shared_shadow_mesh: CylinderMesh
+var _enemy_shadow_batch: MultiMeshInstance3D
+var _enemy_shadow_multimesh: MultiMesh
 
 
 func is_ready_for_world_entry() -> bool:
@@ -237,15 +240,36 @@ func _resolve_rest_area_center() -> Vector2:
 func sync_late_visuals(_delta: float) -> void:
 	if not enabled or _camera == null:
 		return
+	var started := Time.get_ticks_usec()
 	if _mesh_registry != null:
 		_mesh_registry.sync_late(_delta)
+	var mesh_finished := Time.get_ticks_usec()
 	if _unit_billboard_renderer != null:
 		_unit_billboard_renderer.sync_late(_delta)
+	_mesh_sync_total_usec += mesh_finished - started
+	_billboard_sync_total_usec += Time.get_ticks_usec() - mesh_finished
+	_visual_sync_calls += 1
+
+var _mesh_sync_total_usec := 0
+var _billboard_sync_total_usec := 0
+var _visual_sync_calls := 0
+
+func reset_visual_timing_metrics() -> void:
+	_mesh_sync_total_usec = 0
+	_billboard_sync_total_usec = 0
+	_visual_sync_calls = 0
+	if _unit_billboard_renderer != null:
+		_unit_billboard_renderer.reset_timing_metrics()
+	if _mesh_registry != null:
+		_mesh_registry.reset_timing_metrics()
 
 func is_world_point_within_visual_bounds(world_point: Vector2, margin_pixels: float = 0.0) -> bool:
-	if not _projection_ready or _camera == null or not can_project_world_point(world_point):
+	if not _projection_ready or _camera == null or not is_instance_valid(_camera):
 		return false
-	var screen_point := project_world_to_screen(world_point)
+	var point_3d := world_2d_to_3d(world_point)
+	if _camera.is_position_behind(point_3d):
+		return false
+	var screen_point := _camera.unproject_position(point_3d)
 	var viewport_size := get_viewport().get_visible_rect().size
 	var margin := maxf(margin_pixels, 0.0)
 	return screen_point.x >= -margin and screen_point.y >= -margin and screen_point.x <= viewport_size.x + margin and screen_point.y <= viewport_size.y + margin
@@ -253,7 +277,13 @@ func is_world_point_within_visual_bounds(world_point: Vector2, margin_pixels: fl
 func get_visual_performance_metrics() -> Dictionary:
 	if _unit_billboard_renderer == null:
 		return {}
-	return _unit_billboard_renderer.get_performance_metrics()
+	var metrics: Dictionary = _unit_billboard_renderer.get_performance_metrics()
+	metrics["mesh_sync_total_ms"] = float(_mesh_sync_total_usec) / 1000.0
+	metrics["billboard_sync_total_ms"] = float(_billboard_sync_total_usec) / 1000.0
+	metrics["sync_calls"] = _visual_sync_calls
+	if _mesh_registry != null:
+		metrics["ground_mesh_breakdown"] = _mesh_registry.get_timing_metrics()
+	return metrics
 
 func configure(pitch: float, yaw: float, distance: float) -> void:
 	camera_pitch_degrees = clampf(pitch, 25.0, 75.0)
@@ -453,6 +483,10 @@ func _clear_ground_visual_caches() -> void:
 	_rest_ground_material = null
 	_rest_ground_sprite = null
 	_shadow_meshes.clear()
+	if _enemy_shadow_batch != null and is_instance_valid(_enemy_shadow_batch):
+		_enemy_shadow_batch.queue_free()
+	_enemy_shadow_batch = null
+	_enemy_shadow_multimesh = null
 	_affiliation_marker_meshes.clear()
 	_area_meshes.clear()
 	_segment_meshes.clear()
@@ -770,17 +804,52 @@ func _register_shadow(shadow: CanvasItem) -> void:
 		existing["size_2d"] = size_2d
 		_shadow_meshes[source_id] = existing
 		return
-	var mesh := _create_disc_mesh(Color(0.0, 0.0, 0.0, 0.20))
-	mesh.visible = false
-	_ground_root.add_child(mesh)
+	_ensure_shared_shadow_mesh()
+	var is_enemy_shadow := owner_2d.is_in_group(&"enemies")
+	var mesh: MeshInstance3D
+	if is_enemy_shadow:
+		_ensure_enemy_shadow_batch()
+	else:
+		mesh = MeshInstance3D.new()
+		mesh.mesh = _shared_shadow_mesh
+		mesh.visible = false
+		_ground_root.add_child(mesh)
 	_shadow_meshes[source_id] = {
 		"source": weakref(shadow),
 		"owner": weakref(owner_2d),
 		"mesh": mesh,
 		"local_anchor": local_anchor,
 		"size_2d": size_2d,
+		"batched_enemy": is_enemy_shadow,
 	}
 	shadow.set_meta(&"hybrid_ground_registered", true)
+
+func _ensure_shared_shadow_mesh() -> void:
+	if _shared_shadow_mesh != null:
+		return
+	_shared_shadow_mesh = CylinderMesh.new()
+	_shared_shadow_mesh.top_radius = 1.0
+	_shared_shadow_mesh.bottom_radius = 1.0
+	_shared_shadow_mesh.height = 0.008
+	_shared_shadow_mesh.radial_segments = 48
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(0.0, 0.0, 0.0, 0.20)
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_shared_shadow_mesh.material = material
+
+func _ensure_enemy_shadow_batch() -> void:
+	if _enemy_shadow_batch != null and is_instance_valid(_enemy_shadow_batch):
+		return
+	_enemy_shadow_multimesh = MultiMesh.new()
+	_enemy_shadow_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	_enemy_shadow_multimesh.mesh = _shared_shadow_mesh
+	_enemy_shadow_batch = MultiMeshInstance3D.new()
+	_enemy_shadow_batch.name = "EnemyShadowBatch"
+	_enemy_shadow_batch.multimesh = _enemy_shadow_multimesh
+	_enemy_shadow_batch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_ground_root.add_child(_enemy_shadow_batch)
 
 func _get_shadow_visual_size(shadow: CanvasItem) -> Vector2:
 	if shadow is Sprite2D:
@@ -1010,7 +1079,7 @@ func _register_warning_circle(warning: Node2D) -> void:
 		return
 	var color: Color = warning.get("fill_color") as Color
 	# Large danger zones must preserve visibility of units and terrain beneath them.
-	var player_range := bool(warning.get_meta(&"player_attack_range", false)) or warning is WeaponSkillArea or warning is WeaponSkillBlastPulse
+	var player_range := bool(warning.get_meta(&"player_attack_range", false)) or warning is WeaponSkillArea
 	color.a = clampf(color.a, 0.0, 0.07) if player_range else clampf(color.a, 0.12, 0.20)
 	var mesh := _create_translucent_warning_disc(color)
 	var outline_color: Color = warning.get("line_color") as Color
@@ -1090,6 +1159,15 @@ func _register_ground_segment(line: Line2D) -> void:
 	if style == &"chainsaw":
 		pool_key = &"chainsaw_boundary"
 	var mesh := _mesh_registry.acquire_mesh(pool_key, primitive)
+	# Pooled segments may previously have carried a per-instance warning
+	# material. Restore the shared material path before applying this line's
+	# optional priority override.
+	mesh.material_override = null
+	var render_priority := int(line.get_meta(&"hybrid_render_priority", -1))
+	if render_priority >= 0 and material != null:
+		var prioritized_material := material.duplicate() as Material
+		prioritized_material.render_priority = render_priority
+		mesh.material_override = prioritized_material
 	line.visible = false
 	var start_glow: MeshInstance3D
 	var end_glow: MeshInstance3D
@@ -1390,25 +1468,42 @@ func _sync_rest_zone_meshes() -> void:
 		mesh.set_instance_shader_parameter("selected", 1.0 if int(zone_id) == selected else 0.0)
 		mesh.set_instance_shader_parameter("visibility_alpha", clampf(float(_rest_area.modulate.a), 0.0, 1.0))
 
-func _sync_shadow_meshes() -> void:
+func _sync_shadow_meshes(sync_dense_enemies := true) -> void:
+	var batched_transforms: Array[Transform3D] = []
 	for id in _shadow_meshes.keys():
 		var entry := _shadow_meshes[id] as Dictionary
 		var source := (entry.source as WeakRef).get_ref() as CanvasItem
 		var owner_2d := (entry.owner as WeakRef).get_ref() as Node2D
 		var mesh := entry.mesh as MeshInstance3D
-		if source == null or owner_2d == null or mesh == null:
+		var batched_enemy := bool(entry.get("batched_enemy", false))
+		if source == null or owner_2d == null or (mesh == null and not batched_enemy):
 			if mesh != null:
 				mesh.queue_free()
 			_shadow_meshes.erase(id)
 			continue
+		if not sync_dense_enemies and owner_2d.is_in_group(&"enemies"):
+			continue
 		var local_anchor := entry.get("local_anchor", Vector2.ZERO) as Vector2
 		var size_2d := entry.get("size_2d", Vector2(36.0, 18.0)) as Vector2
 		var logical_anchor := owner_2d.global_transform * local_anchor
-		mesh.position = world_2d_to_ground_anchor(logical_anchor)
-		mesh.scale = Vector3(size_2d.x * 0.5 * world_scale, 1.0, size_2d.y * 0.5 * world_scale)
-		mesh.visible = owner_2d.is_visible_in_tree()
+		var position_3d := world_2d_to_ground_anchor(logical_anchor)
+		var scale_3d := Vector3(size_2d.x * 0.5 * world_scale, 1.0, size_2d.y * 0.5 * world_scale)
+		if batched_enemy:
+			if owner_2d.is_visible_in_tree():
+				batched_transforms.append(Transform3D(Basis.IDENTITY.scaled(scale_3d), position_3d))
+		else:
+			mesh.position = position_3d
+			mesh.scale = scale_3d
+			mesh.visible = owner_2d.is_visible_in_tree()
+	if sync_dense_enemies and _enemy_shadow_multimesh != null:
+		var count := batched_transforms.size()
+		if _enemy_shadow_multimesh.instance_count != count:
+			_enemy_shadow_multimesh.instance_count = count
+		for index in count:
+			_enemy_shadow_multimesh.set_instance_transform(index, batched_transforms[index])
+		_enemy_shadow_batch.visible = count > 0
 
-func _sync_affiliation_marker_meshes() -> void:
+func _sync_affiliation_marker_meshes(sync_dense_enemies := true, hide_dense_enemy_markers := false) -> void:
 	for id in _affiliation_marker_meshes.keys():
 		var entry := _affiliation_marker_meshes[id] as Dictionary
 		var source := (entry.source as WeakRef).get_ref() as Node2D
@@ -1418,6 +1513,11 @@ func _sync_affiliation_marker_meshes() -> void:
 			if mesh != null:
 				mesh.queue_free()
 			_affiliation_marker_meshes.erase(id)
+			continue
+		if hide_dense_enemy_markers and owner_2d.is_in_group(&"enemies"):
+			mesh.visible = false
+			continue
+		if not sync_dense_enemies and owner_2d.is_in_group(&"enemies"):
 			continue
 		var config := source.call("get_hybrid_ground_marker_config") as Dictionary
 		var local_anchor := config.get("local_anchor", Vector2.ZERO) as Vector2
@@ -1495,8 +1595,13 @@ func _sync_area_meshes() -> void:
 				texture_mesh.visible = area_visible and progress > 0.0 and texture_alpha > 0.0
 				texture_mesh.scale = Vector3(progress_radius, 1.0, progress_radius)
 				var texture_material := texture_mesh.mesh.material as StandardMaterial3D
-				texture_material.albedo_texture = area.call("get_warning_texture") as Texture2D
-				texture_material.albedo_color = Color(1.0, 1.0, 1.0, texture_alpha)
+				var warning_texture := area.call("get_warning_texture") as Texture2D
+				if entry.get("last_warning_texture") != warning_texture:
+					texture_material.albedo_texture = warning_texture
+					entry["last_warning_texture"] = warning_texture
+				if not is_equal_approx(float(entry.get("last_texture_alpha", -1.0)), texture_alpha):
+					texture_material.albedo_color = Color(1.0, 1.0, 1.0, texture_alpha)
+					entry["last_texture_alpha"] = texture_alpha
 			var fill_material := mesh.mesh.material as ShaderMaterial
 			if fill_material != null:
 				var fill_color := entry.get("fill_color", Color.WHITE) as Color
@@ -1599,7 +1704,8 @@ func _sync_segment_meshes() -> void:
 		var length_3d := maxf(delta.length() * world_scale, 0.01)
 		var width_3d := maxf(line.width * world_scale, 0.01)
 		mesh.scale = Vector3(length_3d, 1.0, width_3d)
-		mesh.position = world_2d_to_3d(midpoint) + Vector3.UP * 0.024
+		var ground_height := float(line.get_meta(&"hybrid_ground_height", 0.024))
+		mesh.position = world_2d_to_3d(midpoint) + Vector3.UP * ground_height
 		mesh.rotation.y = -delta.angle()
 		var segment_color := line.default_color
 		segment_color.a *= line.modulate.a
@@ -1654,6 +1760,24 @@ func _sync_enemy_aura_mesh(source_id: int, entry: Dictionary) -> void:
 		fill.position = world_2d_to_3d(source.global_position) + Vector3.UP * 0.021
 		if detail_outline != null:
 			detail_outline.position = world_2d_to_3d(source.global_position) + Vector3.UP * 0.022
+		if config.get("relationship_kind", &"") in [&"shield_aura", &"speed_aura", &"repair_range"]:
+			outline.visible = false
+			if detail_outline != null:
+				detail_outline.visible = false
+			fill.scale = Vector3(radius_3d, 1.0, radius_3d)
+			var fill_color := config.get("fill_color", Color.TRANSPARENT) as Color
+			var edge_color := config.get("line_color", Color.RED) as Color
+			var core_color := config.get("detail_color", Color.WHITE) as Color
+			if entry.get("support_radius", -1.0) != radius_2d \
+					or entry.get("support_fill_color") != fill_color \
+					or entry.get("support_edge_color") != edge_color \
+					or entry.get("support_core_color") != core_color:
+				AuraRendererType.sync_support_surface(fill, config, radius_2d)
+				entry["support_radius"] = radius_2d
+				entry["support_fill_color"] = fill_color
+				entry["support_edge_color"] = edge_color
+				entry["support_core_color"] = core_color
+			return
 		outline.scale = Vector3.ONE
 		fill.scale = Vector3(inner_radius_3d, 1.0, inner_radius_3d)
 		var outline_mesh := entry.get("outline_mesh") as TorusMesh
@@ -1681,13 +1805,6 @@ func _sync_enemy_aura_mesh(source_id: int, entry: Dictionary) -> void:
 				"detail_color",
 				detail_outline_material.albedo_color
 			) as Color
-
-		if config.get("relationship_kind", &"") in [&"shield_aura", &"speed_aura", &"repair_range"]:
-			outline.visible = false
-			if detail_outline != null:
-				detail_outline.visible = false
-			fill.scale = Vector3(radius_3d, 1.0, radius_3d)
-			AuraRendererType.sync_support_surface(fill, config, radius_2d)
 
 func _sync_enemy_link_meshes() -> void:
 	var active_keys: Dictionary = {}

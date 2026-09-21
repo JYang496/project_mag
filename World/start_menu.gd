@@ -9,6 +9,7 @@ const RESOLUTION_PRESETS: Array[Vector2i] = [
 const START_UI_THEME := preload("res://UI/themes/start_menu_theme.tres")
 const WORLD_SCENE_PATH := "res://World/world.tscn"
 const WEAPON_SKILL_LAB_SCENE_PATH := "res://tests/showcases/weapon/weapon_active_skill_gameplay_lab.tscn"
+const ENEMY_PERFORMANCE_LAB_SCENE_PATH := "res://tests/showcases/enemy/enemy_performance_lab.tscn"
 const WORLD_ENTRY_PREPARE_GATE_SCRIPT := preload("res://World/world_entry_prepare_gate.gd")
 const WORLD_SCENE_LOADER_SCRIPT := preload("res://World/world_scene_loader.gd")
 const MODAL_UI_CONTROLLER_SCRIPT := preload("res://UI/scripts/management/modal_ui_controller.gd")
@@ -28,6 +29,7 @@ enum PrewarmState { NOT_STARTED, RUNNING, SUCCEEDED, FAILED }
 @onready var continue_status: Label = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/ContinueStatus
 @onready var new_game_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/NewGame
 @onready var weapon_skill_lab_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/WeaponSkillLab
+@onready var enemy_performance_lab_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/EnemyPerformanceLab
 @onready var settings_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Settings
 @onready var exit_button: Button = $CanvasLayer/GUI/SafeArea/MainColumn/Navigation/Exit
 @onready var navigation_hint: Label = $CanvasLayer/GUI/SafeArea/MainColumn/InputHint/Navigation/Label
@@ -95,7 +97,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _move_main_menu_focus(direction: int) -> void:
-	var buttons: Array[Button] = [start_button, new_game_button, weapon_skill_lab_button, settings_button, exit_button]
+	var buttons: Array[Button] = [start_button, new_game_button, weapon_skill_lab_button, enemy_performance_lab_button, settings_button, exit_button]
 	var available: Array[Button] = []
 	for button in buttons:
 		if button.visible and not button.disabled:
@@ -114,6 +116,8 @@ func _move_main_menu_focus(direction: int) -> void:
 func _wire_controls() -> void:
 	if not weapon_skill_lab_button.pressed.is_connected(_on_weapon_skill_lab_pressed):
 		weapon_skill_lab_button.pressed.connect(_on_weapon_skill_lab_pressed)
+	if not enemy_performance_lab_button.pressed.is_connected(_on_enemy_performance_lab_pressed):
+		enemy_performance_lab_button.pressed.connect(_on_enemy_performance_lab_pressed)
 	if not settings_button.pressed.is_connected(_open_settings):
 		settings_button.pressed.connect(_open_settings)
 	if not settings_close_button.pressed.is_connected(_close_settings):
@@ -212,6 +216,28 @@ func _on_weapon_skill_lab_pressed() -> void:
 		return
 	get_tree().change_scene_to_packed(packed_scene)
 
+func _on_enemy_performance_lab_pressed() -> void:
+	if enemy_performance_lab_button.disabled:
+		return
+	enemy_performance_lab_button.disabled = true
+	var original_text := enemy_performance_lab_button.text
+	enemy_performance_lab_button.text = LocalizationManager.tr_key("ui.start.loading_test_lab", "Loading Test Lab...")
+	var prepare_result: Dictionary = WORLD_ENTRY_PREPARE_GATE_SCRIPT.prepare_world_entry()
+	SpawnData.ensure_loaded()
+	DataHandler.prewarm_mecha_default_weapon(str(PlayerData.select_mecha_id))
+	if not bool(prepare_result.get("ok", false)):
+		push_error("Enemy performance lab prepare failed: %s" % WORLD_ENTRY_PREPARE_GATE_SCRIPT.format_errors(prepare_result))
+		enemy_performance_lab_button.text = original_text
+		enemy_performance_lab_button.disabled = false
+		return
+	var packed_scene := load(ENEMY_PERFORMANCE_LAB_SCENE_PATH) as PackedScene
+	if packed_scene == null:
+		push_error("Enemy performance lab scene could not be loaded.")
+		enemy_performance_lab_button.text = original_text
+		enemy_performance_lab_button.disabled = false
+		return
+	get_tree().change_scene_to_packed(packed_scene)
+
 
 func _ensure_audio_settings_controls() -> void:
 	var existing := audio_slot.get_node_or_null("AudioSettingsControls")
@@ -274,6 +300,7 @@ func _apply_localized_text() -> void:
 	continue_status.text = LocalizationManager.tr_key("ui.start.no_save", "NO OPERATION RECORD FOUND")
 	new_game_button.text = LocalizationManager.tr_key("ui.start.new_game", "New Game")
 	weapon_skill_lab_button.text = LocalizationManager.tr_key("ui.start.weapon_skill_lab", "Weapon Skill Test Lab")
+	enemy_performance_lab_button.text = "全敌人生成器性能测试"
 	settings_button.text = LocalizationManager.tr_key("ui.start.settings", "Settings")
 	exit_button.text = LocalizationManager.tr_key("ui.start.exit", "Exit Game")
 	var navigation_copy := LocalizationManager.tr_key("ui.start.navigation_hint", "WASD / ARROWS  SELECT")
@@ -375,7 +402,9 @@ func _set_world_entry_buttons_enabled(enabled: bool) -> void:
 		_refresh_save_state()
 		new_game_button.disabled = false
 		weapon_skill_lab_button.disabled = false
+		enemy_performance_lab_button.disabled = false
 		return
 	start_button.disabled = true
 	new_game_button.disabled = true
 	weapon_skill_lab_button.disabled = true
+	enemy_performance_lab_button.disabled = true

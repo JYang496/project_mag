@@ -33,15 +33,13 @@ func get_unit_billboard_config() -> Dictionary:
 	var config := super.get_unit_billboard_config()
 	var changed := _set_billboard_config_value(&"module_feedback", _module_feedback)
 	changed = _set_billboard_config_value(&"floating_module", true) or changed
-	# Reuse the billboard flash channel so the pulse also appears in the hybrid view.
-	var flash_amount := float(config.get("flash_amount", 0.0))
-	if _skill_ready_pulse > flash_amount:
-		changed = _set_billboard_config_value(&"flash_amount", _skill_ready_pulse) or changed
-		changed = _set_billboard_config_value(&"flash_color", Color.WHITE) or changed
 	if changed:
 		_billboard_appearance_version += 1
 		config["appearance_version"] = _billboard_appearance_version
 	return config
+
+func _get_additional_flash_amount() -> float:
+	return _skill_ready_pulse
 
 func get_visual_muzzle_canvas_position() -> Vector2:
 	var texture := _get_current_texture()

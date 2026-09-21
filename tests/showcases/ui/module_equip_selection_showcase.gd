@@ -1,6 +1,6 @@
 extends Control
 
-const PANEL_SCENE := preload("res://UI/scenes/module_equip_selection_panel.tscn")
+const PANEL_SCENE := preload("res://UI/components/ModuleEquipSelectionPanel/ModuleEquipSelectionPanel.tscn")
 const MACHINE_GUN_SCENE := preload("res://Player/Weapons/Instances/machine_gun.tscn")
 const CHARGED_BLASTER_SCENE := preload("res://Player/Weapons/Instances/charged_blaster.tscn")
 const LASER_SCENE := preload("res://Player/Weapons/Instances/laser.tscn")
@@ -34,7 +34,7 @@ func _ready() -> void:
 	add_child(module_instance)
 	module_instance.visible = false
 	InventoryData.temporary_modules.append(module_instance)
-	var panel := PANEL_SCENE.instantiate() as ModuleEquipSelectionPanel
+	var panel := PANEL_SCENE.instantiate()
 	add_child(panel)
 	panel.open_for_module(module_instance, Callable(), true)
 

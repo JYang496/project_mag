@@ -1605,7 +1605,15 @@ func _on_resume_button_pressed() -> void:
 		_set_pause_menu_open(false)
 
 func _on_pause_return_to_menu_pressed() -> void:
+	_return_to_start_menu()
+
+func _return_to_start_menu() -> void:
 	release_ui_pauses()
+	PhaseManager.reset_runtime_state()
+	# Let already queued root-level battle spawns enter the tree, then sweep once
+	# more before replacing the scene so deferred effects cannot reach the menu.
+	await get_tree().process_frame
+	PhaseManager.cleanup_battle_runtime_transients()
 	get_tree().change_scene_to_file("res://World/Start.tscn")
 
 func _set_pause_menu_open(open: bool) -> void:
@@ -1775,8 +1783,7 @@ func _create_game_over_layout() -> void:
 
 
 func _on_game_over_new_game_pressed() -> void:
-	release_ui_pauses()
-	get_tree().change_scene_to_file("res://World/Start.tscn")
+	_return_to_start_menu()
 
 func _on_run_complete_endless_pressed() -> void:
 	release_ui_pauses()

@@ -46,16 +46,18 @@ func show_dash_warning(origin: Vector2, direction: Vector2, dash_distance: float
 	_half_width = default_half_width if half_width <= 0.0 else half_width
 	_progress_line.width = _half_width * 2.0
 	_update_pose(origin, direction)
-	_update_warning_polygon()
-	_update_progress_line(0.0)
-	visible = not _uses_hybrid_ground()
+	if not _uses_hybrid_ground():
+		_update_warning_polygon()
+		_update_progress_line(0.0)
+		visible = true
 
 func update_dash_warning(origin: Vector2, direction: Vector2, delta: float) -> void:
 	if not _active:
 		return
 	_elapsed = minf(_charge_duration, _elapsed + maxf(0.0, delta))
 	_update_pose(origin, direction)
-	_update_progress_line(_elapsed / _charge_duration)
+	if not _uses_hybrid_ground():
+		_update_progress_line(_elapsed / _charge_duration)
 
 func clear_warning() -> void:
 	_active = false

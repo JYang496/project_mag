@@ -7,6 +7,10 @@ var connected_renderer: ConnectedEffectRenderer
 var aura_renderer: AuraRenderer
 var area_renderer: AreaEffectRenderer
 var mesh_pool: GroundMeshInstancePool
+var _board_total_usec := 0
+var _area_total_usec := 0
+var _connected_total_usec := 0
+var _aura_total_usec := 0
 
 func setup(
 	view: Node,
@@ -26,10 +30,35 @@ func setup(
 func sync_late(delta: float) -> void:
 	if not _is_ready():
 		return
+	var started := Time.get_ticks_usec()
 	board_renderer.sync_late(delta)
+	_board_total_usec += Time.get_ticks_usec() - started
+	started = Time.get_ticks_usec()
 	area_renderer.sync_late(delta)
+	_area_total_usec += Time.get_ticks_usec() - started
+	started = Time.get_ticks_usec()
 	connected_renderer.sync_late(delta)
+	_connected_total_usec += Time.get_ticks_usec() - started
+	started = Time.get_ticks_usec()
 	aura_renderer.sync_late(delta)
+	_aura_total_usec += Time.get_ticks_usec() - started
+
+func reset_timing_metrics() -> void:
+	if area_renderer != null:
+		area_renderer.reset_timing_metrics()
+	_board_total_usec = 0
+	_area_total_usec = 0
+	_connected_total_usec = 0
+	_aura_total_usec = 0
+
+func get_timing_metrics() -> Dictionary:
+	return {
+		"board_ms": float(_board_total_usec) / 1000.0,
+		"area_ms": float(_area_total_usec) / 1000.0,
+		"connected_ms": float(_connected_total_usec) / 1000.0,
+		"aura_ms": float(_aura_total_usec) / 1000.0,
+		"area_breakdown": area_renderer.get_timing_metrics() if area_renderer != null else {},
+	}
 
 func clear() -> void:
 	if board_renderer != null:

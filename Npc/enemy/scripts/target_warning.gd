@@ -23,6 +23,7 @@ var _elapsed: float = 0.0
 var _fill_polygon: Polygon2D = null
 var _outline_line: Line2D = null
 var _countdown_label: Label = null
+var _hybrid_ground_registered := false
 
 func _ready() -> void:
 	add_to_group("enemy_runtime_cleanup")
@@ -41,6 +42,7 @@ func _ready() -> void:
 
 func _register_with_hybrid_ground() -> void:
 	if HybridGroundRegistration.register(self, &"register_warning_circle"):
+		_hybrid_ground_registered = true
 		visible = false
 
 func _exit_tree() -> void:
@@ -50,6 +52,10 @@ func _process(delta: float) -> void:
 	_elapsed += maxf(delta, 0.0)
 	if _elapsed >= maxf(duration, 0.01):
 		queue_free()
+		return
+	# Hybrid Ground reads the timing accessors directly. Updating hidden Canvas
+	# geometry and labels here would duplicate the same animation every frame.
+	if _hybrid_ground_registered:
 		return
 	if visual_preset == VisualPreset.BASIC:
 		queue_redraw()

@@ -1,6 +1,6 @@
 extends Control
 
-const REWARD_PANEL_SCRIPT := preload("res://UI/scripts/reward_selection_panel.gd")
+const REWARD_PANEL_SCRIPT := preload("res://UI/components/RewardSelectionPanel/RewardSelectionPanel.gd")
 const MODULE_SCENE := preload("res://Player/Weapons/Modules/wmod_crit_calibrator.tscn")
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
@@ -157,4 +157,6 @@ func _exit_tree() -> void:
 func _reset_runtime_state() -> void:
 	PlayerData.player_weapon_list = _previous_weapon_list
 	_showcase_weapons.clear()
+	if _card_builder != null and is_instance_valid(_card_builder):
+		_card_builder.free()
 	_card_builder = null

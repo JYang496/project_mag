@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WeaponBranchDefinition" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://asset/images/weapons/projectiles/energy_bolt_b.png" id="1_icon"]
+[ext_resource type="Script" path="res://data/WeaponBranchDefinition.gd" id="2_script"]
+
+[resource]
+script = ExtResource("2_script")
+fusion_required_tags = Array[StringName]([&"energy", &"on_hit"])
+produces_tags = Array[StringName]([&"energy", &"on_hit"])
+requires_any_tags = Array[StringName]([&"projectile", &"on_hit"])
+amplifies_tags = Array[StringName]([&"on_hit"])
+branch_id = "energy_bolts_delayed_burst"
+display_name = "Delayed Burst"
+description = "Hits leave energy marks that burst together after a short delay for 25% more damage."
+icon = ExtResource("1_icon")
+unlock_fuse = 2
+sort_order = 20
+weapon_scene_path = "res://Player/Weapons/Instances/energy_bolts.tscn"
+behavior_scene_path = "res://Player/Weapons/Branches/energy_bolts_delayed_burst_branch.tscn"
+exclusive_groups = PackedStringArray("energy_bolts_firing_pattern")

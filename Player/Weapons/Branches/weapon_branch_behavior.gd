@@ -190,5 +190,20 @@ func get_laser_focus_width_multiplier() -> float:
 func on_chainsaw_target_hit(_target: Node, _projectile: Projectile) -> void:
 	pass
 
+func uses_energy_bolt_pack_hunt() -> bool:
+	return false
+
+func get_energy_bolt_homing_turn_multiplier() -> float:
+	return 1.0
+
+func try_defer_energy_bolt_damage(
+	_projectile: Projectile,
+	_target: Node,
+	_base_damage: int,
+	_damage_type: StringName,
+	_knock_back_data: Dictionary
+) -> bool:
+	return false
+
 func on_passive_event(_event_name: StringName, _detail: Dictionary) -> void:
 	pass

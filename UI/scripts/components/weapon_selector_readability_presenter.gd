@@ -13,12 +13,12 @@ func setup(_root: Control, slots: Array[Control]) -> void:
 	_slots = slots
 	_empty_labels.resize(_slots.size())
 	_passive_icons.resize(_slots.size())
-	for slot_index in range(_slots.size()):
-		_ensure_slot_decorations(slot_index)
 
 func update_slot(slot_index: int, weapon: Variant, _is_mainhand: bool) -> void:
 	if slot_index < 0 or slot_index >= _slots.size():
 		return
+	if weapon != null:
+		_ensure_slot_decorations(slot_index)
 	var empty_label := _empty_labels[slot_index]
 	if empty_label != null:
 		empty_label.visible = false
@@ -39,6 +39,8 @@ func get_passive_icon(slot_index: int) -> Control:
 	return null
 
 func _ensure_slot_decorations(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= _slots.size():
+		return
 	var slot := _slots[slot_index]
 	var empty_label := slot.get_node_or_null("EmptyLabel") as Label
 	if empty_label == null:
@@ -46,16 +48,18 @@ func _ensure_slot_decorations(slot_index: int) -> void:
 		slot.add_child(empty_label)
 	_empty_labels[slot_index] = empty_label
 
-	var passive_icon := BADGE_SCENE.instantiate() as Control
-	passive_icon.name = "PassiveIcon"
-	passive_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	passive_icon.position = Vector2(60, 4 + WEAPON_DISK_SWAP_OFFSET_Y)
-	passive_icon.size = Vector2(30, 20)
-	passive_icon.visible = false
-	slot.add_child(passive_icon)
-	_passive_icons[slot_index] = passive_icon
+	if _passive_icons[slot_index] == null or not is_instance_valid(_passive_icons[slot_index]):
+		var passive_icon := BADGE_SCENE.instantiate() as Control
+		passive_icon.name = "PassiveIcon"
+		passive_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		passive_icon.position = Vector2(60, 4 + WEAPON_DISK_SWAP_OFFSET_Y)
+		passive_icon.size = Vector2(30, 20)
+		passive_icon.visible = false
+		slot.add_child(passive_icon)
+		_passive_icons[slot_index] = passive_icon
 
 func update_passive(slot_index: int, status: Dictionary) -> void:
+	_ensure_slot_decorations(slot_index)
 	var badge := _passive_icons[slot_index]
 	var id := str(status.get("id", ""))
 	var supported_ids := [

@@ -16,7 +16,8 @@ func setup(
 	radius: float = 420.0,
 	half_angle_degrees: float = 180.0,
 	target_release_radius_multiplier: float = 1.35,
-	attack_target_point: Variant = null
+	attack_target_point: Variant = null,
+	locked_target: Node2D = null
 ) -> HomingProjectileEffect:
 	projectile = projectile_value
 	use_fixed_search_center = attack_target_point is Vector2
@@ -25,7 +26,7 @@ func setup(
 	acquire_radius = maxf(radius, 1.0)
 	acquire_half_angle_degrees = clampf(half_angle_degrees, 0.0, 180.0)
 	release_radius_multiplier = maxf(target_release_radius_multiplier, 1.0)
-	_target_ref = null
+	_target_ref = weakref(locked_target) if _is_target_alive(locked_target) else null
 	return self
 
 func _physics_process(delta: float) -> void:

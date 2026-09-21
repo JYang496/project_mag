@@ -16,6 +16,8 @@ var _elapsed_sec := 0.0
 var _tick_elapsed_sec := 0.0
 var _cold_snap_target_ids: Dictionary = {}
 var _configured_global_origin := Vector2.ZERO
+var _query_shape: RectangleShape2D
+var _query_parameters: PhysicsShapeQueryParameters2D
 
 func setup(
 	weapon: Node,
@@ -43,9 +45,12 @@ func setup(
 func _ready() -> void:
 	global_position = _configured_global_origin
 	add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
+	_prepare_query_resources()
 	_create_ground_visual()
-	queue_redraw()
 	_apply_tick()
+	# Spread later scans across physics frames when automatic fire keeps several
+	# trails alive. The initial hit above remains immediate.
+	_tick_elapsed_sec = fmod(float(get_instance_id() % 997) * 0.017, tick_interval_sec)
 
 func _physics_process(delta: float) -> void:
 	var step: float = maxf(delta, 0.0)
@@ -57,7 +62,6 @@ func _physics_process(delta: float) -> void:
 	if _tick_elapsed_sec >= tick_interval_sec:
 		_tick_elapsed_sec = fmod(_tick_elapsed_sec, tick_interval_sec)
 		_apply_tick()
-	queue_redraw()
 
 func cleanup_for_battle_end() -> void:
 	queue_free()
@@ -80,6 +84,15 @@ func _create_ground_visual() -> void:
 	visual.area = self
 	add_child(visual)
 
+
+func _prepare_query_resources() -> void:
+	_query_shape = RectangleShape2D.new()
+	_query_parameters = PhysicsShapeQueryParameters2D.new()
+	_query_parameters.shape = _query_shape
+	_query_parameters.collision_mask = ENEMY_HURTBOX_MASK
+	_query_parameters.collide_with_areas = true
+	_query_parameters.collide_with_bodies = false
+
 func _apply_tick() -> void:
 	var damage_length := get_damage_length()
 	if damage_length <= 0.0:
@@ -88,16 +101,12 @@ func _apply_tick() -> void:
 		return
 	if not source_weapon.has_method("apply_glacier_trail_tick"):
 		return
-	var shape: RectangleShape2D = RectangleShape2D.new()
-	shape.size = Vector2(damage_length, path_width)
-	var query: PhysicsShapeQueryParameters2D = PhysicsShapeQueryParameters2D.new()
-	query.shape = shape
-	query.transform = Transform2D(global_rotation, to_global(Vector2(damage_length * 0.5, 0.0)))
-	query.collision_mask = ENEMY_HURTBOX_MASK
-	query.collide_with_areas = true
-	query.collide_with_bodies = false
+	if _query_shape == null or _query_parameters == null:
+		_prepare_query_resources()
+	_query_shape.size = Vector2(damage_length, path_width)
+	_query_parameters.transform = Transform2D(global_rotation, to_global(Vector2(damage_length * 0.5, 0.0)))
 	var seen_targets: Dictionary = {}
-	for hit in get_world_2d().direct_space_state.intersect_shape(query, 128):
+	for hit in get_world_2d().direct_space_state.intersect_shape(_query_parameters, 128):
 		var collider: Variant = hit.get("collider", null)
 		if not collider is HurtBox:
 			continue

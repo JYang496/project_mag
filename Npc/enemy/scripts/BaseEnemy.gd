@@ -70,6 +70,7 @@ var _ai_logic_ticks := 0
 var _ai_cached_movement_ticks := 0
 var _far_movement_accumulator := 0.0
 var _far_physics_simplified := false
+var _dense_crowd_lod_active := false
 var _far_area_monitoring_state: Array[Dictionary] = []
 var _far_body_collision_mask := 0
 var movement_runtime: EnemyMovementRuntime = EnemyMovementRuntime.new()
@@ -417,15 +418,20 @@ func consume_ai_update_delta(delta: float) -> float:
 	if _ai_tick_interval <= 0.0 or _ai_tick_accumulator + 0.00001 >= _ai_tick_interval:
 		var accumulated := _ai_tick_accumulator
 		_ai_tick_accumulator = 0.0
+		if _dense_crowd_lod_active:
+			# The AI step consumes the complete accumulated interval and performs
+			# its authoritative movement, so discard skipped-frame carry here.
+			_far_movement_accumulator = 0.0
 		_ai_logic_ticks += 1
 		return accumulated
 	return 0.0
 
 func continue_lod_movement(delta: float) -> void:
 	var movement_delta := maxf(delta, 0.0)
-	if _ai_is_far_tier and not is_stunned() and not is_quest_movement_locked():
+	if (_ai_is_far_tier or _dense_crowd_lod_active) and not is_stunned() and not is_quest_movement_locked():
 		_far_movement_accumulator += movement_delta
-		var movement_interval := 1.0 / maxf(far_movement_hz, 1.0)
+		var movement_hz := 30.0 if _dense_crowd_lod_active else far_movement_hz
+		var movement_interval := 1.0 / maxf(movement_hz, 1.0)
 		if _far_movement_accumulator + 0.00001 < movement_interval:
 			return
 		movement_delta = _far_movement_accumulator
@@ -444,6 +450,7 @@ func continue_lod_movement(delta: float) -> void:
 	movement_runtime.continue_cached_movement(movement_delta)
 
 func _resolve_ai_tick_interval() -> float:
+	_dense_crowd_lod_active = false
 	if self is EliteEnemy or is_boss or is_in_group("boss"):
 		_ai_is_far_tier = false
 		_set_far_physics_simplified(false)
@@ -456,6 +463,9 @@ func _resolve_ai_tick_interval() -> float:
 	if distance_sq <= maxf(ai_near_distance, 1.0) ** 2 or is_world_position_in_player_screen(global_position, 64.0):
 		_ai_is_far_tier = false
 		_set_far_physics_simplified(false)
+		if EnemySimulationSystem.get_registered_enemy_count() >= EnemySimulationSystem.DENSE_CROWD_THRESHOLD:
+			_dense_crowd_lod_active = true
+			return 1.0 / 30.0
 		return 0.0
 	if distance_sq <= maxf(ai_mid_distance, ai_near_distance) ** 2:
 		_ai_is_far_tier = false

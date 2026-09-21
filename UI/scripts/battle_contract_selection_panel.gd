@@ -1,5 +1,8 @@
 extends Control
 
+const PRESENTATION := preload("res://UI/resources/protocols/catalog.tres")
+@export var animations_enabled := true
+
 const OPEN_DURATION := 0.34
 const CARD_REVEAL_DURATION := 0.18
 const CARD_REVEAL_INTERVAL := 0.07
@@ -9,7 +12,6 @@ const PREFERRED_PANEL_WIDTH := 1232.0
 const PANEL_HORIZONTAL_SAFE_MARGIN := 24.0
 const PANEL_VERTICAL_SAFE_MARGIN := 16.0
 const CARD_SCENE := preload("res://UI/scenes/battle_contract_card.tscn")
-const INPUT_PROMPT_TEXTURE_FACTORY := preload("res://UI/scripts/components/input_prompt_texture_factory.gd")
 const REWARD_ENEMY_SCENE_PATH := "res://Npc/enemy/scenes/reward_enemy.tscn"
 const MAX_ENEMY_PREVIEW_ENTRIES := 5
 const ENEMY_PREVIEW_ICON_SIZE := Vector2(38, 38)
@@ -31,15 +33,15 @@ var _detail_definition: Resource
 @onready var current_selection_label: Label = $Shade/Panel/Margin/Content/Actions/CurrentSelection
 @onready var terminal_status: Label = $Shade/Panel/Margin/Content/TerminalStatus
 @onready var actions: HBoxContainer = $Shade/Panel/Margin/Content/Actions
-@onready var detail_name: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Header/Name
-@onready var detail_objective: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/Objective
-@onready var enemy_preview: VBoxContainer = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/EnemyPreview
-@onready var enemy_preview_header: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/EnemyPreview/Header
-@onready var enemy_preview_entries: HBoxContainer = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailContent/Details/EnemyPreview/Entries
+@onready var detail_name: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailViewport/DetailContent/Header/Name
+@onready var detail_objective: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailViewport/DetailContent/Details/Objective
+@onready var enemy_preview: VBoxContainer = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailViewport/DetailContent/Details/EnemyPreview
+@onready var enemy_preview_header: Label = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailViewport/DetailContent/Details/EnemyPreview/Header
+@onready var enemy_preview_entries: HBoxContainer = $Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailViewport/DetailContent/Details/EnemyPreview/Entries
 
 func _ready() -> void:
 	visible = false
-	confirm_button.icon = INPUT_PROMPT_TEXTURE_FACTORY.space_prompt_texture()
+	_apply_image_styles()
 	get_viewport().size_changed.connect(_on_viewport_size_changed)
 	for card in cards:
 		card.pressed.connect(_on_card_pressed.bind(card))
@@ -60,11 +62,13 @@ func open(options: Array, confirmed: Callable) -> void:
 		"1–{count} Select ·"
 	).replace("{count}", str(options.size()))
 	confirm_button.text = LocalizationManager.tr_key("battle_contract.ui.confirm", "Begin Contract")
+	actions.get_node("SpacePrompt").text = "空格" if LocalizationManager.get_locale() == "zh_CN" else "SPACE"
 	_set_current_selection(null)
 	_apply_panel_size(options.size() == 3)
 	for index in cards.size():
 		if index < options.size():
 			cards[index].visible = true
+			cards[index].animations_enabled = animations_enabled
 			cards[index].call("setup", options[index])
 			_configure_enhanced_offer(cards[index], options[index])
 			cards[index].call("set_compact_layout", options.size() == 3)
@@ -82,6 +86,7 @@ func _apply_panel_size(has_extra_contract: bool, has_enhanced_contract: bool = f
 	panel.offset_right = resolved_width * 0.5
 	panel.offset_top = -resolved_height * 0.5
 	panel.offset_bottom = resolved_height * 0.5
+	panel.position = panel.position.round()
 
 static func calculate_panel_size(viewport_size: Vector2, has_extra_contract: bool, has_enhanced_contract: bool = false) -> Vector2:
 	var available_width := maxf(0.0, viewport_size.x - PANEL_HORIZONTAL_SAFE_MARGIN * 2.0)
@@ -123,6 +128,7 @@ func detach_selected_card(target_parent: Control) -> Button:
 		card.disabled = true
 		card.call("set_selected", false, false)
 		var replacement := CARD_SCENE.instantiate() as Button
+		replacement.animations_enabled = animations_enabled
 		old_parent.add_child(replacement)
 		old_parent.move_child(replacement, old_index)
 		replacement.pressed.connect(_on_card_pressed.bind(replacement))
@@ -195,6 +201,7 @@ func _update_detail_preview(definition: Resource) -> void:
 	if definition == null:
 		return
 	_detail_definition = definition
+	$Shade/Panel/Margin/Content/DetailPanel/DetailMargin/DetailViewport.scroll_vertical = 0
 	var id := str(definition.contract_id)
 	detail_name.text = LocalizationManager.tr_key("battle_contract.ui.briefing", "Protocol Briefing")
 	var structure := LocalizationManager.tr_key(
@@ -381,9 +388,20 @@ func _clear_callbacks() -> void:
 func _play_open_transition() -> void:
 	_kill_transition()
 	visible = true
+	if not animations_enabled:
+		shade.color.a = SHADE_OPACITY
+		panel.scale = Vector2.ONE
+		panel.modulate = Color.WHITE
+		title_label.modulate.a = 1.0
+		subtitle.modulate.a = 1.0
+		actions.modulate.a = 1.0
+		for card in cards:
+			card.modulate = Color.WHITE
+		_finish_open_transition()
+		return
 	shade.color.a = 0.0
 	panel.pivot_offset = panel.size * 0.5
-	panel.scale = Vector2(0.025, 1.0)
+	panel.scale = Vector2.ONE
 	panel.modulate = Color(0.65, 0.9, 1.0, 0.35)
 	title_label.modulate.a = 0.0
 	subtitle.modulate.a = 0.0
@@ -400,7 +418,6 @@ func _play_open_transition() -> void:
 	_transition_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	_transition_tween.set_parallel(true)
 	_transition_tween.tween_property(shade, "color:a", SHADE_OPACITY, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	_transition_tween.tween_property(panel, "scale:x", 1.0, OPEN_DURATION).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	_transition_tween.tween_property(panel, "modulate", Color.WHITE, OPEN_DURATION).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_transition_tween.tween_property(title_label, "modulate:a", 1.0, 0.16).set_delay(0.16)
 	_transition_tween.tween_property(subtitle, "modulate:a", 1.0, 0.16).set_delay(0.2)
@@ -421,6 +438,34 @@ func _finish_open_transition() -> void:
 	)
 	_locked = false
 	cards[0].grab_focus()
+
+func _apply_image_styles() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	$Shade/Panel/Margin/Content/DetailPanel.add_theme_stylebox_override("panel", PRESENTATION.style("frame"))
+	confirm_button.icon = null
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var tint := Color.WHITE
+		if state == "hover":
+			tint = Color(1.15, 1.3, 1.35)
+		elif state == "disabled":
+			tint = Color(0.5, 0.55, 0.6)
+		var style := PRESENTATION.style("button", tint)
+		style.content_margin_left = 20
+		style.content_margin_right = 20
+		confirm_button.add_theme_stylebox_override(state, style)
+	confirm_button.add_theme_stylebox_override("focus", PRESENTATION.style("selected", Color.WHITE, false))
+	confirm_button.add_theme_color_override("font_color", Color(0.85, 0.94, 0.96))
+	confirm_button.add_theme_color_override("font_disabled_color", Color(0.55, 0.62, 0.65))
+	var space_label := Label.new()
+	space_label.name = "SpacePrompt"
+	space_label.text = "SPACE"
+	space_label.add_theme_font_size_override("font_size", 12)
+	space_label.add_theme_stylebox_override("normal", PRESENTATION.style("button"))
+	space_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	space_label.custom_minimum_size = Vector2(64, 32)
+	space_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	actions.add_child(space_label)
+	actions.move_child(space_label, confirm_button.get_index())
 
 func _kill_transition() -> void:
 	if _transition_tween != null and _transition_tween.is_valid():

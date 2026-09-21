@@ -229,6 +229,25 @@ func get_projectile_pierce_capacity() -> int:
 func consume_projectile_durability(charge: int = 1, target: Node = null) -> void:
 	enemy_hit(charge)
 
+func try_defer_hit_damage(
+	target: Node,
+	base_damage: int,
+	hit_damage_type: StringName,
+	knock_back_data: Dictionary
+) -> bool:
+	if source_weapon == null or not is_instance_valid(source_weapon):
+		return false
+	if not source_weapon.has_method("try_defer_projectile_hit_damage"):
+		return false
+	return bool(source_weapon.call(
+		"try_defer_projectile_hit_damage",
+		self,
+		target,
+		base_damage,
+		hit_damage_type,
+		knock_back_data
+	))
+
 func on_hit_target(target: Node) -> void:
 	if source_weapon and is_instance_valid(source_weapon):
 		if source_weapon.has_method("on_projectile_hit_target"):

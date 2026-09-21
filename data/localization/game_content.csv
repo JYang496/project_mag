@@ -1,7 +1,7 @@
 keys,en,zh_CN
-weapon.25.name,Cannon,重炮
+weapon.25.name,Mortar,迫击炮
 weapon.25.role_summary,Delayed ground impact,延迟地面炮击
-weapon.25.desc,"Delayed ground-impact cannon. Mark a landing zone and predict where groups will be when the shell arrives; Support Charge primes an empowered Breach impact.","延迟地面炮击。标记落点并预判炮弹抵达时敌群的位置；支援蓄力会强化下一次破阵落弹。"
+weapon.25.desc,"Indirect-fire mortar. Mark a landing zone and predict where groups will be when the shell arrives; Support Charge primes an empowered Breach impact.","间接火力迫击炮。标记落点并预判炮弹抵达时敌群的位置；支援蓄力会强化下一次破阵落弹。"
 weapon.10.name,Chainsaw Launcher,链锯发射器
 weapon.10.role_summary,Mid-close sustained cutting,中近距离持续切割
 weapon.10.desc,"Close-range projectile saw that ricochets inside its spawn cell. Boundary contact arms slowing vulnerability hits and extends that projectile's lifetime.","近距离投射锯刃，会在出生 cell 内弹射；接触边界后，命中会施加减速和易伤，并延长该投射物的生命周期。"
@@ -47,7 +47,7 @@ weapon.3.desc,"Mid-range Projectile spear. Repeat hits build charge; reload with
 passive.piercing_blade_dance.name,Piercing Blade Dance,穿刺轮舞
 passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds charge. Start reloading at 10 charge to launch an 8-direction volley that knocks surviving enemies away.","同一根长矛重复伤害同一敌人可积累充能。达到 10 点充能时开始装填，发射 8 方向齐射并击退命中后仍存活的敌人。"
 passive.cannon_idle_fire_triggered.name,Breach Shot,破阵炮击
-passive.cannon_idle_fire_triggered.desc,"Keep the Cannon in support mode for 5 seconds to prime one 1.45x-damage impact that makes affected targets take 20% more damage for 4 seconds.","重炮处于支援模式 5 秒后，下一次落弹造成 1.45 倍伤害，并使受影响目标在 4 秒内受到的伤害提高 20%。"
+passive.cannon_idle_fire_triggered.desc,"Keep the Mortar in support mode for 5 seconds to prime one 1.45x-damage impact that makes affected targets take 20% more damage for 4 seconds.","迫击炮处于支援模式 5 秒后，下一次落弹造成 1.45 倍伤害，并使受影响目标在 4 秒内受到的伤害提高 20%。"
 passive.cannon_zero_energy_cycle.name,Zero Burst,零点爆发
 passive.cannon_zero_energy_cycle.desc,"Stored burst cycle. Each valid damage event grants 10 global energy. A full-energy impact deals 2x damage, then releases one 90-radius secondary ring with stronger execute payoff.","蓄能爆发循环。每次有效伤害获得 10 点全局能量。满能量落弹造成 2 倍伤害，随后释放一次半径 90 的二次环，并获得更强的斩杀收益。"
 passive.chainsaw_wall_contact_triggered.name,Wall Contact,触壁回旋
@@ -76,10 +76,10 @@ passive.shotgun_close_hit_triggered.name,Close Hit,近距轰击
 passive.shotgun_close_hit_triggered.desc,"Switch Shotgun into the main slot to empower its first volley; hitting a target recently struck by another weapon triggers its breach payoff.","将霰弹枪切入主武器栏位会强化第一轮齐射；命中刚被其他武器攻击的目标时触发破阵收益。"
 passive.sniper_far_hit_triggered.name,Far Hit,远距狙击
 passive.sniper_far_hit_triggered.desc,"Charge in support mode for 5 seconds or trigger Crossfire to prime the next Sniper shot for the maximum 1.8x distance multiplier.","处于支援模式 5 秒完成蓄力或触发交叉火力，都会使狙击枪下一发获得最高 1.8 倍距离倍率。"
-branch.thermal_cannon_branch.name,Thermal Cannon,热能重炮
-branch.thermal_cannon_branch.desc,"Above half Heat, cannon shots become Fire and deal 50% more damage.",热量超过一半时，炮击转为火焰伤害并提高 50% 伤害。
-branch.zero_cannon_branch.name,Zero Cannon,零式重炮
-branch.zero_cannon_branch.desc,"At full Energy, the next cannon shot deals double damage and creates an energy blast.",能量充满后，下一发炮弹造成双倍伤害并产生能量爆炸。
+branch.thermal_cannon_branch.name,Thermal Mortar,热能迫击炮
+branch.thermal_cannon_branch.desc,"Above half Heat, mortar shells become Fire and deal 50% more damage.",热量超过一半时，迫击炮弹转为火焰伤害并提高 50% 伤害。
+branch.zero_cannon_branch.name,Zero Mortar,零式迫击炮
+branch.zero_cannon_branch.desc,"At full Energy, the next mortar shell deals double damage and creates an energy blast.",能量充满后，下一发迫击炮弹造成双倍伤害并产生能量爆炸。
 branch.explosive_saw.name,Explosive Saw,爆裂链锯
 branch.explosive_saw.desc,A chainsaw explodes after hitting enemies five times.,链锯命中敌人五次后爆炸。
 branch.ricochet_saw.name,Ricochet Saw,弹射链锯
@@ -174,7 +174,7 @@ module.wmod_vampiric_surge.name,Vampiric Surge,吸血涌动
 module.wmod_area_expander.name,Area Expander,范围扩展器
 module.wmod_crit_amplifier.name,Crit Amplifier,暴击增幅器
 module.wmod_crit_calibrator.name,Crit Calibrator,暴击校准器
-module.wmod_dash_cooler.name,Dash Cooler,冲刺冷却器
+module.wmod_dash_cooler.name,Active Skill Cooler,主动技能冷却器
 module.wmod_diffusion_nozzle.name,Diffusion Nozzle,扩散喷嘴
 module.wmod_expanded_magazine.name,Expanded Magazine,扩容弹匣
 module.wmod_fast_reload.name,Fast Reload,快速装填
@@ -243,9 +243,9 @@ module.wmod_crossfire.effect.3,"Hit an enemy recently hit by another weapon: +30
 module.wmod_cryo_infuser_freeze.effect.1,"Adds 3 freeze damage on hit","命中时附加 3 点冻结伤害"
 module.wmod_cryo_infuser_freeze.effect.2,"Adds 4 freeze damage on hit","命中时附加 4 点冻结伤害"
 module.wmod_cryo_infuser_freeze.effect.3,"Adds 5 freeze damage on hit","命中时附加 5 点冻结伤害"
-module.wmod_dash_cooler.effect.1,"While host weapon is main: player dash cooldown -15%","宿主武器为主武器时：玩家冲刺冷却 -15%"
-module.wmod_dash_cooler.effect.2,"While host weapon is main: player dash cooldown -22%","宿主武器为主武器时：玩家冲刺冷却 -22%"
-module.wmod_dash_cooler.effect.3,"While host weapon is main: player dash cooldown -29%","宿主武器为主武器时：玩家冲刺冷却 -29%"
+module.wmod_dash_cooler.effect.1,"While host weapon is main: player active skill cooldown -15%","宿主武器为主武器时：玩家主动技能冷却 -15%"
+module.wmod_dash_cooler.effect.2,"While host weapon is main: player active skill cooldown -22%","宿主武器为主武器时：玩家主动技能冷却 -22%"
+module.wmod_dash_cooler.effect.3,"While host weapon is main: player active skill cooldown -29%","宿主武器为主武器时：玩家主动技能冷却 -29%"
 module.wmod_dot_on_hit.effect.1,"Applies 5 ticks of 1 damage","施加 5 次持续伤害，每次 1 点"
 module.wmod_dot_on_hit.effect.2,"Applies 7 ticks of 1 damage","施加 7 次持续伤害，每次 1 点"
 module.wmod_dot_on_hit.effect.3,"Applies 9 ticks of 2 damage","施加 9 次持续伤害，每次 2 点"

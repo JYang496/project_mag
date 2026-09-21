@@ -308,6 +308,7 @@ func _ensure_elimination_indicator() -> void:
 	_elimination_indicator_canvas = CanvasLayer.new()
 	_elimination_indicator_canvas.name = ELIMINATION_INDICATOR_CANVAS_NAME
 	_elimination_indicator_canvas.layer = 5
+	_elimination_indicator_canvas.add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	_spawner.get_tree().root.add_child(_elimination_indicator_canvas)
 	_elimination_indicator = EliminationIndicatorLayer.new()
 	_elimination_indicator.name = "IndicatorLayer"

@@ -1,41 +1,31 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://UI/scripts/battle_contract_card.gd" id="1"]
-[ext_resource type="Script" path="res://UI/scripts/components/battle_contract_icon.gd" id="2"]
-[ext_resource type="Script" path="res://UI/scripts/components/enhanced_contract_frame.gd" id="3"]
 
 [node name="BattleContractCard" type="Button"]
 custom_minimum_size = Vector2(280, 250)
 size_flags_horizontal = 3
 size_flags_vertical = 3
 toggle_mode = true
+texture_filter = 1
 script = ExtResource("1")
 
-[node name="AccentLine" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 10
-offset_left = 2.0
-offset_top = 2.0
-offset_right = 6.0
-offset_bottom = -2.0
-anchor_right = 0.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-mouse_filter = 2
-
-[node name="SelectionRail" type="ColorRect" parent="."]
+[node name="SelectionRail" type="NinePatchRect" parent="."]
 visible = false
 layout_mode = 1
-anchors_preset = 12
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = -4.0
-offset_right = -8.0
-offset_bottom = -2.0
-grow_horizontal = 2
-grow_vertical = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = -0.0
+offset_bottom = -0.0
 mouse_filter = 2
+draw_center = false
+patch_margin_left = 24
+patch_margin_top = 24
+patch_margin_right = 24
+patch_margin_bottom = 24
 
 [node name="RareFrame" type="Panel" parent="."]
 visible = false
@@ -51,16 +41,39 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="EnhancedFrame" type="Control" parent="."]
+[node name="EnhancedFrame" type="NinePatchRect" parent="."]
 visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+offset_left = 7.0
+offset_top = 7.0
+offset_right = -7.0
+offset_bottom = -7.0
 mouse_filter = 2
-script = ExtResource("3")
+draw_center = false
+patch_margin_left = 24
+patch_margin_top = 24
+patch_margin_right = 24
+patch_margin_bottom = 24
+
+[node name="FocusFrame" type="NinePatchRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = 3.0
+offset_right = -3.0
+offset_bottom = -3.0
+mouse_filter = 2
+draw_center = false
+patch_margin_left = 8
+patch_margin_top = 8
+patch_margin_right = 8
+patch_margin_bottom = 8
 
 [node name="EnhancementToggle" type="CheckButton" parent="."]
 visible = false
@@ -78,7 +91,7 @@ offset_bottom = -10.0
 grow_horizontal = 0
 grow_vertical = 0
 mouse_default_cursor_shape = 2
-focus_mode = 1
+focus_mode = 2
 theme_override_colors/font_color = Color(0.69, 0.78, 0.83, 1)
 theme_override_colors/font_hover_color = Color(0.93, 0.97, 0.98, 1)
 theme_override_colors/font_pressed_color = Color(0.93, 0.97, 0.98, 1)
@@ -108,10 +121,10 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = 14.0
-offset_right = -24.0
-offset_bottom = -14.0
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_bottom = 14
 mouse_filter = 2
 
 [node name="Content" type="VBoxContainer" parent="Margin"]
@@ -123,7 +136,7 @@ layout_mode = 2
 theme_override_constants/separation = 9
 
 [node name="KeyBadge" type="Label" parent="Margin/Content/Header"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.86, 0.94, 0.96, 1)
 theme_override_colors/font_outline_color = Color(0.04, 0.08, 0.09, 1)
@@ -133,16 +146,19 @@ text = "1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ContractIcon" type="Control" parent="Margin/Content/Header"]
-custom_minimum_size = Vector2(25, 25)
+[node name="ContractIcon" type="TextureRect" parent="Margin/Content/Header"]
+custom_minimum_size = Vector2(32, 32)
+expand_mode = 1
+stretch_mode = 4
 layout_mode = 2
 mouse_filter = 2
-script = ExtResource("2")
+
 
 [node name="TypeLabel" type="Label" parent="Margin/Content/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 11
+text_overrun_behavior = 3
 text = "CONTRACT"
 vertical_alignment = 1
 
@@ -161,12 +177,13 @@ theme_override_colors/font_color = Color(0.92, 1, 0.94, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 11
 text = "✓ SELECTED"
 vertical_alignment = 1
 
 [node name="SelectionMark" type="Label" parent="Margin/Content/Header"]
-custom_minimum_size = Vector2(22, 25)
+visible = false
+custom_minimum_size = Vector2(0, 25)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.46, 0.58, 0.61, 0.9)
 theme_override_font_sizes/font_size = 20
@@ -182,15 +199,47 @@ autowrap_mode = 2
 max_lines_visible = 2
 
 [node name="ObjectiveGap" type="Control" parent="Margin/Content"]
-custom_minimum_size = Vector2(0, 12)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="InfoGrid" type="HBoxContainer" parent="Margin/Content"]
+[node name="Illustration" type="TextureRect" parent="Margin/Content/ObjectiveGap"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Missing" type="Label" parent="Margin/Content/ObjectiveGap"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="BodyScroll" type="ScrollContainer" parent="Margin/Content"]
+layout_mode = 2
+mouse_filter = 1
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="Body" type="VBoxContainer" parent="Margin/Content/BodyScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="InfoGrid" type="HBoxContainer" parent="Margin/Content/BodyScroll/Body"]
 layout_mode = 2
 theme_override_constants/separation = 18
 
-[node name="Description" type="Label" parent="Margin/Content/InfoGrid"]
+[node name="Description" type="Label" parent="Margin/Content/BodyScroll/Body/InfoGrid"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 16
@@ -198,14 +247,14 @@ theme_override_colors/font_color = Color(0.82, 0.89, 0.91, 1)
 autowrap_mode = 2
 vertical_alignment = 0
 
-[node name="IntroContent" type="VBoxContainer" parent="Margin/Content"]
+[node name="IntroContent" type="VBoxContainer" parent="Margin/Content/BodyScroll/Body"]
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="Objective" type="Label" parent="Margin/Content/IntroContent"]
+[node name="Objective" type="Label" parent="Margin/Content/BodyScroll/Body/IntroContent"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.82, 0.89, 0.91, 1)
@@ -214,54 +263,76 @@ horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 
-[node name="Parameters" type="Label" parent="Margin/Content/IntroContent"]
+[node name="Parameters" type="Label" parent="Margin/Content/BodyScroll/Body/IntroContent"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 
-[node name="RewardDetails" type="VBoxContainer" parent="Margin/Content"]
+[node name="RewardDetails" type="VBoxContainer" parent="Margin/Content/BodyScroll/Body"]
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 6
 
-[node name="Objective" type="Label" parent="Margin/Content/RewardDetails"]
+[node name="Objective" type="Label" parent="Margin/Content/BodyScroll/Body/RewardDetails"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.82, 0.89, 0.91, 1)
 autowrap_mode = 2
 
-[node name="Rule" type="Label" parent="Margin/Content/RewardDetails"]
+[node name="Rule" type="Label" parent="Margin/Content/BodyScroll/Body/RewardDetails"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.92, 0.72, 0.25, 1)
 autowrap_mode = 2
 
-[node name="ContentSpacer" type="Control" parent="Margin/Content"]
+[node name="ContentSpacer" type="VBoxContainer" parent="Margin/Content/BodyScroll/Body"]
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
 
-[node name="EnhancedDetails" type="VBoxContainer" parent="Margin/Content/ContentSpacer"]
+[node name="EnhancedDetails" type="VBoxContainer" parent="Margin/Content/BodyScroll/Body/ContentSpacer"]
 visible = false
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 74.0
-grow_horizontal = 2
+layout_mode = 2
 theme_override_constants/separation = 7
 
-[node name="Risk" type="Label" parent="Margin/Content/ContentSpacer/EnhancedDetails"]
+[node name="Risk" type="Label" parent="Margin/Content/BodyScroll/Body/ContentSpacer/EnhancedDetails"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(1, 0.53, 0.31, 1)
 autowrap_mode = 2
 
-[node name="Bonus" type="Label" parent="Margin/Content/ContentSpacer/EnhancedDetails"]
+[node name="Bonus" type="Label" parent="Margin/Content/BodyScroll/Body/ContentSpacer/EnhancedDetails"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.96, 0.78, 0.28, 1)
 autowrap_mode = 2
+
+[node name="StateBadges" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -40.0
+offset_bottom = -8.0
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="Rare" type="TextureRect" parent="StateBadges"]
+visible = false
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 4
+
+[node name="Disabled" type="TextureRect" parent="StateBadges"]
+visible = false
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 4

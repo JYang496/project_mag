@@ -3,8 +3,6 @@ class_name WeaponSelector
 
 @export var debug_mode := false
 
-const WEAPON_SLOT_STATUS_BAR_SCENE := preload("res://UI/components/WeaponSlotStatusBar/WeaponSlotStatusBar.tscn")
-const WEAPON_SKILL_CHARGE_TRACK_SCENE := preload("res://UI/components/WeaponSkillChargeTrack/WeaponSkillChargeTrack.tscn")
 const READABILITY_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_selector_readability_presenter.gd")
 const PASSIVE_PRESENTER_SCRIPT := preload("res://UI/scripts/components/weapon_selector_passive_presenter.gd")
 const SLOT_VIEW_SCRIPT := preload("res://UI/components/WeaponSlot/WeaponSlot.gd")
@@ -15,7 +13,9 @@ const RESOURCE_INDICATOR_SCENE := preload("res://UI/components/WeaponResourceInd
 const AVAILABILITY_LABEL_SCENE := preload("res://UI/components/WeaponAvailabilityLabel/WeaponAvailabilityLabel.tscn")
 const KEY_LABEL_SCENE := preload("res://UI/components/WeaponKeyLabel/WeaponKeyLabel.tscn")
 const SELECTOR_OVERLAY_SCENE := preload("res://UI/components/WeaponSelectorOverlay/WeaponSelectorOverlay.tscn")
+const WEAPON_SLOT_OVERLAY_SCENE := preload("res://UI/components/WeaponSlotOverlay/WeaponSlotOverlay.tscn")
 const SLOT_COUNT := 4
+const CONTINUOUS_REFRESH_INTERVAL_SEC := 0.05
 const SWITCH_ANIM_TIME := 0.35
 const SWITCH_ANIM_TRANS := Tween.TRANS_SINE
 const SWITCH_ANIM_EASE := Tween.EASE_OUT
@@ -29,7 +29,6 @@ const WEAPON_DISK_SWAP_OFFSET_Y := 75.0
 # a shallow overlap at the outer frame's lower-right junction.
 const SKILL_DISK_SCALE := 0.8
 const SKILL_DISK_CENTER_OFFSET := Vector2(34.0, 34.0)
-const MAINHAND_READY_GLOW_COLOR := Color(0.58, 0.86, 1.0, 1.0)
 const WEAPON_STATUS_FILL := Color(0.33, 0.66, 1.0, 0.95)
 const WEAPON_STATUS_TRACK := Color(0.11, 0.20, 0.25, 0.92)
 const WEAPON_STATUS_RELOAD := Color(0.34, 0.78, 0.88, 1.0)
@@ -45,14 +44,10 @@ const PASSIVE_COOLDOWN_COLOR := Color(0.44, 0.76, 0.92, 0.65)
 const PASSIVE_COOLDOWN_BASE_COLOR := Color(0.44, 0.76, 0.92, 0.14)
 const PASSIVE_UNAVAILABLE_COLOR := Color(0.48, 0.5, 0.52, 0.34)
 const PASSIVE_UNAVAILABLE_BASE_COLOR := Color(0.48, 0.5, 0.52, 0.09)
-const PASSIVE_CHARGE_BEAN_FILLED_COLOR := Color(1.0, 0.86, 0.26, 0.98)
-const PASSIVE_CHARGE_BEAN_EMPTY_COLOR := Color(0.23, 0.24, 0.26, 0.58)
-const PASSIVE_CHARGE_BEAN_OUTLINE_COLOR := Color(0.05, 0.05, 0.05, 0.72)
 const SKILL_READY_COLOR := Color(0.51, 0.96, 0.74, 1.0)
 const SKILL_COOLDOWN_COLOR := Color(0.20, 0.62, 0.90, 0.92)
 const SKILL_UNLOCK_PROGRESS_COLOR := Color(1.0, 0.76, 0.18, 0.95)
 const SKILL_BLOCKED_COLOR := Color(0.86, 0.30, 0.28, 0.92)
-const HOLD_SKILL_COLOR := Color(1.0, 0.76, 0.18, 1.0)
 const TRIGGER_FEEDBACK_DEBOUNCE_MSEC := 120
 @onready var _slot_nodes: Array[Control] = [$Slot0, $Slot1, $Slot2, $Slot3]
 
@@ -64,13 +59,9 @@ var _is_animating := false
 var _needs_full_refresh := false
 var _switch_controller = SWITCH_CONTROLLER_SCRIPT.new()
 var _slot_views: Array = []
-var _slot_cd_nodes: Array[Control] = []
-var _slot_passive_nodes: Array[Control] = []
-var _slot_passive_charge_nodes: Array[Control] = []
+var _slot_overlay_nodes: Array[Control] = []
 var _slot_resource_indicator_nodes: Array[Label] = []
 var _slot_availability_label_nodes: Array[Label] = []
-var _slot_skill_nodes: Array[Control] = []
-var _slot_hold_nodes: Array[Control] = []
 var _slot_key_labels: Array[Label] = []
 var _slot_skill_icons: Array[Control] = []
 var _key_ready_style: StyleBoxFlat
@@ -79,7 +70,6 @@ var _cooldown_overlay: Control
 var _readability_presenter
 var _passive_presenter
 var _slot_skill_icon_tweens: Dictionary = {}
-var _slot_track_flash_tweens: Dictionary = {}
 var _slot_passive_icon_tweens: Dictionary = {}
 var _last_trigger_feedback_msec: Dictionary = {}
 var _passive_visual_state_by_weapon: Dictionary = {}
@@ -88,6 +78,14 @@ var _skill_ready_state_by_weapon: Dictionary = {}
 var _selector_reload_total_by_weapon: Dictionary = {}
 var _connected_reload_weapon_ids: Dictionary = {}
 var _connected_passive_weapon_ids: Dictionary = {}
+var _availability_state_by_slot: Array[Dictionary] = []
+var _passive_state_by_slot: Array[Dictionary] = []
+var _skill_state_by_slot: Array[Dictionary] = []
+var _resource_state_by_slot: Array[Dictionary] = []
+var _heat_state_by_slot: Array[Dictionary] = []
+var _continuous_refresh_accumulator := 0.0
+var _last_layout_size := Vector2.ZERO
+var _refresh_requested := true
 
 var _missing_weapon_icon: Texture2D = preload("res://asset/images/ui/missing_weapon_icon.png")
 var _mainhand_slot_bg: Texture2D = preload("res://UI/themes/modern/weapon_slot_main.png")
@@ -122,6 +120,15 @@ func _ready() -> void:
 	_debug_log_state("ready")
 
 func _process(_delta: float) -> void:
+	_continuous_refresh_accumulator += maxf(_delta, 0.0)
+	if size != _last_layout_size:
+		_last_layout_size = size
+		_sync_cooldown_overlay_layout()
+		_apply_slot_layout(PlayerData.main_weapon_index)
+	if not _refresh_requested and _continuous_refresh_accumulator < CONTINUOUS_REFRESH_INTERVAL_SEC:
+		return
+	_continuous_refresh_accumulator = fmod(_continuous_refresh_accumulator, CONTINUOUS_REFRESH_INTERVAL_SEC)
+	_refresh_requested = false
 	_update_slot_cooldown_progress()
 	_update_slot_heat()
 	_update_slot_passive_progress()
@@ -134,15 +141,23 @@ func _update_slot_heat() -> void:
 		var weapon_idx := logical_order[slot_idx] if slot_idx < logical_order.size() else -1
 		var slot_view = _slot_views[slot_idx]
 		if weapon_idx < 0 or weapon_idx >= weapons.size() or not is_instance_valid(weapons[weapon_idx]):
-			slot_view.set_heat(0.0, 0.0, false)
+			if not _heat_state_by_slot[slot_idx].is_empty():
+				_heat_state_by_slot[slot_idx] = {}
+				slot_view.set_heat(0.0, 0.0, false)
 			continue
 		var weapon: Node = weapons[weapon_idx]
 		if not weapon.has_method("has_heat_system") or not bool(weapon.call("has_heat_system")):
-			slot_view.set_heat(0.0, 0.0, false)
+			if not _heat_state_by_slot[slot_idx].is_empty():
+				_heat_state_by_slot[slot_idx] = {}
+				slot_view.set_heat(0.0, 0.0, false)
 			continue
 		var heat_value := float(weapon.call("get_heat_value")) if weapon.has_method("get_heat_value") else 0.0
 		var heat_max := float(weapon.call("get_heat_max_value")) if weapon.has_method("get_heat_max_value") else 0.0
 		var overheated := bool(weapon.call("is_weapon_overheated")) if weapon.has_method("is_weapon_overheated") else false
+		var snapshot := {"value": heat_value, "maximum": heat_max, "overheated": overheated}
+		if _heat_state_by_slot[slot_idx] == snapshot:
+			continue
+		_heat_state_by_slot[slot_idx] = snapshot
 		slot_view.set_heat(heat_value, heat_max, overheated)
 
 func set_layout_origin(origin: Vector2) -> void:
@@ -178,6 +193,10 @@ func refresh_slots() -> void:
 	else:
 		main_idx = clampi(main_idx, 0, list_size - 1)
 	logical_order = _switch_controller.build_fixed_order(list_size, SLOT_COUNT)
+	for slot_idx in range(SLOT_COUNT):
+		var weapon_idx := logical_order[slot_idx] if slot_idx < logical_order.size() else -1
+		if weapon_idx >= 0 and weapon_idx < valid_weapons.size():
+			_ensure_slot_runtime_nodes(slot_idx, valid_weapons[weapon_idx] as Weapon)
 	_apply_slot_layout(main_idx)
 	_apply_visuals_from_logical_order(valid_weapons)
 	_apply_cooldown_visibility_from_logical_order(valid_weapons)
@@ -214,6 +233,7 @@ func animate_main_switch(step: int) -> void:
 	_debug_log_state("animate_start_step_%d" % sign_step)
 
 func _on_weapon_list_changed() -> void:
+	_refresh_requested = true
 	if _is_animating:
 		_needs_full_refresh = true
 		return
@@ -222,6 +242,7 @@ func _on_weapon_list_changed() -> void:
 func _on_main_weapon_index_changed(old_index: int, new_index: int, step: int) -> void:
 	if old_index == new_index:
 		return
+	_refresh_requested = true
 	_debug_log_state("signal_main_changed_%d_to_%d_step_%d" % [old_index, new_index, step])
 	var sign_step := signi(step)
 	if sign_step == 0:
@@ -274,6 +295,7 @@ func _apply_slot_layout(main_index: int) -> void:
 	for slot_idx in range(mini(_slot_nodes.size(), target_rects.size())):
 		_slot_nodes[slot_idx].position = target_rects[slot_idx].position
 		_slot_nodes[slot_idx].size = target_rects[slot_idx].size
+		_layout_slot_runtime_nodes(slot_idx)
 
 func _apply_visuals_from_logical_order(weapons: Array) -> void:
 	_apply_slot_backgrounds_from_logical_order()
@@ -281,15 +303,14 @@ func _apply_visuals_from_logical_order(weapons: Array) -> void:
 
 func _apply_cooldown_visibility_from_logical_order(weapons: Array) -> void:
 	for slot_idx in range(SLOT_COUNT):
-		var slot_node := _slot_nodes[slot_idx]
-		var progress_node := _get_slot_cooldown_node(slot_node)
-		if progress_node == null:
+		var overlay := _get_slot_overlay(slot_idx)
+		if overlay == null:
 			continue
 		var weapon_idx := logical_order[slot_idx]
 		var has_weapon := weapon_idx >= 0 and weapon_idx < weapons.size() and is_instance_valid(weapons[weapon_idx])
-		progress_node.visible = false
+		overlay.visible = has_weapon
 		if not has_weapon:
-			progress_node.set("progress", 1.0)
+			overlay.call("set_state", {})
 
 func _apply_slot_backgrounds_from_logical_order() -> void:
 	var current_main_index := PlayerData.main_weapon_index
@@ -308,6 +329,7 @@ func _apply_weapon_icons_from_logical_order(weapons: Array) -> void:
 		var slot_view = _slot_views[slot_idx]
 		var weapon_idx := logical_order[slot_idx]
 		if weapon_idx < 0 or weapon_idx >= weapons.size():
+			_passive_state_by_slot[slot_idx] = {}
 			slot_view.show_empty()
 			_readability_presenter.update_slot(slot_idx, null, false)
 			continue
@@ -338,86 +360,83 @@ func _get_slot_background(slot_node: Control) -> TextureRect:
 
 func _ensure_slot_cooldown_nodes() -> void:
 	_ensure_cooldown_overlay()
-	if _slot_cd_nodes.size() != SLOT_COUNT:
-		_slot_cd_nodes.resize(SLOT_COUNT)
-	if _slot_passive_nodes.size() != SLOT_COUNT:
-		_slot_passive_nodes.resize(SLOT_COUNT)
-	if _slot_passive_charge_nodes.size() != SLOT_COUNT:
-		_slot_passive_charge_nodes.resize(SLOT_COUNT)
+	if _slot_overlay_nodes.size() != SLOT_COUNT:
+		_slot_overlay_nodes.resize(SLOT_COUNT)
 	if _slot_resource_indicator_nodes.size() != SLOT_COUNT:
 		_slot_resource_indicator_nodes.resize(SLOT_COUNT)
 	if _slot_availability_label_nodes.size() != SLOT_COUNT:
 		_slot_availability_label_nodes.resize(SLOT_COUNT)
-	if _slot_skill_nodes.size() != SLOT_COUNT:
-		_slot_skill_nodes.resize(SLOT_COUNT)
-	if _slot_hold_nodes.size() != SLOT_COUNT:
-		_slot_hold_nodes.resize(SLOT_COUNT)
 	if _slot_key_labels.size() != SLOT_COUNT:
 		_slot_key_labels.resize(SLOT_COUNT)
+	if _slot_skill_icons.size() != SLOT_COUNT:
+		_slot_skill_icons.resize(SLOT_COUNT)
+	if _availability_state_by_slot.size() != SLOT_COUNT:
+		_availability_state_by_slot.resize(SLOT_COUNT)
+	if _passive_state_by_slot.size() != SLOT_COUNT:
+		_passive_state_by_slot.resize(SLOT_COUNT)
+	if _skill_state_by_slot.size() != SLOT_COUNT:
+		_skill_state_by_slot.resize(SLOT_COUNT)
+	if _resource_state_by_slot.size() != SLOT_COUNT:
+		_resource_state_by_slot.resize(SLOT_COUNT)
+	if _heat_state_by_slot.size() != SLOT_COUNT:
+		_heat_state_by_slot.resize(SLOT_COUNT)
 	for slot_idx in range(SLOT_COUNT):
-		var existing := _slot_cd_nodes[slot_idx]
-		if existing != null and is_instance_valid(existing):
-			pass
-		else:
-			var progress_node := WEAPON_SLOT_STATUS_BAR_SCENE.instantiate() as Control
-			if progress_node != null:
-				progress_node.name = "WeaponStatusBar%d" % slot_idx
-				progress_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				progress_node.visible = false
-				progress_node.z_index = 0
-				_cooldown_overlay.add_child(progress_node)
-				_slot_cd_nodes[slot_idx] = progress_node
-		if _slot_cd_nodes[slot_idx] != null and is_instance_valid(_slot_cd_nodes[slot_idx]):
-			_slot_cd_nodes[slot_idx].set("placement", WeaponSlotStatusBar.Placement.TOP)
-			_slot_cd_nodes[slot_idx].set("bar_height", 4.0)
-			_slot_cd_nodes[slot_idx].set("top_offset", 8.0)
-			_slot_cd_nodes[slot_idx].set("padding", 10.0)
-			_slot_cd_nodes[slot_idx].set("ready_edge_color", MAINHAND_READY_GLOW_COLOR)
-		_ensure_slot_passive_nodes(slot_idx)
-		_ensure_slot_passive_charge_node(slot_idx)
+		if _availability_state_by_slot[slot_idx] == null:
+			_availability_state_by_slot[slot_idx] = {}
+		if _passive_state_by_slot[slot_idx] == null:
+			_passive_state_by_slot[slot_idx] = {}
+		if _skill_state_by_slot[slot_idx] == null:
+			_skill_state_by_slot[slot_idx] = {}
+		if _resource_state_by_slot[slot_idx] == null:
+			_resource_state_by_slot[slot_idx] = {}
+		if _heat_state_by_slot[slot_idx] == null:
+			_heat_state_by_slot[slot_idx] = {}
+
+func _ensure_slot_runtime_nodes(slot_idx: int, weapon: Weapon) -> void:
+	if slot_idx < 0 or slot_idx >= SLOT_COUNT or weapon == null:
+		return
+	if _slot_overlay_nodes[slot_idx] == null or not is_instance_valid(_slot_overlay_nodes[slot_idx]):
+		var overlay := WEAPON_SLOT_OVERLAY_SCENE.instantiate() as Control
+		overlay.name = "WeaponSlotOverlay%d" % slot_idx
+		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_cooldown_overlay.add_child(overlay)
+		_slot_overlay_nodes[slot_idx] = overlay
+	if weapon.has_method("get_combat_resource_slots"):
 		_ensure_slot_resource_indicator_node(slot_idx)
+	if weapon.has_method("get_ammo_status"):
 		_ensure_slot_availability_label_node(slot_idx)
-		_ensure_slot_skill_nodes(slot_idx)
+	_ensure_slot_skill_nodes(slot_idx)
+	_layout_slot_runtime_nodes(slot_idx)
 
-func _ensure_slot_passive_nodes(slot_idx: int) -> void:
-	var existing := _slot_passive_nodes[slot_idx]
-	if existing == null or not is_instance_valid(existing):
-		var passive_node := WEAPON_SLOT_STATUS_BAR_SCENE.instantiate() as Control
-		if passive_node != null:
-			passive_node.name = "PassiveDiamond%d" % slot_idx
-			passive_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			passive_node.visible = false
-			passive_node.z_index = 0
-			passive_node.modulate = Color(1.0, 1.0, 1.0, 0.92)
-			passive_node.set("progress", 0.0)
-			passive_node.set("placement", WeaponSlotStatusBar.Placement.TOP)
-			passive_node.set("top_offset", 0.0)
-			passive_node.set("bar_height", 5.0)
-			passive_node.set("line_width", 3.0)
-			passive_node.set("padding", 2.0)
-			passive_node.set("clockwise", true)
-			passive_node.set("shape_mode", DiamondCooldownProgress.ShapeMode.RECTANGLE)
-			_cooldown_overlay.add_child(passive_node)
-			_slot_passive_nodes[slot_idx] = passive_node
-
-func _ensure_slot_passive_charge_node(slot_idx: int) -> void:
-	if slot_idx < 0 or slot_idx >= _slot_passive_charge_nodes.size():
+func _layout_slot_runtime_nodes(slot_idx: int) -> void:
+	if slot_idx < 0 or slot_idx >= _slot_nodes.size():
 		return
-	var existing := _slot_passive_charge_nodes[slot_idx]
-	if existing != null and is_instance_valid(existing):
-		return
-	var charge_node := WEAPON_SKILL_CHARGE_TRACK_SCENE.instantiate() as Control
-	if charge_node == null:
-		return
-	charge_node.name = "PassiveChargeTrack%d" % slot_idx
-	charge_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	charge_node.visible = false
-	charge_node.z_index = 0
-	charge_node.set("filled_color", PASSIVE_CHARGE_BEAN_FILLED_COLOR)
-	charge_node.set("empty_color", PASSIVE_CHARGE_BEAN_EMPTY_COLOR)
-	charge_node.set("outline_color", PASSIVE_CHARGE_BEAN_OUTLINE_COLOR)
-	_cooldown_overlay.add_child(charge_node)
-	_slot_passive_charge_nodes[slot_idx] = charge_node
+	var slot_node := _slot_nodes[slot_idx]
+	var overlay := _get_slot_overlay(slot_idx)
+	if overlay != null:
+		overlay.position = slot_node.position
+		overlay.size = slot_node.size
+		overlay.pivot_offset = overlay.size * 0.5
+	var availability_label := _get_slot_availability_label_node(slot_idx)
+	if availability_label != null:
+		var weapon_idx := logical_order[slot_idx] if slot_idx < logical_order.size() else -1
+		var is_mainhand := weapon_idx >= 0 and weapon_idx == PlayerData.main_weapon_index
+		var label_rect := get_weapon_availability_label_rect(slot_node.size, is_mainhand)
+		availability_label.position = slot_node.position + label_rect.position
+		availability_label.size = label_rect.size
+	var indicator := _get_slot_resource_indicator_node(slot_idx)
+	if indicator != null:
+		indicator.position = slot_node.position + Vector2(60.0, 4.0 + WEAPON_DISK_SWAP_OFFSET_Y)
+		indicator.size = Vector2(30.0, 15.0)
+	var key_label := _slot_key_labels[slot_idx] if slot_idx < _slot_key_labels.size() else null
+	if key_label != null:
+		key_label.position = slot_node.position + Vector2(25.0, 25.0)
+		key_label.size = Vector2(26.0, 22.0)
+	var skill_icon := _slot_skill_icons[slot_idx] if slot_idx < _slot_skill_icons.size() else null
+	if skill_icon != null:
+		skill_icon.position = slot_node.position \
+			+ SLOT_VIEW_SCRIPT.WEAPON_DISK_CENTER + SKILL_DISK_CENTER_OFFSET \
+			- Vector2(24.0, 24.0) * SKILL_DISK_SCALE
 
 func _ensure_slot_resource_indicator_node(slot_idx: int) -> void:
 	if slot_idx < 0 or slot_idx >= _slot_resource_indicator_nodes.size():
@@ -442,30 +461,6 @@ func _ensure_slot_availability_label_node(slot_idx: int) -> void:
 	_slot_availability_label_nodes[slot_idx] = label
 
 func _ensure_slot_skill_nodes(slot_idx: int) -> void:
-	if _slot_skill_nodes[slot_idx] == null or not is_instance_valid(_slot_skill_nodes[slot_idx]):
-		var skill_bar := WEAPON_SLOT_STATUS_BAR_SCENE.instantiate() as Control
-		skill_bar.name = "WeaponSkillBar%d" % slot_idx
-		skill_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		skill_bar.z_index = 3
-		skill_bar.set("placement", WeaponSlotStatusBar.Placement.BOTTOM)
-		skill_bar.set("bar_height", 4.0)
-		skill_bar.set("padding", 8.0)
-		skill_bar.set("base_color", Color(0.05, 0.12, 0.17, 0.92))
-		_cooldown_overlay.add_child(skill_bar)
-		_slot_skill_nodes[slot_idx] = skill_bar
-	if _slot_hold_nodes[slot_idx] == null or not is_instance_valid(_slot_hold_nodes[slot_idx]):
-		var hold_bar := WEAPON_SLOT_STATUS_BAR_SCENE.instantiate() as Control
-		hold_bar.name = "WeaponHoldBar%d" % slot_idx
-		hold_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		hold_bar.visible = false
-		hold_bar.z_index = 4
-		hold_bar.set("placement", WeaponSlotStatusBar.Placement.BOTTOM)
-		hold_bar.set("bar_height", 3.0)
-		hold_bar.set("padding", 2.0)
-		hold_bar.set("fill_color", HOLD_SKILL_COLOR)
-		hold_bar.set("base_color", Color(0.22, 0.14, 0.03, 0.94))
-		_cooldown_overlay.add_child(hold_bar)
-		_slot_hold_nodes[slot_idx] = hold_bar
 	if _slot_key_labels[slot_idx] == null or not is_instance_valid(_slot_key_labels[slot_idx]):
 		var key_label := KEY_LABEL_SCENE.instantiate() as Label
 		key_label.call("set_slot_index", slot_idx)
@@ -474,6 +469,7 @@ func _ensure_slot_skill_nodes(slot_idx: int) -> void:
 		if _key_idle_style == null:
 			_key_idle_style = key_label.get_theme_stylebox("normal") as StyleBoxFlat
 			_key_ready_style = key_label.get_theme_stylebox("pressed") as StyleBoxFlat
+	if _slot_skill_icons[slot_idx] == null or not is_instance_valid(_slot_skill_icons[slot_idx]):
 		var state_icon := SKILL_STATE_ICON_SCENE.instantiate() as Control
 		state_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		state_icon.name = "SkillStateIcon%d" % slot_idx
@@ -481,33 +477,25 @@ func _ensure_slot_skill_nodes(slot_idx: int) -> void:
 		state_icon.size = Vector2(48, 48)
 		state_icon.scale = Vector2.ONE * SKILL_DISK_SCALE
 		_cooldown_overlay.add_child(state_icon)
-		_slot_skill_icons.append(state_icon)
+		_slot_skill_icons[slot_idx] = state_icon
 
 func _update_slot_weapon_skill_progress() -> void:
 	var weapons: Array = PlayerData.player_weapon_list
 	for slot_idx in range(SLOT_COUNT):
-		var slot_node := _slot_nodes[slot_idx]
-		var skill_bar := _slot_skill_nodes[slot_idx]
-		var hold_bar := _slot_hold_nodes[slot_idx]
-		var key_label := _slot_key_labels[slot_idx]
 		var weapon_idx := logical_order[slot_idx] if slot_idx < logical_order.size() else -1
 		var has_weapon := weapon_idx >= 0 and weapon_idx < weapons.size() and is_instance_valid(weapons[weapon_idx])
-		for overlay_node in [skill_bar, hold_bar]:
-			overlay_node.position = slot_node.position
-			overlay_node.size = slot_node.size
-		# The key prompt and weapon disk trade vertical positions; the skill disk
-		# remains between them as the action/state bridge.
-		key_label.position = slot_node.position + Vector2(25.0, 25.0)
-		key_label.size = Vector2(26.0, 22.0)
-		key_label.text = str(weapon_idx + 1) if has_weapon else ""
-		key_label.visible = has_weapon
-		_slot_skill_icons[slot_idx].visible = has_weapon
-		_slot_skill_icons[slot_idx].position = slot_node.position \
-			+ SLOT_VIEW_SCRIPT.WEAPON_DISK_CENTER + SKILL_DISK_CENTER_OFFSET \
-			- Vector2(24.0, 24.0) * SKILL_DISK_SCALE
+		if has_weapon:
+			_ensure_slot_runtime_nodes(slot_idx, weapons[weapon_idx] as Weapon)
+		var key_label := _slot_key_labels[slot_idx] if slot_idx < _slot_key_labels.size() else null
+		var skill_icon := _slot_skill_icons[slot_idx] if slot_idx < _slot_skill_icons.size() else null
+		if key_label == null or skill_icon == null:
+			continue
 		if not has_weapon:
-			skill_bar.visible = false
-			hold_bar.visible = false
+			if not _skill_state_by_slot[slot_idx].is_empty():
+				_skill_state_by_slot[slot_idx] = {}
+				key_label.text = ""
+				key_label.visible = false
+				skill_icon.visible = false
 			continue
 		var weapon := weapons[weapon_idx] as Weapon
 		var status: Dictionary = weapon.get_weapon_skill_status()
@@ -516,16 +504,24 @@ func _update_slot_weapon_skill_progress() -> void:
 			status = status.duplicate()
 			status["ready"] = false
 			status["overheated"] = true
+		var effect_id := str(weapon.active_skill_effect_id)
+		var snapshot := status.duplicate(true)
+		snapshot["effect_id"] = effect_id
+		snapshot["key_text"] = str(weapon_idx + 1)
+		if _skill_state_by_slot[slot_idx] == snapshot:
+			continue
+		_skill_state_by_slot[slot_idx] = snapshot
 		_track_weapon_skill_activation(slot_idx, weapon, status)
 		_track_weapon_skill_readiness(slot_idx, weapon, status)
-		skill_bar.visible = false
-		hold_bar.visible = false
 		var ready := bool(status.get("ready", false)) and bool(status.get("available", false))
+		key_label.text = str(weapon_idx + 1)
+		key_label.visible = true
+		skill_icon.visible = true
 		key_label.add_theme_stylebox_override("normal", _key_ready_style if ready else _key_idle_style)
 		key_label.add_theme_color_override("font_color", Color("102b22") if ready else Color("e0edf5"))
 		key_label.add_theme_constant_override("outline_size", 0 if ready else 2)
-		_slot_skill_icons[slot_idx].call("set_effect_id", str(weapon.active_skill_effect_id))
-		_slot_skill_icons[slot_idx].call("set_status", status)
+		skill_icon.call("set_effect_id", effect_id)
+		skill_icon.call("set_status", status)
 
 func _track_weapon_skill_activation(
 	slot_idx: int,
@@ -564,80 +560,59 @@ func _track_weapon_skill_readiness(
 	if is_ready and not was_ready:
 		_pulse_skill_icon(slot_idx)
 
-func _get_slot_cooldown_node(slot_node: Control) -> Control:
-	if slot_node == null:
+func _get_slot_overlay(slot_idx: int) -> Control:
+	if slot_idx < 0 or slot_idx >= _slot_overlay_nodes.size():
 		return null
-	var slot_idx := _slot_nodes.find(slot_node)
-	if slot_idx < 0 or slot_idx >= _slot_cd_nodes.size():
-		return null
-	var cached := _slot_cd_nodes[slot_idx]
-	if cached != null and is_instance_valid(cached):
-		return cached
-	return null
-
-func _get_slot_passive_node(slot_node: Control) -> Control:
-	if slot_node == null:
-		return null
-	var slot_idx := _slot_nodes.find(slot_node)
-	if slot_idx < 0 or slot_idx >= _slot_passive_nodes.size():
-		return null
-	var cached := _slot_passive_nodes[slot_idx]
-	if cached != null and is_instance_valid(cached):
-		return cached
-	return null
-
-func _get_slot_passive_charge_node(slot_node: Control) -> Control:
-	if slot_node == null:
-		return null
-	var slot_idx := _slot_nodes.find(slot_node)
-	if slot_idx < 0 or slot_idx >= _slot_passive_charge_nodes.size():
-		return null
-	var cached := _slot_passive_charge_nodes[slot_idx]
+	var cached := _slot_overlay_nodes[slot_idx]
 	if cached != null and is_instance_valid(cached):
 		return cached
 	return null
 
 func _update_slot_cooldown_progress() -> void:
-	_sync_cooldown_overlay_layout()
 	var weapons: Array = PlayerData.player_weapon_list
 	var active_weapon_ids: Dictionary = {}
 	for slot_idx in range(SLOT_COUNT):
 		var slot_node := _slot_nodes[slot_idx]
 		var slot_view = _slot_views[slot_idx]
-		slot_view.set_ammo_state(false, 0.0, Color("73e7ef"), WEAPON_STATUS_TRACK)
-		var progress_node := _get_slot_cooldown_node(slot_node)
+		var overlay := _get_slot_overlay(slot_idx)
 		var availability_label := _get_slot_availability_label_node(slot_idx)
-		if progress_node == null:
-			continue
-		progress_node.position = slot_node.position
-		progress_node.size = slot_node.size
-		if _is_animating:
-			progress_node.scale = Vector2(0.94, 0.94)
-			progress_node.pivot_offset = progress_node.size * 0.5
-		else:
-			progress_node.scale = Vector2.ONE
 		var weapon_idx := -1
 		if slot_idx < logical_order.size():
 			weapon_idx = logical_order[slot_idx]
 		if weapon_idx < 0 or weapon_idx >= weapons.size():
-			progress_node.visible = false
-			progress_node.set("progress", 1.0)
+			_availability_state_by_slot[slot_idx] = {}
+			slot_view.set_ammo_state(false, 0.0, Color("73e7ef"), WEAPON_STATUS_TRACK)
+			if overlay != null:
+				overlay.visible = false
 			if availability_label != null:
 				availability_label.visible = false
 			continue
 		var weapon: Variant = weapons[weapon_idx]
 		if weapon == null or not is_instance_valid(weapon):
-			progress_node.visible = false
-			progress_node.set("progress", 1.0)
+			_availability_state_by_slot[slot_idx] = {}
+			slot_view.set_ammo_state(false, 0.0, Color("73e7ef"), WEAPON_STATUS_TRACK)
+			if overlay != null:
+				overlay.visible = false
 			if availability_label != null:
 				availability_label.visible = false
 			continue
+		_ensure_slot_runtime_nodes(slot_idx, weapon as Weapon)
+		overlay = _get_slot_overlay(slot_idx)
+		availability_label = _get_slot_availability_label_node(slot_idx)
+		overlay.visible = true
+		overlay.scale = Vector2(0.94, 0.94) if _is_animating else Vector2.ONE
 		var weapon_id: int = weapon.get_instance_id()
 		active_weapon_ids[weapon_id] = true
 		_ensure_weapon_reload_signal_connected(weapon)
 		_ensure_weapon_passive_signal_connected(weapon)
 		var is_mainhand_weapon := weapon_idx == PlayerData.main_weapon_index
 		var visual_state := _resolve_weapon_availability_state(weapon, is_mainhand_weapon)
+		visual_state["is_mainhand"] = is_mainhand_weapon
+		visual_state["overheated"] = bool(weapon.call("is_weapon_overheated")) if weapon.has_method("is_weapon_overheated") else false
+		if _availability_state_by_slot[slot_idx] == visual_state:
+			continue
+		_availability_state_by_slot[slot_idx] = visual_state.duplicate(true)
+		slot_view.set_ammo_state(false, 0.0, Color("73e7ef"), WEAPON_STATUS_TRACK)
 		var availability_kind := StringName(str(visual_state.get("kind", "unavailable")))
 		if is_mainhand_weapon and availability_kind != &"unavailable":
 			var ammo_fill: Color = visual_state.get("fill_color", Color("73e7ef"))
@@ -654,57 +629,51 @@ func _update_slot_cooldown_progress() -> void:
 			availability_label.position = slot_node.position + label_rect.position
 			availability_label.size = label_rect.size
 			availability_label.add_theme_font_size_override("font_size", 14 if is_mainhand_weapon else 12)
-		progress_node.visible = bool(visual_state.get("visible", false)) and not is_mainhand_weapon and visual_state.get("kind") == &"reloading"
-		progress_node.set("fill_color", visual_state.get("fill_color", WEAPON_STATUS_FILL))
-		progress_node.set("base_color", visual_state.get("track_color", WEAPON_STATUS_TRACK))
-		progress_node.set("progress", clampf(float(visual_state.get("progress", 0.0)), 0.0, 1.0))
+		var show_reload: bool = bool(visual_state.get("visible", false)) \
+			and not is_mainhand_weapon \
+			and StringName(str(visual_state.get("kind", ""))) == &"reloading"
+		overlay.call(
+			"set_reload_state",
+			show_reload,
+			clampf(float(visual_state.get("progress", 0.0)), 0.0, 1.0),
+			visual_state.get("fill_color", WEAPON_STATUS_FILL),
+			bool(visual_state.get("overheated", false))
+		)
 		_apply_weapon_availability_label(availability_label, visual_state, is_mainhand_weapon)
 
 	_disconnect_stale_reload_signals(active_weapon_ids)
 	_disconnect_stale_passive_signals(active_weapon_ids)
 
 func _update_slot_passive_progress() -> void:
-	_sync_cooldown_overlay_layout()
 	var weapons: Array = PlayerData.player_weapon_list
 	for slot_idx in range(SLOT_COUNT):
-		var slot_node := _slot_nodes[slot_idx]
-		var passive_node := _get_slot_passive_node(slot_node)
-		var charge_node := _get_slot_passive_charge_node(slot_node)
-		if passive_node == null:
-			continue
+		var overlay := _get_slot_overlay(slot_idx)
 		var weapon_idx := -1
 		if slot_idx < logical_order.size():
 			weapon_idx = logical_order[slot_idx]
 		if weapon_idx < 0 or weapon_idx >= weapons.size():
-			passive_node.visible = false
+			_passive_state_by_slot[slot_idx] = {}
 			_set_passive_tag_visible(slot_idx, false)
-			if charge_node != null:
-				charge_node.visible = false
+			if overlay != null:
+				overlay.call("set_passive_state", false, 0.0)
 			continue
 		var weapon: Variant = weapons[weapon_idx]
 		if weapon == null or not is_instance_valid(weapon):
-			passive_node.visible = false
+			_passive_state_by_slot[slot_idx] = {}
 			_set_passive_tag_visible(slot_idx, false)
-			if charge_node != null:
-				charge_node.visible = false
+			if overlay != null:
+				overlay.call("set_passive_state", false, 0.0)
 			continue
 		var visual_state: Dictionary = _passive_presenter.resolve_state(weapon)
-		_passive_presenter.layout_status(
-			passive_node,
-			charge_node,
-			slot_node,
-			visual_state,
-			_is_animating
-		)
+		if _passive_state_by_slot[slot_idx] == visual_state:
+			continue
+		_passive_state_by_slot[slot_idx] = visual_state.duplicate(true)
 		var should_show := bool(visual_state.get("visible", true))
 		_set_passive_tag_visible(slot_idx, should_show)
-		_passive_presenter.apply_status(
-			passive_node,
-			null,
-			visual_state,
-			_is_animating
-		)
-		charge_node.visible = false
+		if overlay != null:
+			# Preserve the current presentation: passive readiness remains a compact
+			# badge while the consolidated track stays dormant until explicitly used.
+			overlay.call("set_passive_state", false, float(visual_state.get("progress", 0.0)))
 		_readability_presenter.update_passive(slot_idx, weapon.get_passive_status())
 		_track_passive_visual_transition(slot_idx, weapon, visual_state)
 
@@ -712,7 +681,6 @@ func _set_passive_tag_visible(slot_idx: int, visible_value: bool) -> void:
 	_readability_presenter.set_passive_visible(slot_idx, visible_value)
 
 func _update_slot_resource_indicators() -> void:
-	_sync_cooldown_overlay_layout()
 	var weapons: Array = PlayerData.player_weapon_list
 	for slot_idx in range(SLOT_COUNT):
 		var indicator := _get_slot_resource_indicator_node(slot_idx)
@@ -722,22 +690,22 @@ func _update_slot_resource_indicators() -> void:
 		if slot_node == null:
 			indicator.visible = false
 			continue
-		indicator.position = slot_node.position + Vector2(
-			60.0,
-			4.0 + WEAPON_DISK_SWAP_OFFSET_Y
-		)
-		indicator.size = Vector2(30.0, 15.0)
 		var weapon_idx := -1
 		if slot_idx < logical_order.size():
 			weapon_idx = logical_order[slot_idx]
 		if weapon_idx < 0 or weapon_idx >= weapons.size() or weapon_idx == PlayerData.main_weapon_index:
+			_resource_state_by_slot[slot_idx] = {}
 			indicator.visible = false
 			continue
 		var weapon: Variant = weapons[weapon_idx]
 		var slot := _select_weapon_indicator_resource(weapon)
 		if slot.is_empty():
+			_resource_state_by_slot[slot_idx] = {}
 			indicator.visible = false
 			continue
+		if _resource_state_by_slot[slot_idx] == slot:
+			continue
+		_resource_state_by_slot[slot_idx] = slot.duplicate(true)
 		indicator.visible = true
 		var passive_badge: Control = _readability_presenter.get_passive_icon(slot_idx)
 		if passive_badge != null:
@@ -1010,6 +978,7 @@ func _disconnect_stale_passive_signals(active_weapon_ids: Dictionary) -> void:
 		_passive_visual_state_by_weapon.erase(weapon_id)
 
 func _on_weapon_passive_triggered(event_name: StringName, detail: Dictionary, weapon_id: int) -> void:
+	_refresh_requested = true
 	var weapon := instance_from_id(weapon_id)
 	if weapon == null or not is_instance_valid(weapon):
 		return
@@ -1047,6 +1016,7 @@ func _can_play_trigger_feedback(slot_idx: int) -> bool:
 	return true
 
 func _on_weapon_reload_completed(weapon: Weapon) -> void:
+	_refresh_requested = true
 	if weapon == null or not is_instance_valid(weapon):
 		return
 	var slot_idx := _find_slot_index_for_weapon(weapon)
@@ -1097,23 +1067,9 @@ func _track_passive_visual_transition(slot_idx: int, weapon: Variant, visual_sta
 		_pulse_passive_icon(slot_idx)
 
 func _play_passive_track_flash(slot_idx: int) -> void:
-	if slot_idx < 0 or slot_idx >= _slot_passive_charge_nodes.size():
-		return
-	var track := _slot_passive_charge_nodes[slot_idx]
-	if track == null or not is_instance_valid(track) or not track.visible:
-		return
-	var existing: Tween = _slot_track_flash_tweens.get(slot_idx, null) as Tween
-	if existing != null and is_instance_valid(existing):
-		existing.kill()
-	track.set("trigger_flash", 1.0)
-	var tween := create_tween()
-	_slot_track_flash_tweens[slot_idx] = tween
-	tween.tween_property(track, "trigger_flash", 0.0, 0.22)
-	tween.finished.connect(func() -> void:
-		if track != null and is_instance_valid(track):
-			track.set("trigger_flash", 0.0)
-			_slot_track_flash_tweens.erase(slot_idx)
-	)
+	# Passive feedback is carried by the compact action badge; the former hidden
+	# segmented track no longer owns a second animation surface.
+	return
 
 func _pulse_passive_icon(slot_idx: int) -> void:
 	var icon: Control = _readability_presenter.get_passive_icon(slot_idx)

@@ -126,6 +126,8 @@
         "res://data/weapon_branches/charged_blaster_prism_fan.tres",
         "res://data/weapon_branches/dash_frost.tres",
         "res://data/weapon_branches/dash_return_execute.tres",
+        "res://data/weapon_branches/energy_bolts_delayed_burst.tres",
+        "res://data/weapon_branches/energy_bolts_pack_hunt.tres",
         "res://data/weapon_branches/flamethrower_fire_aura.tres",
         "res://data/weapon_branches/flamethrower_long_cone.tres",
         "res://data/weapon_branches/glacier_subzero_battery.tres",

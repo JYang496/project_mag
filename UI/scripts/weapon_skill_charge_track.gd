@@ -3,55 +3,87 @@ class_name WeaponSkillChargeTrack
 
 @export var current_charges := 0:
 	set(value):
-		current_charges = maxi(value, 0)
+		var next := maxi(value, 0)
+		if current_charges == next:
+			return
+		current_charges = next
 		queue_redraw()
 @export var max_charges := 0:
 	set(value):
-		max_charges = maxi(value, 0)
+		var next := maxi(value, 0)
+		if max_charges == next:
+			return
+		max_charges = next
 		queue_redraw()
 var charge_states: Array = []:
 	set(value):
-		charge_states = value.duplicate(true) if value != null else []
+		var next: Array = value.duplicate(true) if value != null else []
+		if charge_states == next:
+			return
+		charge_states = next
 		queue_redraw()
 @export_range(0.0, 1.0, 0.01) var cycle_progress := 0.0:
 	set(value):
-		cycle_progress = clampf(value, 0.0, 1.0)
+		var next := clampf(value, 0.0, 1.0)
+		if is_equal_approx(cycle_progress, next):
+			return
+		cycle_progress = next
 		queue_redraw()
 @export var show_cycle_progress := false:
 	set(value):
+		if show_cycle_progress == value:
+			return
 		show_cycle_progress = value
 		queue_redraw()
 @export var filled_color := Color(1.0, 0.86, 0.26, 0.98):
 	set(value):
+		if filled_color == value:
+			return
 		filled_color = value
 		queue_redraw()
 @export var active_color := Color(0.30, 0.92, 1.0, 1.0):
 	set(value):
+		if active_color == value:
+			return
 		active_color = value
 		queue_redraw()
 @export var empty_color := Color(0.23, 0.24, 0.26, 0.72):
 	set(value):
+		if empty_color == value:
+			return
 		empty_color = value
 		queue_redraw()
 @export var outline_color := Color(0.05, 0.05, 0.05, 0.88):
 	set(value):
+		if outline_color == value:
+			return
 		outline_color = value
 		queue_redraw()
 @export var cycle_color := Color(0.62, 1.0, 1.0, 1.0):
 	set(value):
+		if cycle_color == value:
+			return
 		cycle_color = value
 		queue_redraw()
 @export var cycle_track_color := Color(0.08, 0.48, 0.56, 1.0):
 	set(value):
+		if cycle_track_color == value:
+			return
 		cycle_track_color = value
 		queue_redraw()
 @export_range(0.0, 1.0, 0.01) var trigger_flash := 0.0:
 	set(value):
-		trigger_flash = clampf(value, 0.0, 1.0)
+		var next := clampf(value, 0.0, 1.0)
+		if is_equal_approx(trigger_flash, next):
+			return
+		trigger_flash = next
 		queue_redraw()
 var cycle_thresholds: Array = []:
 	set(value):
-		cycle_thresholds = value.duplicate() if value != null else []
+		var next: Array = value.duplicate() if value != null else []
+		if cycle_thresholds == next:
+			return
+		cycle_thresholds = next
 		queue_redraw()
 
 const HORIZONTAL_PADDING := 2.0

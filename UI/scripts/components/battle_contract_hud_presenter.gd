@@ -283,6 +283,16 @@ func prepare_boss_intro(snapshot: Dictionary) -> void:
 func play_prepared_intro() -> void:
 	if _intro_control == null or not is_instance_valid(_intro_control):
 		return
+	if _intro_control.has_method("begin_intro_collapse") and not bool(_intro_control.get("animations_enabled")):
+		_intro_control.queue_free()
+		_intro_control = null
+		_intro_playing = false
+		_last_snapshot = {}
+		refresh(true)
+		panel.modulate = Color.WHITE
+		progress.modulate = Color.WHITE
+		panel.scale = Vector2.ONE
+		return
 	_intro_playing = true
 	panel.visible = false
 	var viewport_size := panel.get_viewport_rect().size

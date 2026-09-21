@@ -192,6 +192,8 @@ signal player_active_skill()
 @warning_ignore("unused_signal")
 signal player_skill_activated(skill: Node)
 @warning_ignore("unused_signal")
+signal player_skill_failed(reason: StringName)
+@warning_ignore("unused_signal")
 signal coin_collected()
 @warning_ignore("unused_signal")
 signal movement_state_changed(previous_mode: StringName, current_mode: StringName, status: Dictionary)
@@ -1582,7 +1584,13 @@ func _compute_stable_mecha_direction(direction: Vector2) -> String:
 	return "top_right" if _last_face_vertical_sign < 0 else "bottom_right"
 
 # Player does not have death atm
+var damage_disabled := false
+
 func damaged(attack: Attack) -> DamageResult:
+	if damage_disabled:
+		var blocked := DamageResult.new()
+		blocked.rejection_reason = DamageResult.REASON_INVULNERABLE
+		return blocked
 	_ensure_damage_reaction_system()
 	if _damage_reaction_system != null:
 		var result := _damage_reaction_system.damaged(attack)
@@ -1988,6 +1996,8 @@ func _on_collision_cd_timeout() -> void:
 	pass
 
 func _exit_tree() -> void:
+	if PlayerData != null and PlayerData.player == self:
+		PlayerData.player = null
 	if _weapon_command_controller != null:
 		_weapon_command_controller.clear()
 	if _weapon_auto_fire_runtime != null:

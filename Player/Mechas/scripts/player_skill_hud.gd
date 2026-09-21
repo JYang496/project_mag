@@ -9,6 +9,8 @@ const HUD_ICON_GAP := 4.0
 const ENERGY_TRACK := Color(0.105, 0.065, 0.018, 0.94)
 const ENERGY_FILL := Color(1.0, 0.55, 0.04, 0.98)
 const ENERGY_EDGE := Color(1.0, 0.76, 0.22, 1.0)
+const FAILURE_SHAKE_OFFSETS := [4.0, -4.0, 3.0, -3.0, 2.0, -2.0, 0.0]
+const FAILURE_SHAKE_STEP_SEC := 0.035
 
 @export var hud_size := Vector2(128.0, 64.0)
 @export_range(0.05, 0.5, 0.01) var fade_in_duration_sec := 0.15
@@ -17,7 +19,9 @@ const ENERGY_EDGE := Color(1.0, 0.76, 0.22, 1.0)
 
 var _player: Node2D
 var _feedback_tween: Tween
+var _failure_shake_tween: Tween
 var _feedback_active := false
+var _failure_shake_offset_x := 0.0
 var _current_energy := 100.0
 var _max_energy := 100.0
 
@@ -36,6 +40,8 @@ func _ready() -> void:
 	modulate.a = 0.0
 	if _player != null and _player.has_signal("player_active_skill"):
 		_player.connect("player_active_skill", _on_player_skill_attempted)
+	if _player != null and _player.has_signal("player_skill_failed"):
+		_player.connect("player_skill_failed", _on_player_skill_failed)
 	queue_redraw()
 
 
@@ -48,6 +54,37 @@ func _process(_delta: float) -> void:
 func _on_player_skill_attempted() -> void:
 	_sync_energy()
 	show_skill_feedback()
+
+
+func _on_player_skill_failed(_reason: StringName) -> void:
+	play_failure_shake()
+
+
+func play_failure_shake() -> void:
+	if _failure_shake_tween != null and _failure_shake_tween.is_valid():
+		_failure_shake_tween.kill()
+	_failure_shake_offset_x = 0.0
+	visible = true
+	modulate.a = 1.0
+	if not is_inside_tree():
+		queue_redraw()
+		return
+	_failure_shake_tween = create_tween()
+	var previous_offset_x := 0.0
+	for offset_x in FAILURE_SHAKE_OFFSETS:
+		_failure_shake_tween.tween_method(_set_failure_shake_offset, previous_offset_x, offset_x, FAILURE_SHAKE_STEP_SEC)
+		previous_offset_x = offset_x
+	_failure_shake_tween.tween_callback(_finish_failure_shake)
+
+
+func _set_failure_shake_offset(offset_x: float) -> void:
+	_failure_shake_offset_x = offset_x
+	queue_redraw()
+
+
+func _finish_failure_shake() -> void:
+	_failure_shake_offset_x = 0.0
+	queue_redraw()
 
 
 func show_skill_feedback() -> void:
@@ -129,7 +166,7 @@ func _draw() -> void:
 
 
 func get_skill_slot_rect() -> Rect2:
-	var anchor := hud_size * 0.5 + ENERGY_BAR_SCREEN_OFFSET
+	var anchor := hud_size * 0.5 + ENERGY_BAR_SCREEN_OFFSET + Vector2(_failure_shake_offset_x, 0.0)
 	return Rect2(anchor - ENERGY_BAR_SIZE * 0.5, ENERGY_BAR_SIZE)
 
 

@@ -7,13 +7,13 @@
 [node name="DashCooler" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
 cost = 6
-item_name = "Dash Cooler"
+item_name = "Active Skill Cooler"
 player_stat = 2
 value_lv1 = 0.15
 value_lv2 = 0.22
 value_lv3 = 0.29
-level_effects = PackedStringArray("While host weapon is main: player dash cooldown -15%", "While host weapon is main: player dash cooldown -22%", "While host weapon is main: player dash cooldown -29%")
-module_tags = PackedStringArray("buff", "movement")
+level_effects = PackedStringArray("While host weapon is main: player active skill cooldown -15%", "While host weapon is main: player active skill cooldown -22%", "While host weapon is main: player active skill cooldown -29%")
+module_tags = PackedStringArray("buff", "skill")
 
 [node name="Sprite" parent="." index="0"]
 texture = ExtResource("3_icon")

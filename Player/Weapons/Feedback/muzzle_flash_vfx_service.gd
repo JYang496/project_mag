@@ -20,14 +20,15 @@ func _on_phase_changed(phase: String) -> void:
 		entry["active"] = false
 
 static func ensure(tree: SceneTree) -> Node:
-	if tree == null or tree.root == null:
+	if tree == null or tree.root == null or PhaseManager.current_state() != PhaseManager.BATTLE:
 		return null
 	var existing := tree.get_first_node_in_group(&"muzzle_flash_vfx_service")
-	if existing != null:
+	if existing != null and not existing.is_queued_for_deletion():
 		return existing
 	var service = load("res://Player/Weapons/Feedback/muzzle_flash_vfx_service.gd").new()
 	service.name = "MuzzleFlashVfxService"
 	service.add_to_group(&"muzzle_flash_vfx_service")
+	service.add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	tree.root.add_child(service)
 	return service
 

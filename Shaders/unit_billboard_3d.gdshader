@@ -46,7 +46,7 @@ void fragment() {
 	vec4 texel = texture(sprite_texture, sprite_uv);
 	vec2 texel_size = 1.0 / vec2(textureSize(sprite_texture, 0));
 	float outline_alpha = 0.0;
-	if (outline_width_px > 0.0) {
+	if (outline_width_px > 0.0 && outline_color.a > 0.0 && texel.a <= 0.01) {
 		vec2 step_uv = texel_size * max(outline_width_px, 1.0);
 		outline_alpha = max(outline_alpha, texture(sprite_texture, sprite_uv + vec2(step_uv.x, 0.0)).a);
 		outline_alpha = max(outline_alpha, texture(sprite_texture, sprite_uv - vec2(step_uv.x, 0.0)).a);

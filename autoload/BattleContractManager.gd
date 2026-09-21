@@ -379,6 +379,13 @@ func _stop_runtime() -> void:
 	_runtime = null
 
 func _on_runtime_completed(snapshot: Dictionary) -> void:
+	# Contract completion can originate from an Area2D body_entered callback. Defer
+	# reward spawning until the physics server has finished flushing its queries.
+	call_deferred("_finalize_runtime_completion", snapshot.duplicate(true))
+
+func _finalize_runtime_completion(snapshot: Dictionary) -> void:
+	if state != ACTIVE or _runtime == null:
+		return
 	_stop_runtime()
 	_grant_staged_completion_gold(snapshot, true)
 	if not complete_contract(snapshot):

@@ -4,6 +4,8 @@ class_name AffiliationMarker
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 var _hybrid_config: Dictionary = {}
 var _hybrid_visual_version := 0
+var _hybrid_state: Array = []
+var _hybrid_registered := false
 
 enum MarkerShape {
 	PLAYER_RING,
@@ -65,6 +67,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _hybrid_registered:
+		return
 	super._process(delta)
 
 
@@ -74,7 +78,9 @@ func _register_with_hybrid_ground() -> void:
 	if not has_meta(&"hybrid_ground_visible"):
 		set_meta(&"hybrid_ground_visible", visible)
 	if HybridGroundRegistration.register(self, &"register_affiliation_marker"):
+		_hybrid_registered = true
 		visible = false
+		set_process(false)
 
 
 func sync_to_ground_shadow() -> void:
@@ -108,29 +114,28 @@ func _get_shadow_visual_size(shadow: CanvasItem) -> Vector2:
 
 
 func get_hybrid_ground_marker_config() -> Dictionary:
-	var changed := _set_hybrid_value(&"local_anchor", _base_transform.origin)
-	changed = _set_hybrid_value(&"footprint_size", _get_effective_footprint_size()) or changed
-	changed = _set_hybrid_value(&"line_width", line_width) or changed
-	changed = _set_hybrid_value(&"arc_length", arc_length) or changed
-	changed = _set_hybrid_value(&"color", marker_color) or changed
-	changed = _set_hybrid_value(&"marker_shape", marker_shape) or changed
-	changed = _set_hybrid_value(&"marker_rank", marker_rank) or changed
-	changed = _set_hybrid_value(&"visible", bool(get_meta(&"hybrid_ground_visible", true))) or changed
-	if changed:
+	var next_state := [
+		_base_transform.origin, _get_effective_footprint_size(), line_width, arc_length,
+		marker_color, marker_shape, marker_rank, bool(get_meta(&"hybrid_ground_visible", true)),
+	]
+	if next_state != _hybrid_state:
+		_hybrid_state = next_state
+		_hybrid_config["local_anchor"] = next_state[0]
+		_hybrid_config["footprint_size"] = next_state[1]
+		_hybrid_config["line_width"] = line_width
+		_hybrid_config["arc_length"] = arc_length
+		_hybrid_config["color"] = marker_color
+		_hybrid_config["marker_shape"] = marker_shape
+		_hybrid_config["marker_rank"] = marker_rank
+		_hybrid_config["visible"] = next_state[7]
 		_hybrid_visual_version += 1
 	_hybrid_config["visual_version"] = _hybrid_visual_version
 	return _hybrid_config
 
 
-func _set_hybrid_value(key: StringName, value: Variant) -> bool:
-	if _hybrid_config.has(key) and _hybrid_config[key] == value:
-		return false
-	_hybrid_config[key] = value
-	return true
-
-
 func _exit_tree() -> void:
 	HybridGroundRegistration.unregister(self)
+	_hybrid_registered = false
 	super._exit_tree()
 
 

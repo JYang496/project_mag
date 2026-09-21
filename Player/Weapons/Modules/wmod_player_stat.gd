@@ -3,7 +3,7 @@ extends Module
 enum PlayerStat {
 	CRIT_RATE,
 	CRIT_DAMAGE,
-	DASH_COOLDOWN,
+	ACTIVE_SKILL_COOLDOWN,
 	GRAB_RADIUS,
 }
 
@@ -66,12 +66,13 @@ func _apply_value_change(previous_value: float, next_value: float) -> void:
 				1.0,
 				float(PlayerData.bonus_crit_damage) + next_value - previous_value
 			)
-		PlayerStat.DASH_COOLDOWN:
+		PlayerStat.ACTIVE_SKILL_COOLDOWN:
 			var previous_multiplier := maxf(1.0 - previous_value, 0.05)
 			var next_multiplier := maxf(1.0 - next_value, 0.05)
-			PlayerData.dash_cooldown = maxf(
+			PlayerData.active_skill_cooldown_multiplier = maxf(
 				0.05,
-				float(PlayerData.dash_cooldown) / previous_multiplier * next_multiplier
+				float(PlayerData.active_skill_cooldown_multiplier) \
+					/ previous_multiplier * next_multiplier
 			)
 		PlayerStat.GRAB_RADIUS:
 			var previous_multiplier := maxf(1.0 + previous_value, 0.05)

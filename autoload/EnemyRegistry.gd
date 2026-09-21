@@ -23,6 +23,13 @@ var _spatial_bucket_index_by_id: Dictionary = {}
 var _query_count := 0
 var _candidate_checks := 0
 var _bucket_visits := 0
+var _query_profiling_enabled := false
+var _separation_query_usec := 0
+var _radius_query_usec := 0
+var _rect_query_usec := 0
+var _separation_query_count := 0
+var _radius_query_count := 0
+var _rect_query_count := 0
 
 func _ready() -> void:
 	_rebuild_from_group()
@@ -78,6 +85,26 @@ func update_enemy_position(enemy: Node) -> void:
 	_remove_from_spatial_bucket(instance_id, old_cell)
 	_add_to_spatial_bucket(enemy2d, new_cell)
 
+
+func try_commit_enemy_position(enemy: Node, previous_position: Vector2) -> bool:
+	var enemy2d := enemy as Node2D
+	if enemy2d == null:
+		return false
+	var instance_id := enemy2d.get_instance_id()
+	if not _enemy_ids.has(instance_id):
+		register_enemy(enemy2d)
+		return true
+	var new_cell := _world_to_cell(enemy2d.global_position)
+	var old_cell: Variant = _enemy_cell_by_id.get(instance_id)
+	if old_cell is Vector2i and old_cell == new_cell:
+		return true
+	if _get_bucket_size(new_cell) >= MAX_ENEMIES_PER_SPATIAL_CELL:
+		enemy2d.global_position = previous_position
+		return false
+	_remove_from_spatial_bucket(instance_id, old_cell)
+	_add_to_spatial_bucket(enemy2d, new_cell)
+	return true
+
 func can_accept_position(world_position: Vector2, moving_enemy: Node = null) -> bool:
 	var target_cell := _world_to_cell(world_position)
 	if moving_enemy != null:
@@ -93,6 +120,8 @@ func get_separation_vector(requester: Node2D, radius: float, max_neighbors: int 
 func get_separation_sample(requester: Node2D, radius: float, max_neighbors: int = 12) -> Dictionary:
 	if requester == null or radius <= 0.0 or max_neighbors <= 0:
 		return _build_separation_sample(Vector2.ZERO, 0.0, 0, maxf(radius, 0.0))
+	var started := Time.get_ticks_usec() if _query_profiling_enabled else 0
+	_separation_query_count += 1
 	var radius_sq := radius * radius
 	var accumulated := Vector2.ZERO
 	var total_strength := 0.0
@@ -131,8 +160,14 @@ func get_separation_sample(requester: Node2D, radius: float, max_neighbors: int 
 				nearest_distance = minf(nearest_distance, distance)
 				processed += 1
 				if processed >= max_neighbors:
-					return _build_separation_sample(accumulated, total_strength, processed, nearest_distance)
-	return _build_separation_sample(accumulated, total_strength, processed, nearest_distance)
+					var capped_sample := _build_separation_sample(accumulated, total_strength, processed, nearest_distance)
+					if started > 0:
+						_record_query_time(started, &"separation")
+					return capped_sample
+	var sample := _build_separation_sample(accumulated, total_strength, processed, nearest_distance)
+	if started > 0:
+		_record_query_time(started, &"separation")
+	return sample
 
 func _build_separation_sample(accumulated: Vector2, total_strength: float, neighbor_count: int, nearest_distance: float) -> Dictionary:
 	var accumulated_length := accumulated.length()
@@ -205,46 +240,139 @@ func get_nearest_support(requester: Node, max_radius: float) -> Node2D:
 	return best
 
 func get_enemies_in_radius(origin: Vector2, radius: float, excluded: Node = null) -> Array[Node2D]:
+	var started := Time.get_ticks_usec() if _query_profiling_enabled else 0
+	_radius_query_count += 1
 	var output: Array[Node2D] = []
 	var safe_radius := maxf(radius, 0.0)
 	var max_radius_sq := safe_radius * safe_radius
 	var excluded_id := excluded.get_instance_id() if excluded != null else 0
 	_query_count += 1
-	for enemy in _get_spatial_candidates(origin - Vector2.ONE * safe_radius, origin + Vector2.ONE * safe_radius):
-		_candidate_checks += 1
-		if enemy == null or not is_instance_valid(enemy):
-			continue
-		if excluded_id != 0 and enemy.get_instance_id() == excluded_id:
-			continue
-		if enemy.global_position.distance_squared_to(origin) <= max_radius_sq:
-			output.append(enemy)
+	var min_cell := _world_to_cell(origin - Vector2.ONE * safe_radius)
+	var max_cell := _world_to_cell(origin + Vector2.ONE * safe_radius)
+	var cell_count := (max_cell.x - min_cell.x + 1) * (max_cell.y - min_cell.y + 1)
+	if cell_count > _spatial_buckets.size():
+		for cell_value in _spatial_buckets:
+			_bucket_visits += 1
+			var cell := cell_value as Vector2i
+			if cell.x < min_cell.x or cell.x > max_cell.x or cell.y < min_cell.y or cell.y > max_cell.y:
+				continue
+			for candidate_value in _spatial_buckets[cell]:
+				_candidate_checks += 1
+				var enemy := candidate_value as Node2D
+				if enemy == null or not is_instance_valid(enemy):
+					continue
+				if excluded_id != 0 and enemy.get_instance_id() == excluded_id:
+					continue
+				if enemy.global_position.distance_squared_to(origin) <= max_radius_sq:
+					output.append(enemy)
+	else:
+		for cell_y in range(min_cell.y, max_cell.y + 1):
+			for cell_x in range(min_cell.x, max_cell.x + 1):
+				_bucket_visits += 1
+				var bucket_value: Variant = _spatial_buckets.get(Vector2i(cell_x, cell_y))
+				if not (bucket_value is Array):
+					continue
+				for candidate_value in bucket_value as Array:
+					_candidate_checks += 1
+					var enemy := candidate_value as Node2D
+					if enemy == null or not is_instance_valid(enemy):
+						continue
+					if excluded_id != 0 and enemy.get_instance_id() == excluded_id:
+						continue
+					if enemy.global_position.distance_squared_to(origin) <= max_radius_sq:
+						output.append(enemy)
 	_sort_by_registration_order(output)
+	if started > 0:
+		_record_query_time(started, &"radius")
 	return output
 
 func get_enemies_in_rect(world_rect: Rect2, excluded: Node = null) -> Array[Node2D]:
+	var started := Time.get_ticks_usec() if _query_profiling_enabled else 0
+	_rect_query_count += 1
 	var output: Array[Node2D] = []
 	_query_count += 1
 	if world_rect.size.x < 0.0 or world_rect.size.y < 0.0:
+		if started > 0:
+			_record_query_time(started, &"rect")
 		return output
 	var excluded_id := excluded.get_instance_id() if excluded != null else 0
-	for enemy in _get_spatial_candidates(world_rect.position, world_rect.end):
-		_candidate_checks += 1
-		if enemy == null or not is_instance_valid(enemy):
-			continue
-		if excluded_id != 0 and enemy.get_instance_id() == excluded_id:
-			continue
-		if world_rect.has_point(enemy.global_position):
-			output.append(enemy)
+	var min_cell := _world_to_cell(world_rect.position)
+	var max_cell := _world_to_cell(world_rect.end)
+	var cell_count := (max_cell.x - min_cell.x + 1) * (max_cell.y - min_cell.y + 1)
+	if cell_count > _spatial_buckets.size():
+		for cell_value in _spatial_buckets:
+			_bucket_visits += 1
+			var cell := cell_value as Vector2i
+			if cell.x < min_cell.x or cell.x > max_cell.x or cell.y < min_cell.y or cell.y > max_cell.y:
+				continue
+			for candidate_value in _spatial_buckets[cell]:
+				_candidate_checks += 1
+				var enemy := candidate_value as Node2D
+				if enemy == null or not is_instance_valid(enemy):
+					continue
+				if excluded_id != 0 and enemy.get_instance_id() == excluded_id:
+					continue
+				if world_rect.has_point(enemy.global_position):
+					output.append(enemy)
+	else:
+		for cell_y in range(min_cell.y, max_cell.y + 1):
+			for cell_x in range(min_cell.x, max_cell.x + 1):
+				_bucket_visits += 1
+				var bucket_value: Variant = _spatial_buckets.get(Vector2i(cell_x, cell_y))
+				if not (bucket_value is Array):
+					continue
+				for candidate_value in bucket_value as Array:
+					_candidate_checks += 1
+					var enemy := candidate_value as Node2D
+					if enemy == null or not is_instance_valid(enemy):
+						continue
+					if excluded_id != 0 and enemy.get_instance_id() == excluded_id:
+						continue
+					if world_rect.has_point(enemy.global_position):
+						output.append(enemy)
 	_sort_by_registration_order(output)
+	if started > 0:
+		_record_query_time(started, &"rect")
 	return output
+
+func set_query_profiling_enabled(enabled: bool) -> void:
+	_query_profiling_enabled = enabled
+
+func _record_query_time(started: int, kind: StringName) -> void:
+	if started <= 0:
+		return
+	var elapsed := Time.get_ticks_usec() - started
+	match kind:
+		&"separation":
+			_separation_query_usec += elapsed
+		&"radius":
+			_radius_query_usec += elapsed
+		&"rect":
+			_rect_query_usec += elapsed
 
 func reset_query_metrics() -> void:
 	_query_count = 0
 	_candidate_checks = 0
 	_bucket_visits = 0
+	_separation_query_usec = 0
+	_radius_query_usec = 0
+	_rect_query_usec = 0
+	_separation_query_count = 0
+	_radius_query_count = 0
+	_rect_query_count = 0
 
 func get_query_metrics() -> Dictionary:
-	return {"query_count": _query_count, "candidate_checks": _candidate_checks, "bucket_visits": _bucket_visits}
+	return {
+		"query_count": _query_count,
+		"candidate_checks": _candidate_checks,
+		"bucket_visits": _bucket_visits,
+		"separation_query_count": _separation_query_count,
+		"radius_query_count": _radius_query_count,
+		"rect_query_count": _rect_query_count,
+		"separation_query_ms": float(_separation_query_usec) / 1000.0,
+		"radius_query_ms": float(_radius_query_usec) / 1000.0,
+		"rect_query_ms": float(_rect_query_usec) / 1000.0,
+	}
 
 func get_spatial_debug_snapshot() -> Dictionary:
 	var bucket_entry_count := 0
@@ -264,22 +392,6 @@ func get_spatial_debug_snapshot() -> Dictionary:
 		"bucket_capacity": MAX_ENEMIES_PER_SPATIAL_CELL,
 		"has_frame_processing": is_physics_processing() or is_processing(),
 	}
-
-func _get_spatial_candidates(minimum: Vector2, maximum: Vector2) -> Array[Node2D]:
-	var candidates: Array[Node2D] = []
-	var min_cell := _world_to_cell(minimum)
-	var max_cell := _world_to_cell(maximum)
-	for cell_y in range(min_cell.y, max_cell.y + 1):
-		for cell_x in range(min_cell.x, max_cell.x + 1):
-			_bucket_visits += 1
-			var bucket_value: Variant = _spatial_buckets.get(Vector2i(cell_x, cell_y))
-			if not (bucket_value is Array):
-				continue
-			for enemy_value in bucket_value:
-				var enemy := enemy_value as Node2D
-				if enemy != null:
-					candidates.append(enemy)
-	return candidates
 
 func _world_to_cell(world_position: Vector2) -> Vector2i:
 	return Vector2i(floori(world_position.x / SPATIAL_CELL_SIZE), floori(world_position.y / SPATIAL_CELL_SIZE))

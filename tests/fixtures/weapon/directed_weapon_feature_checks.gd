@@ -157,9 +157,9 @@ func _validate_weapon_specific_unlock_boundaries() -> void:
 	var cannon := (load("res://Player/Weapons/Instances/cannon.tscn") as PackedScene).instantiate() as Weapon
 	_host.add_child(cannon)
 	cannon.skill_unlock_runtime.update(14.9)
-	_check(not bool(cannon.get_weapon_skill_status().get("unlock_ready", true)), "Cannon remains locked before 15 support seconds")
+	_check(not bool(cannon.get_weapon_skill_status().get("unlock_ready", true)), "Mortar remains locked before 15 support seconds")
 	cannon.skill_unlock_runtime.update(0.1)
-	_check(bool(cannon.get_weapon_skill_status().get("unlock_ready", false)), "Cannon unlocks at 15 support seconds")
+	_check(bool(cannon.get_weapon_skill_status().get("unlock_ready", false)), "Mortar unlocks at 15 support seconds")
 
 	var glacier := (load("res://Player/Weapons/Instances/glacier_projector.tscn") as PackedScene).instantiate() as Weapon
 	_host.add_child(glacier)

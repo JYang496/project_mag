@@ -51,12 +51,13 @@ func _on_shoot() -> void:
 	is_on_cooldown = true
 	start_weapon_cooldown(0.05)
 	var base_direction := get_aim_forward()
+	var shared_target := _find_pack_hunt_target(base_direction)
 	var launcher_directions := branch_runtime.get_branch_shot_directions(base_direction)
 	if launcher_directions.is_empty():
 		launcher_directions = [base_direction]
 	for launcher_direction in launcher_directions:
 		for direction in _build_volley_directions(launcher_direction):
-			_fire_energy_bolt(direction)
+			_fire_energy_bolt(direction, shared_target)
 	branch_runtime.notify_branch_weapon_shot(base_direction)
 
 func supports_multi_launcher_module() -> bool:
@@ -72,7 +73,7 @@ func _build_volley_directions(base_direction: Vector2) -> Array[Vector2]:
 	var step_radians := deg_to_rad(volley_half_angle_deg * 2.0) / float(bolt_count - 1)
 	return WeaponBranchBehavior.build_centered_spread_directions(safe_direction, bolt_count, step_radians)
 
-func _fire_energy_bolt(direction: Vector2) -> void:
+func _fire_energy_bolt(direction: Vector2, shared_target: Node2D = null) -> void:
 	var bolt := spawn_projectile_from_scene(PROJECTILE_SCENE) as Projectile
 	if bolt == null:
 		return
@@ -90,11 +91,64 @@ func _fire_energy_bolt(direction: Vector2) -> void:
 	apply_effects_on_projectile(bolt)
 	var homing := HOMING_EFFECT.new().setup(
 		bolt,
-		deg_to_rad(maxf(homing_turn_rate_deg_per_sec, 0.1)),
+		deg_to_rad(maxf(
+			homing_turn_rate_deg_per_sec * branch_runtime.get_energy_bolt_homing_turn_multiplier(),
+			0.1
+		)),
 		maxf(homing_acquisition_radius, 1.0),
 		clampf(homing_acquisition_half_angle_deg, 0.0, 180.0),
-		maxf(homing_release_radius_multiplier, 1.0)
+		maxf(homing_release_radius_multiplier, 1.0),
+		null,
+		shared_target
 	)
 	bolt.add_child(homing)
 	bolt.module_list.append(homing)
 	get_projectile_spawn_parent().call_deferred("add_child", bolt)
+
+func try_defer_projectile_hit_damage(
+	projectile: Projectile,
+	target: Node,
+	base_damage_value: int,
+	damage_type: StringName,
+	knock_back_data: Dictionary
+) -> bool:
+	return branch_runtime.try_defer_energy_bolt_damage(
+		projectile,
+		target,
+		base_damage_value,
+		damage_type,
+		knock_back_data
+	)
+
+func _find_pack_hunt_target(base_direction: Vector2) -> Node2D:
+	if not branch_runtime.uses_energy_bolt_pack_hunt():
+		return null
+	var origin := get_muzzle_global_position()
+	var forward := base_direction.normalized()
+	if forward == Vector2.ZERO:
+		forward = Vector2.UP
+	var max_angle := deg_to_rad(clampf(homing_acquisition_half_angle_deg, 0.0, 180.0))
+	var best_target: Node2D
+	var best_angle := INF
+	var best_distance := INF
+	for enemy_ref in WeaponModuleRuntimeUtils.get_nearby_enemies(
+		get_tree(),
+		origin,
+		maxf(homing_acquisition_radius, 1.0)
+	):
+		var enemy := enemy_ref as Node2D
+		if enemy == null or not is_instance_valid(enemy) or not enemy.is_inside_tree():
+			continue
+		var dead_value: Variant = enemy.get("is_dead")
+		if dead_value != null and bool(dead_value):
+			continue
+		var to_enemy := origin.direction_to(enemy.global_position)
+		var angle := absf(forward.angle_to(to_enemy))
+		if angle > max_angle:
+			continue
+		var distance := origin.distance_squared_to(enemy.global_position)
+		if angle < best_angle or (is_equal_approx(angle, best_angle) and distance < best_distance):
+			best_angle = angle
+			best_distance = distance
+			best_target = enemy
+	return best_target

@@ -4,6 +4,8 @@ class_name EnemySpikeTurret
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const FEEDBACK_SPEC := preload("res://Combat/visual/combat_feedback_spec.gd")
 const PROJECTILE_SCENE := preload("res://Npc/enemy/scenes/enemy_spike_projectile.tscn")
+const ATTACK_WARNING_GROUND_HEIGHT := 0.036
+const ATTACK_WARNING_RENDER_PRIORITY := 40
 
 @export var detect_range: float = 760.0
 @export var attack_range: float = 430.0
@@ -31,6 +33,7 @@ var _aim_warning_outline: Line2D = null
 var _aim_warning_line: Line2D = null
 var _aim_warning_fill: Line2D = null
 var _warning_lines: Array[Line2D] = []
+var _warning_visuals_active: bool = false
 
 @onready var lock_audio: AudioStreamPlayer2D = get_node_or_null("LockAudio") as AudioStreamPlayer2D
 @onready var fire_audio: AudioStreamPlayer2D = get_node_or_null("FireAudio") as AudioStreamPlayer2D
@@ -57,6 +60,11 @@ func _create_warning_line(line_name: String, line_width: float, color: Color, li
 	line.visible = false
 	line.add_to_group(&"hybrid_ground_segment")
 	line.set_meta(&"hybrid_ground_visible", false)
+	# The hybrid 3D ground renderer cannot use CanvasItem.z_index. Carry the
+	# combat-warning hierarchy explicitly so persistent floor AOE never covers
+	# this immediate attack indicator.
+	line.set_meta(&"hybrid_ground_height", ATTACK_WARNING_GROUND_HEIGHT)
+	line.set_meta(&"hybrid_render_priority", ATTACK_WARNING_RENDER_PRIORITY)
 	add_child(line)
 	return line
 
@@ -175,7 +183,8 @@ func _update_muzzle_flash() -> void:
 	if muzzle_flash == null:
 		return
 	if _release_flash_remaining <= 0.0:
-		muzzle_flash.visible = false
+		if muzzle_flash.visible:
+			muzzle_flash.visible = false
 		return
 	var remaining_ratio := clampf(_release_flash_remaining / maxf(release_flash_duration, 0.01), 0.0, 1.0)
 	muzzle_flash.visible = true
@@ -230,10 +239,14 @@ func _set_warning_points(line: Line2D, start: Vector2, end: Vector2) -> void:
 	if line == null:
 		return
 	line.points = PackedVector2Array([start, end])
+	_warning_visuals_active = true
 	line.set_meta(&"hybrid_ground_visible", true)
 	line.visible = not bool(line.get_meta(&"hybrid_ground_registered", false))
 
 func _clear_warning_visuals() -> void:
+	if not _warning_visuals_active:
+		return
+	_warning_visuals_active = false
 	for line in _warning_lines:
 		if line == null:
 			continue

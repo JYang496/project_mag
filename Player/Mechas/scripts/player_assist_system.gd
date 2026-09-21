@@ -111,7 +111,7 @@ func _request_auto_fire_at_target(main_weapon: Weapon, target: Node2D, delta: fl
 		_clear_auto_fire_pending(main_weapon)
 		handle_post_fire(main_weapon, fired)
 	elif not bool(shot_state.get("observed", false)):
-		# Delayed-fire weapons such as Cannon keep the target meta until their windup emits shoot.
+		# Delayed-fire weapons such as Mortar keep the target meta until their windup emits shoot.
 		return
 	else:
 		_clear_auto_fire_pending(main_weapon)

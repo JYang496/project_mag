@@ -28,6 +28,7 @@ func set_data(data: Dictionary) -> void:
 	reason_label.text = str(data.get("reason", ""))
 	reason_label.visible = not reason_label.text.is_empty()
 	stat_label.text = str(data.get("stats", ""))
+	stat_label.visible = not stat_label.text.is_empty()
 	modules_label.text = str(data.get("modules_label", ""))
 	equip_button.text = str(data.get("action", ""))
 	var available := bool(data.get("available", false))

@@ -196,6 +196,36 @@ func notify_branch_passive_event(event_name: StringName, detail: Dictionary) -> 
 	for behavior in get_branch_behaviors():
 		behavior.on_passive_event(event_name, detail)
 
+func uses_energy_bolt_pack_hunt() -> bool:
+	for behavior in get_branch_behaviors():
+		if behavior.uses_energy_bolt_pack_hunt():
+			return true
+	return false
+
+func get_energy_bolt_homing_turn_multiplier() -> float:
+	var multiplier := 1.0
+	for behavior in get_branch_behaviors():
+		multiplier *= maxf(behavior.get_energy_bolt_homing_turn_multiplier(), 0.05)
+	return multiplier
+
+func try_defer_energy_bolt_damage(
+	projectile: Projectile,
+	target: Node,
+	base_damage: int,
+	damage_type: StringName,
+	knock_back_data: Dictionary
+) -> bool:
+	for behavior in get_branch_behaviors():
+		if behavior.try_defer_energy_bolt_damage(
+			projectile,
+			target,
+			base_damage,
+			damage_type,
+			knock_back_data
+		):
+			return true
+	return false
+
 func get_branch_shot_directions(base_direction: Vector2, shot_count: int = -1) -> Array[Vector2]:
 	var directions: Array[Vector2] = [base_direction]
 	for behavior in get_branch_behaviors():

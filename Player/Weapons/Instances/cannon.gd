@@ -1,15 +1,14 @@
 extends Ranger
-class_name Cannon
+class_name Mortar
 
-var projectile_template = preload("res://Player/Weapons/Projectiles/projectile.tscn")
-var projectile_texture_resource = preload("res://asset/images/weapons/projectiles/cannon_shell.png")
-
-var ITEM_NAME := "Cannon"
-const BULLET_PIXEL_SIZE := Vector2(14, 18)
-const SKILL_BLAST_PULSE := preload("res://Player/Weapons/Effects/weapon_skill_blast_pulse.gd")
+var ITEM_NAME := "Mortar"
 const DELAYED_GROUND_IMPACT := preload("res://Player/Weapons/Geometry/delayed_ground_impact.gd")
-const SIEGE_SKILL_FLIGHT_SEC := 0.85
-const SIEGE_SKILL_SPEED_MULTIPLIER := 0.90
+const WALKING_BARRAGE_DAMAGE_RATIOS: Array[float] = [0.50, 0.60, 0.70, 0.90]
+const WALKING_BARRAGE_DISTANCE_OFFSETS: Array[float] = [-96.0, -32.0, 32.0, 96.0]
+const WALKING_BARRAGE_LATERAL_OFFSETS: Array[float] = [-18.0, 18.0, -18.0, 18.0]
+const WALKING_BARRAGE_FIRST_IMPACT_SEC := 0.48
+const WALKING_BARRAGE_IMPACT_INTERVAL_SEC := 0.16
+const WALKING_BARRAGE_RADIUS := 68.0
 
 @export var windup_sec: float = 0.15
 @export var idle_fire_empowered_shots: int = 1
@@ -150,50 +149,44 @@ func _resolve_ground_impact_position(origin: Vector2, direction: Vector2) -> Vec
 	return collision_position - normalized_direction * 4.0
 
 func activate_weapon_skill_effect(_context: SkillActionContext) -> bool:
-	var shell := spawn_projectile_from_scene(projectile_template) as Projectile
-	if shell == null:
+	if not is_inside_tree() or not is_attack_phase_allowed():
 		return false
-	projectile_direction = get_aim_forward()
-	if projectile_direction == Vector2.ZERO:
-		projectile_direction = Vector2.RIGHT
-	shell.damage = max(1, int(round(float(get_runtime_damage()) * 0.20)))
-	shell.damage_type = Attack.TYPE_PHYSICAL
-	shell.hp = 99999
-	shell.knock_back = {"amount": 180.0, "angle": projectile_direction}
-	shell.global_position = get_muzzle_global_position()
-	shell.projectile_texture = projectile_texture_resource
-	shell.desired_pixel_size = BULLET_PIXEL_SIZE * 2.0
-	shell.size = size
-	shell.expire_time = SIEGE_SKILL_FLIGHT_SEC
-	shell.wall_collision_mask = 32
-	shell.set_meta(&"cannon_siege_shell", true)
-	apply_effects_on_projectile(shell)
-	shell.base_displacement *= SIEGE_SKILL_SPEED_MULTIPLIER
-	get_projectile_spawn_parent().add_child(shell)
+	var origin := get_muzzle_global_position()
+	var direction := get_aim_forward()
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT
+	var barrage_center := _resolve_ground_impact_position(origin, direction)
+	var lateral := direction.orthogonal()
+	var runtime_damage := get_runtime_damage()
+	var spawn_parent := get_projectile_spawn_parent()
+	for index in range(WALKING_BARRAGE_DAMAGE_RATIOS.size()):
+		var impact_position := barrage_center
+		impact_position += direction * WALKING_BARRAGE_DISTANCE_OFFSETS[index]
+		impact_position += lateral * WALKING_BARRAGE_LATERAL_OFFSETS[index]
+		impact_position = _resolve_skill_impact_position(origin, impact_position)
+		var impact_damage := maxi(1, int(round(
+			float(runtime_damage) * WALKING_BARRAGE_DAMAGE_RATIOS[index]
+		)))
+		var impact_delay := WALKING_BARRAGE_FIRST_IMPACT_SEC + WALKING_BARRAGE_IMPACT_INTERVAL_SEC * index
+		var impact := DELAYED_GROUND_IMPACT.new().setup(
+			self, origin, impact_position, impact_delay,
+			get_effective_area_radius(WALKING_BARRAGE_RADIUS), impact_damage,
+			Attack.TYPE_PHYSICAL, false
+		) as Node
+		spawn_parent.add_child(impact)
 	return true
 
-func on_projectile_hit_wall(projectile: Projectile, _wall_hit: Dictionary) -> void:
-	if projectile != null and bool(projectile.get_meta(&"cannon_siege_shell", false)):
-		projectile.despawn()
-
-func on_projectile_will_despawn(shell: Projectile) -> void:
-	if shell == null or not bool(shell.get_meta(&"cannon_siege_shell", false)):
-		return
-	shell.set_meta(&"cannon_siege_shell", false)
-	if not is_inside_tree() or not is_attack_phase_allowed():
-		return
-	_emit_siege_blast_sequence(shell.global_position)
-
-func _emit_siege_blast_sequence(position: Vector2) -> void:
-	var ratios: Array[float] = [0.60, 0.90, 1.20]
-	for index in range(ratios.size()):
-		if index > 0:
-			await get_tree().create_timer(0.18, false).timeout
-		if not is_inside_tree() or not is_attack_phase_allowed():
-			return
-		var pulse := SKILL_BLAST_PULSE.new().setup(self, ratios[index], 105.0 + 18.0 * index, Attack.TYPE_PHYSICAL)
-		pulse.global_position = position
-		get_projectile_spawn_parent().add_child(pulse)
+func _resolve_skill_impact_position(origin: Vector2, desired_position: Vector2) -> Vector2:
+	if ground_target_blocker_mask <= 0 or not is_inside_tree():
+		return desired_position
+	var query := PhysicsRayQueryParameters2D.create(origin, desired_position, ground_target_blocker_mask)
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var result := get_world_2d().direct_space_state.intersect_ray(query)
+	if result.is_empty():
+		return desired_position
+	var direction := origin.direction_to(desired_position)
+	return (result.get("position", desired_position) as Vector2) - direction * 4.0
 
 func _consume_branch_heat_spend_multiplier() -> float:
 	var multiplier := 1.0

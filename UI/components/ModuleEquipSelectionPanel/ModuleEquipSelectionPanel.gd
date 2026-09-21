@@ -43,8 +43,9 @@ var _store_button: Button
 var _store_current_requested := false
 var _tracked_stat_keys: PackedStringArray = [
 	"damage", "attack_cooldown", "projectile_hits", "speed", "size", "hp",
-	"dash_speed", "return_speed", "attack_range",
+	"dash_speed", "return_speed", "attack_range", "reload_duration_sec",
 ]
+var _lower_is_better_stat_keys: PackedStringArray = ["attack_cooldown", "reload_duration_sec"]
 
 func _ready() -> void:
 	visible = false
@@ -240,11 +241,7 @@ func _request_cancel() -> void:
 			_show_review_store_confirmation()
 		return
 	if _allow_reward_transaction:
-		reward_cancel_dialog.title = LocalizationManager.tr_key("ui.module.reward_cancel.title", "Store Module")
-		reward_cancel_dialog.dialog_text = LocalizationManager.tr_key("ui.module.reward_cancel.confirm", "Cancel installation and keep this module in the module warehouse?")
-		reward_cancel_dialog.ok_button_text = LocalizationManager.tr_key("ui.module.reward_cancel.store", "Store Module")
-		reward_cancel_dialog.cancel_button_text = LocalizationManager.tr_key("ui.module.reward_cancel.back", "Return")
-		reward_cancel_dialog.popup_centered(Vector2i(560, 240))
+		_show_reward_cancel_dialog(LocalizationManager.tr_key("ui.module.reward_cancel.confirm", "Cancel installation and keep this module in the module warehouse?"))
 		return
 	_cancel_remaining()
 
@@ -262,11 +259,25 @@ func _on_store_current_pressed() -> void:
 	_show_review_store_confirmation()
 
 func _show_review_store_confirmation() -> void:
-	reward_cancel_dialog.title = LocalizationManager.tr_key("ui.module.reward_cancel.title", "Store Module")
-	reward_cancel_dialog.dialog_text = LocalizationManager.tr_key("ui.module.reward_cancel.confirm", "Keep this module in the warehouse?") if _store_current_requested else LocalizationManager.tr_format("ui.module.review.store_remaining", {"count": _pending_review_indices.size()}, "Store all %d pending modules and continue?" % _pending_review_indices.size())
+	var message := LocalizationManager.tr_key("ui.module.reward_cancel.confirm", "Keep this module in the warehouse?") if _store_current_requested else LocalizationManager.tr_format("ui.module.review.store_remaining", {"count": _pending_review_indices.size()}, "Store all %d pending modules and continue?" % _pending_review_indices.size())
+	_show_reward_cancel_dialog(message)
+
+func _show_reward_cancel_dialog(message: String) -> void:
+	reward_cancel_dialog.title = ""
+	reward_cancel_dialog.dialog_text = ""
 	reward_cancel_dialog.ok_button_text = LocalizationManager.tr_key("ui.module.reward_cancel.store", "Store Module")
 	reward_cancel_dialog.cancel_button_text = LocalizationManager.tr_key("ui.module.reward_cancel.back", "Return")
-	reward_cancel_dialog.popup_centered(Vector2i(560, 240))
+	var dialog_title := reward_cancel_dialog.get_node_or_null("Content/TitleBar/Title") as Label
+	var dialog_message := reward_cancel_dialog.get_node_or_null("Content/BodyScroll/BodyContent/MessagePanel/MessageMargin/Message") as Label
+	if dialog_title != null:
+		dialog_title.text = LocalizationManager.tr_key("ui.module.reward_cancel.title", "Store Module")
+	if dialog_message != null:
+		dialog_message.text = message
+	reward_cancel_dialog.popup_centered_clamped(Vector2i(560, 300), 0.9)
+	reward_cancel_dialog.call_deferred("fit_content_to_native_message")
+	var ok_button := reward_cancel_dialog.get_ok_button()
+	if ok_button != null:
+		ok_button.grab_focus.call_deferred()
 
 func close_without_assignment() -> void:
 	if visible:
@@ -337,6 +348,10 @@ func _get_weapon_display_name(weapon: Weapon) -> String:
 	return LocalizationManager.get_weapon_instance_display_name(weapon)
 
 func _build_stat_preview_bbcode(weapon: Weapon) -> String:
+	if _module_instance == null or not is_instance_valid(_module_instance):
+		return ""
+	if not _module_instance.can_apply_to_weapon(weapon):
+		return ""
 	var current: Dictionary = weapon.build_stat_snapshot()
 	var projected: Dictionary = weapon.get_projected_stats_with_module(_module_instance)
 	var deltas: PackedStringArray = []
@@ -347,7 +362,8 @@ func _build_stat_preview_bbcode(weapon: Weapon) -> String:
 		var after := float(projected[stat_key])
 		if is_equal_approx(before, after):
 			continue
-		var value_color := stat_up_color if after > before else stat_down_color
+		var improved := after < before if _lower_is_better_stat_keys.has(stat_key) else after > before
+		var value_color := stat_up_color if improved else stat_down_color
 		deltas.append("%s %.2f → [color=#%s]%.2f[/color]" % [
 			_format_stat_label(stat_key), before, value_color.to_html(false), after,
 		])
@@ -400,6 +416,32 @@ func _apply_visual_style() -> void:
 	TOKENS.style_label(section_hint, TOKENS.FONT_LABEL, TOKENS.COLOR_TEXT_SECONDARY)
 	equipped_list.add_theme_constant_override("separation", 10)
 	_style_secondary_button(cancel_button)
+	_apply_reward_dialog_style()
+
+func _apply_reward_dialog_style() -> void:
+	var title := reward_cancel_dialog.get_node_or_null("Content/TitleBar/Title") as Label
+	var message := reward_cancel_dialog.get_node_or_null("Content/BodyScroll/BodyContent/MessagePanel/MessageMargin/Message") as Label
+	var accent_bar := reward_cancel_dialog.get_node_or_null("Content/AccentBar") as ColorRect
+	var close_button := reward_cancel_dialog.get_node_or_null("Content/TitleBar/CloseButton") as Button
+	TOKENS.style_label(title, TOKENS.FONT_TITLE, TOKENS.COLOR_TEXT_PRIMARY)
+	TOKENS.style_label(message, TOKENS.FONT_BODY, TOKENS.COLOR_TEXT_PRIMARY)
+	if accent_bar != null:
+		accent_bar.color = TOKENS.COLOR_ACCENT_SYSTEM
+	_style_primary_button(reward_cancel_dialog.get_ok_button())
+	_style_secondary_button(reward_cancel_dialog.get_cancel_button())
+	if close_button != null:
+		_style_dialog_close_button(close_button)
+
+func _style_dialog_close_button(button: Button) -> void:
+	var styles := TOKENS.make_button_style(Color.TRANSPARENT, Color.TRANSPARENT)
+	for state in styles:
+		var style := styles[state] as StyleBoxFlat
+		if state == "hover" or state == "focus":
+			style.bg_color = Color(TOKENS.COLOR_DANGER, 0.22)
+		elif state == "pressed":
+			style.bg_color = Color(TOKENS.COLOR_DANGER, 0.34)
+		button.add_theme_stylebox_override(state, style)
+	button.add_theme_color_override("font_color", TOKENS.COLOR_TEXT_PRIMARY)
 
 func _style_secondary_button(button: Button) -> void:
 	var styles := TOKENS.make_button_style(TOKENS.COLOR_SURFACE_INTERACTIVE, TOKENS.COLOR_ACCENT_SYSTEM)

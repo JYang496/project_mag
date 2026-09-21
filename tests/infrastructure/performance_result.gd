@@ -1,7 +1,7 @@
 extends RefCounted
 class_name PerformanceResult
 
-const SCHEMA_VERSION := 1
+const SCHEMA_VERSION := 2
 
 static func percentile(samples: PackedFloat64Array, ratio: float) -> float:
 	if samples.is_empty():
@@ -13,7 +13,7 @@ static func percentile(samples: PackedFloat64Array, ratio: float) -> float:
 
 static func summarize(samples: PackedFloat64Array) -> Dictionary:
 	if samples.is_empty():
-		return {"average_frame_ms": 0.0, "p95_frame_ms": 0.0, "p99_frame_ms": 0.0, "maximum_frame_ms": 0.0}
+		return {"average_frame_ms": 0.0, "p50_frame_ms": 0.0, "p95_frame_ms": 0.0, "p99_frame_ms": 0.0, "maximum_frame_ms": 0.0}
 	var total := 0.0
 	var maximum := 0.0
 	for sample in samples:
@@ -21,6 +21,7 @@ static func summarize(samples: PackedFloat64Array) -> Dictionary:
 		maximum = maxf(maximum, sample)
 	return {
 		"average_frame_ms": total / float(samples.size()),
+		"p50_frame_ms": percentile(samples, 0.50),
 		"p95_frame_ms": percentile(samples, 0.95),
 		"p99_frame_ms": percentile(samples, 0.99),
 		"maximum_frame_ms": maximum,

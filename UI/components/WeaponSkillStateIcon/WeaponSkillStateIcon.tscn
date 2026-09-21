@@ -1,5 +1,40 @@
-[gd_scene load_steps=2 format=3]
-[ext_resource type="Script" path="res://UI/components/WeaponSkillStateIcon/WeaponSkillStateIcon.gd" id="1"]
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://UI/components/WeaponSkillStateIcon/WeaponSkillStateIcon.gd" id="1_script"]
+[ext_resource type="Shader" path="res://UI/shaders/weapon_skill_state_icon.gdshader" id="2_disk"]
+[ext_resource type="Shader" path="res://UI/shaders/weapon_skill_pictogram.gdshader" id="3_glyph"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_disk"]
+resource_local_to_scene = true
+shader = ExtResource("2_disk")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_glyph"]
+resource_local_to_scene = true
+shader = ExtResource("3_glyph")
+
 [node name="WeaponSkillStateIcon" type="Control"]
+custom_minimum_size = Vector2(48, 48)
 mouse_filter = 2
-script = ExtResource("1")
+script = ExtResource("1_script")
+
+[node name="Disk" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+material = SubResource("ShaderMaterial_disk")
+
+[node name="Glyph" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+material = SubResource("ShaderMaterial_glyph")

@@ -95,6 +95,12 @@ func _update_state_label(text: String) -> void:
 	%CurrentState.text = text
 
 
+func _exit_tree() -> void:
+	if _card_builder != null and is_instance_valid(_card_builder):
+		_card_builder.free()
+	_card_builder = null
+
+
 func _validate_showcase() -> void:
 	await get_tree().process_frame
 	if _card == null or _tag_chips.size() != SHOWCASE_TAGS.size():

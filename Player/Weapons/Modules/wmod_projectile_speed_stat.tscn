@@ -8,6 +8,7 @@
 script = ExtResource("2_ep60x")
 cost = 6
 level_effects = PackedStringArray("Projectile travel speed +50%", "Projectile travel speed +67.5%", "Projectile travel speed +85%")
+required_delivery_types = 1
 module_tags = PackedStringArray("buff", "projectile")
 mult_by = 1.2
 

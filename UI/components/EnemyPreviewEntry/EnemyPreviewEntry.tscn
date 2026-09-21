@@ -13,6 +13,20 @@ mouse_filter = 2
 texture_filter = 1
 expand_mode = 1
 stretch_mode = 5
+[node name="Base" type="NinePatchRect" parent="Portrait"]
+show_behind_parent = true
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -27.0
+offset_right = 27.0
+mouse_filter = 2
+texture_filter = 1
+patch_margin_left = 12
+patch_margin_top = 12
+patch_margin_right = 12
+patch_margin_bottom = 12
 [node name="NameRow" type="HBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 3

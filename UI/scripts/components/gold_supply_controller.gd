@@ -220,19 +220,17 @@ func layout() -> void:
 	if not is_instance_valid(button):
 		return
 	var viewport_size := ui.get_viewport().get_visible_rect().size
-	var health := ui.hp_label_label as Control
-	var health_right := (viewport_size.x + 344.0) * 0.5
-	if is_instance_valid(health):
-		health_right = health.position.x + health.size.x * health.scale.x
-	var x := minf(health_right + 16.0, viewport_size.x - button.size.x - 16.0)
-	# Reserve the existing special-resource meter's bottom strip.
-	var bottom_reserve := 82.0
+	var resource_size := Vector2(250.0, 20.0)
 	if ui.hud_presenter != null and is_instance_valid(ui.hud_presenter.primary_resource_meter):
 		var meter := ui.hud_presenter.primary_resource_meter as Control
 		if meter.has_method("get_visual_footprint_size"):
-			var footprint: Vector2 = meter.call("get_visual_footprint_size")
-			bottom_reserve = maxf(bottom_reserve, footprint.y + 24.0)
-	button.position = Vector2(roundf(x), roundf(viewport_size.y - 16.0 - bottom_reserve - button.size.y))
+			resource_size = meter.call("get_visual_footprint_size") as Vector2
+	var right_edge := viewport_size.x - 16.0
+	var resource_top := viewport_size.y - 16.0 - resource_size.y
+	button.position = Vector2(
+		roundf(maxf(16.0, right_edge - button.size.x)),
+		roundf(maxf(16.0, resource_top - 12.0 - button.size.y))
+	)
 
 func _reward_feedback(reward: RewardInfo) -> String:
 	var index := _prepared_rewards.find(reward)
@@ -306,8 +304,15 @@ func _selected(reward: RewardInfo, generation: int) -> void:
 	if bool(result.get("ok", false)) and str(result.get("status", "")) == "replacement_required":
 		_open_replacement(result.option)
 	elif bool(result.get("ok", false)):
+		var module_to_install: Module = null
+		if _phase == PhaseManager.BATTLE and str(result.get("result", "")) == "stored" and reward.module_scene != null:
+			module_to_install = InventoryData.find_owned_module_by_scene_path(reward.module_scene.resource_path)
+			if not InventoryData.can_assign_module_to_any_equipped_weapon(module_to_install, true):
+				module_to_install = null
 		close_supply()
 		_show_applied_feedback()
+		if module_to_install != null and is_instance_valid(module_to_install):
+			ui.request_module_pickup_selection(module_to_install)
 	else:
 		_fail()
 

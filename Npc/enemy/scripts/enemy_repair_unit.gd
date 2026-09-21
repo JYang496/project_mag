@@ -4,6 +4,7 @@ class_name EnemyRepairUnit
 const AURA_VISUAL := preload("res://Visual/Oblique/aura_renderer.gd")
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
+const EMPTY_TARGET_RETRY_SEC := 0.25
 
 @export var heal_radius: float = 240.0
 @export var preferred_range: float = 280.0
@@ -56,10 +57,12 @@ func _process_healing(delta: float) -> void:
 	if _cooldown_remaining > 0.0:
 		return
 	var target := _find_lowest_health_target()
-	if target != null:
-		_heal_target = target
-		_cast_remaining = maxf(cast_duration, 0.05)
-		queue_redraw()
+	if target == null:
+		_cooldown_remaining = EMPTY_TARGET_RETRY_SEC
+		return
+	_heal_target = target
+	_cast_remaining = maxf(cast_duration, 0.05)
+	queue_redraw()
 
 func _find_lowest_health_target() -> BaseEnemy:
 	var registry := get_node_or_null("/root/EnemyRegistry")

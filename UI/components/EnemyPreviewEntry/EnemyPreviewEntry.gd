@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+const PRESENTATION := preload("res://UI/resources/protocols/catalog.tres")
+
 @onready var portrait: TextureRect = %Portrait
 @onready var name_label: Label = %Name
 @onready var elite_badge: Label = %EliteBadge
@@ -8,6 +10,7 @@ extends VBoxContainer
 func set_data(data: Dictionary) -> void:
 	_resolve_nodes()
 	portrait.texture = data.get("texture") as Texture2D
+	portrait.get_node("Base").texture = PRESENTATION.texture("button")
 	name_label.text = str(data.get("name", "Enemy"))
 	name_label.tooltip_text = name_label.text
 	var elite := bool(data.get("elite", false))

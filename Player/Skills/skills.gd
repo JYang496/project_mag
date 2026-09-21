@@ -8,6 +8,7 @@ class_name Skills
 var _player: Player
 var _on_cooldown := false
 var _cooldown_remaining: float = 0.0
+var _cooldown_duration: float = 0.0
 var _cooldown_serial: int = 0
 var _finished_action_ids: Dictionary = {}
 
@@ -45,11 +46,14 @@ func _resolve_player() -> Player:
 
 func _on_player_active_skill_requested() -> void:
 	if _on_cooldown:
+		_notify_activation_failed(&"cooldown")
 		return
 	if not can_activate():
+		_notify_activation_failed(&"unavailable")
 		return
 	var spent_energy := get_energy_cost()
 	if not _pay_energy_cost():
+		_notify_activation_failed(&"insufficient_energy")
 		return
 	var context := SkillActionContext.create(
 		self,
@@ -60,6 +64,7 @@ func _on_player_active_skill_requested() -> void:
 	)
 	if not activate_skill(context):
 		_player.add_energy(spent_energy)
+		_notify_activation_failed(&"activation_rejected")
 		return
 	emit_skill_event(WeaponEvent.SKILL_CAST_COMMITTED, context)
 	_player.player_skill_activated.emit(self)
@@ -68,21 +73,29 @@ func _on_player_active_skill_requested() -> void:
 	if cooldown > 0.0:
 		_start_cooldown()
 
+func _notify_activation_failed(reason: StringName) -> void:
+	if _player != null and is_instance_valid(_player) and _player.has_signal("player_skill_failed"):
+		_player.player_skill_failed.emit(reason)
+
 func _start_cooldown() -> void:
 	_cooldown_serial += 1
 	var serial := _cooldown_serial
+	var effective_cooldown := _get_effective_cooldown()
 	_on_cooldown = true
-	_cooldown_remaining = maxf(cooldown, 0.0)
-	await get_tree().create_timer(cooldown).timeout
+	_cooldown_duration = effective_cooldown
+	_cooldown_remaining = effective_cooldown
+	await get_tree().create_timer(effective_cooldown).timeout
 	if serial != _cooldown_serial:
 		return
 	_on_cooldown = false
 	_cooldown_remaining = 0.0
+	_cooldown_duration = 0.0
 
 func force_cooldown_ready() -> void:
 	_cooldown_serial += 1
 	_on_cooldown = false
 	_cooldown_remaining = 0.0
+	_cooldown_duration = 0.0
 
 func _physics_process(delta: float) -> void:
 	if _cooldown_remaining <= 0.0:
@@ -134,9 +147,15 @@ func get_cooldown_remaining() -> float:
 	return _cooldown_remaining
 
 func get_cooldown_duration() -> float:
-	return maxf(cooldown, 0.0)
+	if _on_cooldown:
+		return _cooldown_duration
+	return _get_effective_cooldown()
+
+func _get_effective_cooldown() -> float:
+	return maxf(cooldown * float(PlayerData.active_skill_cooldown_multiplier), 0.0)
 
 func get_cooldown_ratio() -> float:
-	if cooldown <= 0.0:
+	var effective_cooldown := get_cooldown_duration()
+	if effective_cooldown <= 0.0:
 		return 0.0
-	return clampf(_cooldown_remaining / cooldown, 0.0, 1.0)
+	return clampf(_cooldown_remaining / effective_cooldown, 0.0, 1.0)

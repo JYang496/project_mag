@@ -578,6 +578,8 @@ ui.module.term.hook.skill_cast,Skill cast,释放技能
 ui.module.term.hook.skill_finish,Skill finish,技能结束
 ui.rest.zone.purchase.locked,Opens after battle 3,完成第 3 场战斗后开放
 ui.module.term.stat.damage,Damage,伤害
+ui.module.term.stat.attack_cooldown,Attack Cooldown,攻击冷却
+ui.module.term.stat.reload_duration_sec,Reload Duration,换弹时长
 ui.module.term.stat.size,Size,尺寸
 ui.module.term.stat.heat_max_value,Heat Max Value,热量上限
 ui.module.term.stat.heat_cool_rate,Heat Cool Rate,热量冷却速度
@@ -712,8 +714,8 @@ ui.weapon.skill.plasma_storm.name,Plasma Storm,电浆风暴
 ui.weapon.skill.plasma_storm.description,Create a 4-second storm that pulls ordinary enemies inward and deals 45% weapon damage every 0.5 seconds.,生成持续4秒的风暴，牵引普通敌人并每0.5秒造成45%武器伤害。
 ui.weapon.skill.glacier_white_frost_domain.name,White Frost Domain,白霜领域
 ui.weapon.skill.glacier_white_frost_domain.description,Create a 6-second field around you. Enemies slow and freeze after 2 seconds; you move 20% faster inside it.,在身边生成持续6秒的领域；敌人减速并在停留2秒后冻结，玩家在领域内移动速度提高20%。
-ui.weapon.skill.cannon_siege_trajectory.name,Siege Trajectory,攻城弹道
-ui.weapon.skill.cannon_siege_trajectory.description,"Fire a slow giant shell that pushes enemies aside and erupts for 60%, 90%, then 120% weapon damage.","发射沿途推开敌人的缓慢巨型炮弹，终点依次爆炸并造成60%、90%、120%武器伤害。"
+ui.weapon.skill.cannon_siege_trajectory.name,Walking Barrage,徐进弹幕
+ui.weapon.skill.cannon_siege_trajectory.description,"Call four mortar strikes that walk across the target area from near to far, dealing 50%, 60%, 70%, and 90% weapon damage.","呼叫四发由近及远覆盖目标区域的迫击炮击，依次造成50%、60%、70%和90%武器伤害。"
 ui.weapon.skill.sniper_lethal_aim.name,Lethal Aim,致命瞄准
 ui.weapon.skill.sniper_lethal_aim.description,The next shot gains +250% damage and unlimited pierce plus up to +100% additional damage with distance.,下一发获得250%额外伤害与无限贯穿，并根据距离额外获得最多100%伤害。
 ui.controls.reload,Reload,装填

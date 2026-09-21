@@ -33,6 +33,10 @@ func _setup_projected_visual() -> void:
 	_projected_visual = ProjectedVisual.new()
 	_projected_visual.name = "BeaconProjectedVisual_%s" % get_instance_id()
 	var visual_layer := _ensure_visual_layer()
+	if visual_layer == null:
+		_projected_visual.queue_free()
+		_projected_visual = null
+		return
 	visual_layer.add_child(_projected_visual)
 	_ensure_player_foreground(visual_layer)
 	_projected_visual.configure(self, visual_kind, beacon_id, _get_footprint_size())
@@ -40,12 +44,15 @@ func _setup_projected_visual() -> void:
 	_projected_visual.set_presence(_player_inside, _enemies.size())
 
 func _ensure_visual_layer() -> CanvasLayer:
+	if PhaseManager.current_state() != PhaseManager.BATTLE:
+		return null
 	var existing := get_tree().root.get_node_or_null(VISUAL_LAYER_NAME) as CanvasLayer
-	if existing != null:
+	if existing != null and not existing.is_queued_for_deletion():
 		return existing
 	var layer := CanvasLayer.new()
 	layer.name = VISUAL_LAYER_NAME
 	layer.layer = VISUAL_LAYER_ORDER
+	layer.add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	get_tree().root.add_child(layer)
 	return layer
 

@@ -11,14 +11,15 @@ var _serial := 0
 
 
 static func ensure(tree: SceneTree) -> Node:
-	if tree == null or tree.root == null:
+	if tree == null or tree.root == null or PhaseManager.current_state() != PhaseManager.BATTLE:
 		return null
 	var existing := tree.get_first_node_in_group(&"enemy_death_vfx_service")
-	if existing != null:
+	if existing != null and not existing.is_queued_for_deletion():
 		return existing
 	var service = load("res://Combat/Vfx/enemy_death_vfx_service.gd").new()
 	service.name = "EnemyDeathVfxService"
 	service.add_to_group(&"enemy_death_vfx_service")
+	service.add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	tree.root.add_child(service)
 	return service
 

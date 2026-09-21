@@ -74,7 +74,7 @@ func _build_showcase() -> void:
 	page.add_child(grid)
 
 	var entries := [
-		{"title": "1  下一次开火", "detail": "重炮 / 狙击 / 冰川\n计时结束后，下一次开火触发"},
+		{"title": "1  下一次开火", "detail": "迫击炮 / 狙击 / 冰川\n计时结束后，下一次开火触发"},
 		{"title": "2  下一次换弹", "detail": "机枪\n换弹消耗当前层数并发动增益"},
 		{"title": "3  切入主手", "detail": "霰弹枪\n先切入主手，再由下一次开火触发"},
 		{"title": "4  倒计时", "detail": "支援位蓄力\n数字是距离就绪的整秒数"},

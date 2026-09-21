@@ -5,7 +5,6 @@ const PANEL_SCRIPT := preload("res://UI/scripts/battle_contract_selection_panel.
 const ELIMINATION := preload("res://data/battle_contracts/elimination.tres")
 const SURVIVAL := preload("res://data/battle_contracts/survival.tres")
 const REWARD := preload("res://data/battle_contracts/reward.tres")
-const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 var _panel: Control
 
@@ -34,8 +33,8 @@ func _run() -> void:
 	for card: Button in cards:
 		if card.visible:
 			valid = valid and card.get_node("Margin/Content").get_global_rect().end.y <= card.get_global_rect().end.y + 0.5
-	print("PASS: expanded contract selection showcase" if valid else "FAIL: expanded contract selection showcase")
-	await TEST_TEARDOWN.finish(self, 0 if valid else 1, _reset)
+	print("CONTRACT_SELECTION_GALLERY_READY valid_layout=%s" % str(valid))
+	# Hosted by the unified gallery: remain open for manual review.
 
 
 func _capture_layouts() -> void:
@@ -64,7 +63,7 @@ func _capture_layouts() -> void:
 
 
 func _open_options(options: Array) -> void:
-	_panel.call("open", options, Callable(), Callable())
+	_panel.call("open", options, Callable())
 	_panel.call("_kill_transition")
 	var panel_container := _panel.get_node("Shade/Panel") as PanelContainer
 	var shade := _panel.get_node("Shade") as ColorRect
