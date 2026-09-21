@@ -9,6 +9,7 @@
 [node name="Orbit" unique_id=80514895 instance=ExtResource("1_4h80h")]
 active_skill_effect_id = &"orbit_proliferation"
 base_trait_flags = 1
+energy_release_cooldown_sec = 10.0
 script = ExtResource("1_lxm1t")
 skill_unlock_condition = &"player_damaged"
 skill_unlock_hint = "Lose health from an enemy attack"

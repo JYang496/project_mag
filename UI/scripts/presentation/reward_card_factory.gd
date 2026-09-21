@@ -292,11 +292,18 @@ func _build_weapon_reward_hero(card_data: Dictionary) -> CenterContainer:
 
 func _build_weapon_preview_section(preview: Dictionary, reward_index: int) -> VBoxContainer:
 	var section := WEAPON_BRANCH_PREVIEW_SECTION_SCENE.instantiate() as VBoxContainer
-	section.call("set_heading", _inline_text("BRANCH PREVIEW", "分支预览"))
+	section.call("set_heading", _inline_text("BRANCH DETAILS", "分支详情"))
 	var branch_row := section.call("get_branch_container") as HBoxContainer
 	_panel.call("_configure_weapon_detail_hotspot", branch_row, reward_index)
-	for branch_variant in preview.get("branches", []):
-		branch_row.add_child(_build_branch_preview_node(branch_variant as Dictionary))
+	var branch_count := (preview.get("branches", []) as Array).size()
+	var hint := _make_card_label(
+		_inline_text("%d branches · hover or focus for details" % branch_count, "%d 条分支 · 悬停或聚焦查看" % branch_count),
+		13,
+		TOKENS.COLOR_TEXT_SECONDARY
+	)
+	hint.custom_minimum_size.y = 28.0
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	branch_row.add_child(hint)
 	return section
 
 func _build_branch_preview_node(branch: Dictionary) -> PanelContainer:

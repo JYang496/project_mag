@@ -276,7 +276,7 @@ func _on_passive_event(event_name: StringName, detail: Dictionary) -> void:
 
 func get_passive_status() -> Dictionary:
 	if has_weapon_trait(WeaponTrait.ENERGY):
-		return get_energy_full_fire_status()
+		return get_empowered_attack_status()
 	var state := "ready" if skill_unlock_runtime.ready else "waiting_damage"
 	return with_passive_charge_status({
 		"id": "orbit_player_damaged_triggered",

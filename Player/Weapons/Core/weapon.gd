@@ -51,10 +51,8 @@ const PASSIVE_SCOPE_BODY: StringName = &"body"
 const PASSIVE_SCOPE_GLOBAL: StringName = &"global"
 const LAST_HIT_WEAPON_META: StringName = &"_last_player_weapon_hit_id"
 const LAST_HIT_WEAPON_TIME_META: StringName = &"_last_player_weapon_hit_msec"
-const ENERGY_RELEASE_ATTACK_META: StringName = &"_global_energy_release_attack"
-const ENERGY_RELEASE_SPENT_META: StringName = &"_global_energy_release_spent"
-const ENERGY_RELEASE_MULTIPLIER_META: StringName = &"_global_energy_release_multiplier"
-const ENERGY_ATTACK_GROUP_META: StringName = &"_global_energy_attack_group"
+const ENERGY_RELEASE_ATTACK_META: StringName = &"_empowered_attack"
+const ENERGY_RELEASE_MULTIPLIER_META: StringName = &"_empowered_attack_multiplier"
 const HEAT_SNAPSHOT_META: StringName = &"_bipolar_heat_snapshot"
 const AUTOMATIC_AIM_TARGET_META: StringName = &"_player_assist_auto_aim_target"
 const DELIVERY_PROJECTILE: StringName = DamageDeliveryType.PROJECTILE
@@ -88,14 +86,12 @@ var runtime_capability_additions: Dictionary = {}
 var runtime_capability_suppressions: Dictionary = {}
 @export var magazine_capacity: int = 50
 @export var reload_duration_sec: float = 3.0
+@export var energy_release_cooldown_sec: float = 12.0
+var _energy_release_ready_at_msec: int = 0
 var _energy_release_attack_active: bool = false
 var _energy_release_damage_multiplier: float = 1.0
-var _energy_release_spent: float = 0.0
-var _energy_attack_sequence: int = 0
-var _active_energy_attack_group_id: StringName = StringName()
 var _active_skill_visual_original_modulate := Color.WHITE
 var _active_skill_visual_armed := false
-var _energy_pool_owner: Node
 var current_ammo: int = 0
 var is_reloading: bool = false
 var reload_time_left: float = 0.0
@@ -223,7 +219,6 @@ func _handle_hit_target(target: Node, damage_type: StringName = StringName()) ->
 
 func on_damage_applied(target: Node, data: DamageData, result: DamageResult) -> void:
 	preload("res://Player/Weapons/Effects/projectile_impact_vfx_service.gd").damage_feedback(self, target, data, result)
-	_accumulate_global_weapon_energy(data, result)
 	var damage_event := WeaponEvent.create(WeaponEvent.DAMAGE_DEALT, self).with_context(data.action_context)
 	damage_event.target = target
 	damage_event.damage_data = data
@@ -244,130 +239,76 @@ func on_damage_applied(target: Node, data: DamageData, result: DamageResult) -> 
 		kill_event.detail["position"] = (target as Node2D).global_position if target is Node2D else Vector2.ZERO
 		emit_weapon_event(kill_event)
 
-func _accumulate_global_weapon_energy(data: DamageData, result: DamageResult) -> void:
-	if data == null or result == null or not result.applied or result.health_damage <= 0:
-		return
-	if data.source_category != DamageData.SOURCE_PLAYER_WEAPON:
-		return
-	if data.damage_kind != DamageData.KIND_DIRECT or data.suppress_reactive_effects:
-		return
-	if Attack.normalize_damage_type(result.damage_type) != Attack.TYPE_ENERGY:
-		return
-	if not has_weapon_trait(WeaponTrait.ENERGY):
-		return
-	if _is_energy_release_source(data.source_node):
-		return
-	var player := data.source_player
-	if player == null or not is_instance_valid(player):
-		player = DamageManager.resolve_source_player(self)
-	if player == null or not is_instance_valid(player) or not player.has_method("add_global_weapon_energy"):
-		return
-	_energy_pool_owner = player
-	var gain := get_energy_gain_per_damage_event()
-	player.call("add_global_weapon_energy", gain, data.source_node)
-
-func get_energy_full_fire_passive_id() -> StringName:
-	var branch_passive_id := branch_runtime.get_energy_full_fire_passive_id()
+func get_empowered_attack_passive_id() -> StringName:
+	var branch_passive_id := branch_runtime.get_empowered_attack_passive_id()
 	if branch_passive_id != StringName():
 		return branch_passive_id
-	return &"energy_full_fire_triggered"
+	return &"empowered_attack_triggered"
 
-func get_energy_full_fire_display_name() -> String:
-	var branch_display_name := branch_runtime.get_energy_full_fire_display_name()
+func get_empowered_attack_display_name() -> String:
+	var branch_display_name := branch_runtime.get_empowered_attack_display_name()
 	if not branch_display_name.is_empty():
 		return branch_display_name
-	return "Full-Energy Release"
+	return "Empowered Attack"
 
-func get_energy_full_fire_status() -> Dictionary:
-	var player := _resolve_energy_pool_player()
-	var current := 0.0
-	var maximum := 100.0
-	if player != null and is_instance_valid(player):
-		if player.has_method("get_global_weapon_energy"):
-			current = maxf(float(player.call("get_global_weapon_energy")), 0.0)
-		if player.has_method("get_global_weapon_energy_max"):
-			maximum = maxf(float(player.call("get_global_weapon_energy_max")), 1.0)
-	var ratio := clampf(current / maximum, 0.0, 1.0)
-	var ready := current >= maximum - 0.001
+func get_empowered_attack_status() -> Dictionary:
+	var remaining := maxf(float(_energy_release_ready_at_msec - Time.get_ticks_msec()) / 1000.0, 0.0)
+	var duration := maxf(energy_release_cooldown_sec, 0.01)
+	var ready := remaining <= 0.0
+	var ratio := 1.0 - clampf(remaining / duration, 0.0, 1.0)
 	return {
-		"id": str(get_energy_full_fire_passive_id()),
-		"display_name": get_energy_full_fire_display_name(),
-		"state": "ready_pending_action" if ready else "charging",
+		"id": str(get_empowered_attack_passive_id()),
+		"display_name": get_empowered_attack_display_name(),
+		"state": "ready_pending_action" if ready else "cooldown",
 		"progress": ratio,
-		"progress_role": "global_energy",
-		"current": current,
-		"required": maximum,
+		"progress_role": "cooldown",
+		"current": duration - remaining,
+		"required": duration,
 		"ready": ready,
 		"condition_visible": true,
 		"condition_progress": ratio,
 		"condition_thresholds": [],
-		"trigger_hint": "fire_at_full_global_energy",
-		"refresh_hint": "automatic_after_full_energy_attack",
+		"trigger_hint": "fire_when_ready",
+		"refresh_hint": "cooldown_after_empowered_attack",
 		"charge_based": false,
-		"energy_full_fire_cycle": true,
 	}
 
 func prepare_energy_release_attack() -> Dictionary:
-	_energy_attack_sequence += 1
-	_active_energy_attack_group_id = StringName("%d:%d" % [get_instance_id(), _energy_attack_sequence])
 	_energy_release_attack_active = false
 	_energy_release_damage_multiplier = 1.0
-	_energy_release_spent = 0.0
 	if is_support_weapon():
-		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
+		return {"triggered": false, "multiplier": 1.0}
 	if not has_weapon_trait(WeaponTrait.ENERGY):
-		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
-	var player := _resolve_energy_pool_player()
-	if player == null or not is_instance_valid(player) or not player.has_method("consume_all_global_weapon_energy"):
-		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
-	var max_energy := 1.0
-	if player.has_method("get_global_weapon_energy_max"):
-		max_energy = maxf(float(player.call("get_global_weapon_energy_max")), 1.0)
-	var current_energy := 0.0
-	if player.has_method("get_global_weapon_energy"):
-		current_energy = maxf(float(player.call("get_global_weapon_energy")), 0.0)
-	var special_state := _prepare_special_energy_release_attack(player, current_energy, max_energy)
+		return {"triggered": false, "multiplier": 1.0}
+	var special_state := _prepare_special_energy_release_attack()
 	if not special_state.is_empty():
 		return special_state
-	if current_energy < max_energy - 0.001:
-		return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
-	_energy_release_spent = maxf(float(player.call("consume_all_global_weapon_energy")), 0.0)
-	if _energy_release_spent > 0.0:
-		var release_ratio := clampf(_energy_release_spent / max_energy, 0.0, 1.0)
-		return activate_energy_release_attack(
-			_energy_release_spent,
-			1.0 + release_ratio * get_energy_release_bonus_at_full()
-		)
-	return {"triggered": false, "spent": 0.0, "multiplier": 1.0}
+	if Time.get_ticks_msec() < _energy_release_ready_at_msec:
+		return {"triggered": false, "multiplier": 1.0}
+	return activate_energy_release_attack(1.0 + get_empowered_attack_bonus())
 
-func _prepare_special_energy_release_attack(
-	_player: Node,
-	_current_energy: float,
-	_max_energy: float
-) -> Dictionary:
+func _prepare_special_energy_release_attack() -> Dictionary:
 	return {}
 
 func activate_energy_release_attack(
-	spent: float,
 	damage_multiplier: float,
 	detail: Dictionary = {}
 ) -> Dictionary:
-	_energy_release_spent = maxf(spent, 0.0)
 	_energy_release_damage_multiplier = maxf(damage_multiplier, 1.0)
 	_energy_release_attack_active = true
+	if not detail.has("focus_remaining_sec"):
+		_energy_release_ready_at_msec = Time.get_ticks_msec() + int(maxf(energy_release_cooldown_sec, 0.0) * 1000.0)
 	var event_detail := {
-		"trigger": "full_energy_attack_fired",
-		"energy_spent": _energy_release_spent,
+		"trigger": "empowered_attack_fired",
 		"damage_multiplier": _energy_release_damage_multiplier,
 	}
 	event_detail.merge(detail, true)
-	emit_passive_trigger(&"global_energy_release_attack", event_detail, PASSIVE_SCOPE_GLOBAL)
-	var release_event := WeaponEvent.create(WeaponEvent.SHARED_RESOURCE_RELEASE, self)
+	emit_passive_trigger(&"empowered_attack", event_detail, PASSIVE_SCOPE_GLOBAL)
+	var release_event := WeaponEvent.create(WeaponEvent.EMPOWERED_ATTACK_RELEASE, self)
 	release_event.detail = event_detail
 	emit_weapon_event(release_event)
 	return {
 		"triggered": true,
-		"spent": _energy_release_spent,
 		"multiplier": _energy_release_damage_multiplier,
 		"release_mode": event_detail.get("release_mode", &"instant"),
 	}
@@ -375,57 +316,31 @@ func activate_energy_release_attack(
 func is_energy_release_attack_active() -> bool:
 	return _energy_release_attack_active
 
-func get_energy_release_spent() -> float:
-	return _energy_release_spent
-
 func finish_energy_release_attack() -> void:
 	_energy_release_attack_active = false
 	_energy_release_damage_multiplier = 1.0
-	_energy_release_spent = 0.0
-	_active_energy_attack_group_id = StringName()
 
 func apply_energy_release_marker(attack_node: Node) -> void:
 	if attack_node == null or not is_instance_valid(attack_node):
 		return
-	if _active_energy_attack_group_id != StringName():
-		attack_node.set_meta(ENERGY_ATTACK_GROUP_META, _active_energy_attack_group_id)
-	else:
-		attack_node.remove_meta(ENERGY_ATTACK_GROUP_META)
 	if not _energy_release_attack_active:
 		attack_node.remove_meta(ENERGY_RELEASE_ATTACK_META)
-		attack_node.remove_meta(ENERGY_RELEASE_SPENT_META)
 		attack_node.remove_meta(ENERGY_RELEASE_MULTIPLIER_META)
 		return
 	attack_node.set_meta(ENERGY_RELEASE_ATTACK_META, true)
-	attack_node.set_meta(ENERGY_RELEASE_SPENT_META, _energy_release_spent)
 	attack_node.set_meta(ENERGY_RELEASE_MULTIPLIER_META, _energy_release_damage_multiplier)
 
-func get_energy_gain_per_damage_event() -> float:
-	var branch_value := branch_runtime.get_energy_gain_per_damage_event()
-	if branch_value >= 0.0:
-		return branch_value
-	return 6.0
-
-func get_energy_release_bonus_at_full() -> float:
-	var branch_value := branch_runtime.get_energy_release_bonus_at_full()
+func get_empowered_attack_bonus() -> float:
+	var branch_value := branch_runtime.get_empowered_attack_bonus()
 	if branch_value >= 0.0:
 		return branch_value
 	return 0.75
 
-func _is_energy_release_source(source_node: Node) -> bool:
-	return source_node != null and is_instance_valid(source_node) \
-		and bool(source_node.get_meta(ENERGY_RELEASE_ATTACK_META, false))
-
-func _resolve_energy_pool_player() -> Node:
-	if _energy_pool_owner != null and is_instance_valid(_energy_pool_owner):
-		return _energy_pool_owner
+func _resolve_owner_player() -> Node:
 	var resolved := DamageManager.resolve_source_player(self)
 	if resolved != null and is_instance_valid(resolved):
-		_energy_pool_owner = resolved
 		return resolved
-	if PlayerData.player != null and is_instance_valid(PlayerData.player) \
-			and PlayerData.player.has_method("consume_all_global_weapon_energy"):
-		_energy_pool_owner = PlayerData.player
+	if PlayerData.player != null and is_instance_valid(PlayerData.player):
 		return PlayerData.player
 	return null
 
@@ -1091,7 +1006,7 @@ func _on_weapon_event(event: WeaponEvent) -> void:
 		WeaponEvent.MAGAZINE_QUARTER_SPENT,
 		WeaponEvent.SUPPORT_CHARGE_READY,
 		WeaponEvent.CROSS_WEAPON_HIT,
-		WeaponEvent.SHARED_RESOURCE_RELEASE,
+		WeaponEvent.EMPOWERED_ATTACK_RELEASE,
 	]:
 		_on_passive_event(event.passive_event_name(), event.to_detail())
 
@@ -1148,7 +1063,6 @@ func _on_tree_exited() -> void:
 	branch_runtime.clear_for_weapon_exit()
 	heat_runtime.clear_for_weapon_exit()
 	stat_pipeline.clear_for_weapon_exit()
-	_energy_pool_owner = null
 #endregion
 
 #region Weapon Role And Input
@@ -1199,6 +1113,7 @@ func consume_support_trigger() -> bool:
 
 func clear_timed_effects_for_prepare() -> void:
 	finish_energy_release_attack()
+	_energy_release_ready_at_msec = 0
 	skill_runtime.clear_active()
 	set_active_skill_visual_armed(false)
 	for module_node in get_equipped_modules():

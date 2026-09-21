@@ -8,6 +8,7 @@ var required: float = 0.0
 var progress: float = 0.0
 var ready: bool = true
 var _threshold_rearm_required: bool = false
+var _attack_since_cast: bool = false
 
 
 func setup(source_weapon: Weapon) -> void:
@@ -21,6 +22,7 @@ func configure(next_condition_id: StringName, next_hint: String, next_required: 
 	progress = 0.0
 	ready = required <= 0.0
 	_threshold_rearm_required = false
+	_attack_since_cast = false
 
 
 func update(delta: float) -> void:
@@ -30,10 +32,9 @@ func update(delta: float) -> void:
 		&"support_time":
 			if weapon.is_support_weapon():
 				add_progress(maxf(delta, 0.0))
-		&"global_energy_full":
-			_update_global_energy_condition(false)
-		&"global_energy_and_heat":
-			_update_global_energy_condition(true)
+		&"weapon_attack_and_heat":
+			if _attack_since_cast:
+				_update_shared_heat_condition()
 		&"shared_heat_hot":
 			_update_shared_heat_condition()
 
@@ -42,6 +43,13 @@ func on_weapon_event(event: WeaponEvent) -> void:
 	if event == null or ready or required <= 0.0:
 		return
 	match condition_id:
+		&"primary_attack_count":
+			if event.type == WeaponEvent.PRIMARY_ATTACK_FIRED:
+				add_progress(1.0)
+		&"weapon_attack_and_heat":
+			if event.type == WeaponEvent.PRIMARY_ATTACK_FIRED:
+				_attack_since_cast = true
+				_update_shared_heat_condition()
 		&"magazine_reload":
 			if event.type == WeaponEvent.MAGAZINE_QUARTER_SPENT:
 				progress = clampf(float(event.detail.get("spent_ratio", 0.0)), 0.0, required)
@@ -83,7 +91,8 @@ func consume_ready() -> bool:
 		return true
 	ready = false
 	progress = 0.0
-	_threshold_rearm_required = condition_id in [&"global_energy_full", &"global_energy_and_heat", &"shared_heat_hot"]
+	_threshold_rearm_required = condition_id == &"shared_heat_hot"
+	_attack_since_cast = false
 	if weapon != null and is_instance_valid(weapon) and weapon.has_method("on_weapon_skill_unlock_consumed"):
 		weapon.call("on_weapon_skill_unlock_consumed", condition_id)
 	return true
@@ -97,6 +106,7 @@ func reset() -> void:
 	progress = 0.0
 	ready = required <= 0.0
 	_threshold_rearm_required = false
+	_attack_since_cast = false
 
 
 func get_status() -> Dictionary:
@@ -115,13 +125,13 @@ func get_status() -> Dictionary:
 
 
 func get_condition_group() -> StringName:
-	if condition_id in [&"magazine_reload", &"support_time", &"weapon_kill"]:
+	if condition_id in [&"magazine_reload", &"support_time", &"weapon_kill", &"primary_attack_count"]:
 		return &"combat_cycle"
 	if condition_id in [&"wall_bounce", &"long_dash_hit", &"support_to_main_close_hit", &"far_hit"]:
 		return &"positioning_action"
 	if condition_id in [&"magazine_distinct_targets", &"projectile_distinct_targets", &"explosion_distinct_targets", &"freeze_buildup"]:
 		return &"multi_target_accumulation"
-	if condition_id in [&"shared_heat_hot", &"global_energy_full", &"global_energy_and_heat"]:
+	if condition_id in [&"shared_heat_hot", &"weapon_attack_and_heat"]:
 		return &"shared_resource"
 	if condition_id == &"player_damaged":
 		return &"reactive"
@@ -136,27 +146,7 @@ func clear_for_weapon_exit() -> void:
 	progress = 0.0
 	ready = false
 	_threshold_rearm_required = false
-
-
-func _update_global_energy_condition(require_heat: bool) -> void:
-	var player := _resolve_player()
-	if player == null or not player.has_method("get_global_weapon_energy"):
-		return
-	var maximum := 100.0
-	if player.has_method("get_global_weapon_energy_max"):
-		maximum = maxf(float(player.call("get_global_weapon_energy_max")), 1.0)
-	var energy_ratio := clampf(float(player.call("get_global_weapon_energy")) / maximum, 0.0, 1.0)
-	var heat_ratio := 1.0
-	if require_heat:
-		heat_ratio = _read_hot_heat_ratio() / maxf(required, 0.001)
-	var condition_ratio := minf(energy_ratio, clampf(heat_ratio, 0.0, 1.0))
-	progress = condition_ratio * required
-	if _threshold_rearm_required:
-		if condition_ratio < 0.999:
-			_threshold_rearm_required = false
-		return
-	if condition_ratio >= 0.999:
-		mark_ready()
+	_attack_since_cast = false
 
 
 func _update_shared_heat_condition() -> void:

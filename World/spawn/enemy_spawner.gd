@@ -26,6 +26,7 @@ const SPAWN_PERFORMANCE_METRICS_SCRIPT := preload("res://World/spawn/spawn_perfo
 const CONTRACT_OBJECTIVE_POINT_PLANNER_SCRIPT := preload("res://World/spawn/contract_objective_point_planner.gd")
 const BATTLE_CONTRACT_COMBAT_BRIDGE_SCRIPT := preload("res://Combat/battle_contract/BattleContractCombatBridge.gd")
 const RUNTIME_DIAGNOSTICS_SCRIPT := preload("res://autoload/RuntimeDiagnostics.gd")
+const ENEMY_DEATH_VFX_SERVICE_SCRIPT := preload("res://Combat/Vfx/enemy_death_vfx_service.gd")
 const REWARD_ENEMY_SCENE := preload("res://Npc/enemy/scenes/reward_enemy.tscn")
 const CONTRACT_ELITE_ENEMY_SCENE := preload("res://Npc/enemy/scenes/enemy_rolling_ball_elite.tscn")
 const VANGUARD_START_LEVEL_INDEX := 1
@@ -96,6 +97,15 @@ var _contract_reward_hp_multiplier := 1.0
 var _contract_reward_multiplier := 1.0
 var _contract_kill_gold_multiplier := 1.0
 var _spawn_performance_metrics: RefCounted = SPAWN_PERFORMANCE_METRICS_SCRIPT.new()
+const HEAVY_SPAWN_BEHAVIOR_SCRIPTS: Array[String] = [
+	"res://Npc/enemy/scripts/enemy_spike_turret.gd",
+	"res://Npc/enemy/scripts/enemy_mortar_turret.gd",
+	"res://Npc/enemy/scripts/enemy_orbit_support.gd",
+]
+var _prewarmed_spawn_behavior_scripts: Array[Script] = []
+var _spawn_scene_prewarm_queue: Array[String] = []
+var _spawn_scene_prewarm_level := -1
+var _prewarmed_spawn_scenes: Dictionary = {}
 var _contract_objective_point_planner: RefCounted = CONTRACT_OBJECTIVE_POINT_PLANNER_SCRIPT.new()
 
 func _ready():
@@ -109,20 +119,103 @@ func _ready():
 		board.connect("active_cells_changed", Callable(self, "_on_board_active_cells_changed"))
 	_refresh_fallback_bounds()
 	_refresh_spawn_tables()
+	_prewarm_spawn_behavior_scripts()
+	prepare_spawn_scenes_for_level(PhaseManager.current_level)
 	_contract_bridge = BATTLE_CONTRACT_COMBAT_BRIDGE_SCRIPT.new()
 	_contract_bridge.bind(self)
 	BattleContractManager.bind_combat_port(_contract_bridge)
+	if not PhaseManager.phase_changed.is_connected(_on_phase_changed_for_enemy_vfx):
+		PhaseManager.phase_changed.connect(_on_phase_changed_for_enemy_vfx)
+	_on_phase_changed_for_enemy_vfx(PhaseManager.current_state())
 
 func _exit_tree() -> void:
+	_spawn_scene_prewarm_queue.clear()
+	_prewarmed_spawn_scenes.clear()
+	_prewarmed_spawn_behavior_scripts.clear()
+	if PhaseManager.phase_changed.is_connected(_on_phase_changed_for_enemy_vfx):
+		PhaseManager.phase_changed.disconnect(_on_phase_changed_for_enemy_vfx)
 	BattleContractManager.abort_current_contract({"reason": "scene_exit"})
 	if BattleContractManager.get_combat_port() == _contract_bridge:
 		BattleContractManager.unbind_combat_port()
 	if _contract_bridge != null:
 		_contract_bridge.unbind()
 
+
+func _on_phase_changed_for_enemy_vfx(new_phase: String) -> void:
+	if new_phase in [PhaseManager.SETTLEMENT, PhaseManager.REST, PhaseManager.PROTOCOL_SELECTION]:
+		prepare_spawn_scenes_for_level(PhaseManager.current_level)
+	if new_phase not in [PhaseManager.BATTLE_STARTING, PhaseManager.BATTLE]:
+		return
+	var service := ENEMY_DEATH_VFX_SERVICE_SCRIPT.ensure(get_tree())
+	if service != null and service.has_method("prepare_pool"):
+		service.call("prepare_pool")
+
+func _prewarm_spawn_behavior_scripts() -> void:
+	# Parse proven heavy behavior scripts while WorldShell still shows its
+	# loading overlay, instead of compiling them in a rest or combat frame.
+	for path in HEAVY_SPAWN_BEHAVIOR_SCRIPTS:
+		var behavior_script := load(path) as Script
+		if behavior_script != null:
+			_prewarmed_spawn_behavior_scripts.append(behavior_script)
+		else:
+			push_warning("Enemy behavior prewarm failed for %s" % path)
+
 func _process(delta: float) -> void:
+	if PhaseManager.current_state() in [PhaseManager.SETTLEMENT, PhaseManager.REST, PhaseManager.PROTOCOL_SELECTION, PhaseManager.BATTLE_STARTING]:
+		advance_spawn_scene_prewarm()
 	if PhaseManager.current_state() == PhaseManager.BATTLE:
 		combat_frame.emit(maxf(delta, 0.0))
+
+func prepare_spawn_scenes_for_level(level_index: int, immediate: bool = false) -> void:
+	if instance_list.is_empty():
+		return
+	if level_index != _spawn_scene_prewarm_level:
+		_spawn_scene_prewarm_queue.clear()
+		_spawn_scene_prewarm_level = level_index
+	var levels: Array = [instance_list[level_index]] if level_index >= 0 and level_index < instance_list.size() else instance_list
+	for level_spawns in levels:
+		if not (level_spawns is Array):
+			continue
+		var ordered_entries: Array[EnemySpawnEntry] = []
+		for entry_variant in level_spawns:
+			var entry := entry_variant as EnemySpawnEntry
+			if entry != null and not entry.enemy_scene_path.is_empty():
+				ordered_entries.append(entry)
+		ordered_entries.sort_custom(func(a: EnemySpawnEntry, b: EnemySpawnEntry) -> bool:
+			return a.start_sec < b.start_sec
+		)
+		for entry in ordered_entries:
+			var path := entry.enemy_scene_path
+			if _prewarmed_spawn_scenes.has(path) or _spawn_scene_prewarm_queue.has(path):
+				continue
+			_spawn_scene_prewarm_queue.append(path)
+	if immediate:
+		while not _spawn_scene_prewarm_queue.is_empty():
+			advance_spawn_scene_prewarm()
+
+func are_spawn_scenes_ready_for_level(level_index: int) -> bool:
+	if level_index < 0 or level_index >= instance_list.size():
+		return false
+	for entry_variant in instance_list[level_index]:
+		var entry := entry_variant as EnemySpawnEntry
+		if entry != null and not entry.enemy_scene_path.is_empty() and not _prewarmed_spawn_scenes.has(entry.enemy_scene_path):
+			return false
+	return true
+
+func advance_spawn_scene_prewarm() -> Dictionary:
+	if _spawn_scene_prewarm_queue.is_empty():
+		return {}
+	var path: String = _spawn_scene_prewarm_queue.pop_front()
+	if _prewarmed_spawn_scenes.has(path):
+		return {}
+	var started := Time.get_ticks_usec()
+	var scene := load(path) as PackedScene
+	if scene != null:
+		_prewarmed_spawn_scenes[path] = scene
+		_get_enemy_metadata(path, scene)
+	else:
+		push_warning("Enemy scene prewarm failed for %s" % path)
+	return {"path": path, "elapsed_ms": float(Time.get_ticks_usec() - started) / 1000.0}
 
 func _init_spawn_point_picker() -> void:
 	if _spawn_point_picker != null:
@@ -256,15 +349,20 @@ func start_timer() -> void:
 	_prepare_level_combat_budget(level_index, effective_time_out)
 	_spawn_budget_stop_emitted = false
 	_start_kill_gold_budget(level_index, effective_time_out)
+	_spawn_performance_metrics.begin_tick()
 	_deploy_battle_vanguard(level_index)
+	_spawn_performance_metrics.end_tick()
 	timer.start()
 
 func _deploy_battle_vanguard(level_index: int) -> int:
 	if level_index < VANGUARD_START_LEVEL_INDEX or _planned_target_total_hp <= 0:
 		return 0
+	var candidates_started := Time.get_ticks_usec()
 	var candidates := _get_vanguard_candidates()
+	_spawn_performance_metrics.record_vanguard_candidates_usec(Time.get_ticks_usec() - candidates_started)
 	if candidates.is_empty():
 		return 0
+	var loop_started := Time.get_ticks_usec()
 	var target_hp := maxi(int(ceil(float(_planned_target_total_hp) * VANGUARD_TOTAL_HP_RATIO)), 1)
 	var deployed_hp := 0
 	var candidate_cursor := 0
@@ -284,20 +382,29 @@ func _deploy_battle_vanguard(level_index: int) -> int:
 				break
 			continue
 		deployed_hp += spawned_hp
+	_spawn_performance_metrics.record_vanguard_loop_usec(Time.get_ticks_usec() - loop_started)
 	return deployed_hp
 
 func _get_vanguard_candidates() -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []
-	var earliest_start_sec := 2147483647
+	var start_seconds: Array[int] = []
 	for state in _runtime_spawn_states:
 		var entry := _get_state_entry(state)
-		if entry == null or entry.enemy == null:
+		if entry == null:
 			continue
-		if entry.start_sec < earliest_start_sec:
-			earliest_start_sec = entry.start_sec
-			candidates.clear()
-		if entry.start_sec == earliest_start_sec:
-			candidates.append(state)
+		# Generated entries may hold a PackedScene without a resource path.
+		if entry.enemy_scene_path.is_empty() and entry.enemy == null:
+			continue
+		if not start_seconds.has(entry.start_sec):
+			start_seconds.append(entry.start_sec)
+	start_seconds.sort()
+	for start_sec in start_seconds:
+		for state in _runtime_spawn_states:
+			var entry := _get_state_entry(state)
+			if entry != null and entry.start_sec == start_sec and entry.enemy != null:
+				candidates.append(state)
+		if not candidates.is_empty():
+			break
 	return candidates
 
 func _on_timer_timeout():
@@ -314,9 +421,11 @@ func _on_timer_timeout():
 		finish_battle_with_victory(level_index, effective_time_out)
 		return
 	var spawn_cycles := maxi(int(round(_contract_spawn_frequency_multiplier)), 1)
+	_spawn_performance_metrics.begin_tick()
 	for _cycle in spawn_cycles:
 		_tick_spawn_intervals()
 		_spawn_with_random_wave_template(level_index, effective_time_out)
+	_spawn_performance_metrics.end_tick()
 	if not _contract_external_victory and _should_end_after_spawn_budget_stopped():
 		finish_battle_with_victory(level_index, effective_time_out)
 
@@ -661,6 +770,7 @@ func _add_enemy_with_state_signal(state: Dictionary, enemy_instance: Node) -> vo
 func _get_enemy_metadata(scene_path: String, scene: PackedScene) -> Dictionary:
 	if scene_path != "" and _enemy_metadata_cache.has(scene_path):
 		return _enemy_metadata_cache[scene_path]
+	var metadata_started := Time.get_ticks_usec()
 	var metadata := {
 		"spawn_tags": [],
 		"spawn_alive_cap": 0,
@@ -682,6 +792,7 @@ func _get_enemy_metadata(scene_path: String, scene: PackedScene) -> Dictionary:
 			preview.free()
 	if scene_path != "":
 		_enemy_metadata_cache[scene_path] = metadata
+	_spawn_performance_metrics.record_metadata_usec(Time.get_ticks_usec() - metadata_started)
 	return metadata
 
 func _safe_int(value: Variant, fallback: int) -> int:
@@ -802,6 +913,7 @@ func _is_spawn_ranged(state: Dictionary) -> bool:
 	return tags.has(BaseEnemy.SPAWN_TAG_RANGED)
 
 func _spawn_from_state(state: Dictionary, requested_count: int, hp_override: int = -1) -> int:
+	var spawn_call_started := Time.get_ticks_usec()
 	var entry := _get_state_entry(state)
 	if entry == null or entry.enemy == null:
 		return 0
@@ -813,11 +925,15 @@ func _spawn_from_state(state: Dictionary, requested_count: int, hp_override: int
 	var spawn_count: int = base_count
 	_spawn_performance_metrics.begin_batch(spawn_count)
 	var loot_value_multiplier: float = 1.0
+	var position_started := Time.get_ticks_usec()
 	var random_position_center := get_random_position()
+	_spawn_performance_metrics.record_position_usec(Time.get_ticks_usec() - position_started)
 	var counter := 0
 	var spawned_hp := 0
 	while counter < spawn_count:
+		var instantiate_started := Time.get_ticks_usec()
 		var enemy_spawn = new_enemy.instantiate()
+		_spawn_performance_metrics.record_instantiate_usec(Time.get_ticks_usec() - instantiate_started)
 		_spawn_performance_metrics.record_instantiated()
 		_apply_level_scaling(state, enemy_spawn)
 		if enemy_spawn is BaseEnemy:
@@ -830,12 +946,17 @@ func _spawn_from_state(state: Dictionary, requested_count: int, hp_override: int
 			base_enemy.set_meta("_spawn_budget_scaled_hp", scaled_hp)
 			spawned_hp += scaled_hp
 		_debug_log_spawned_enemy(enemy_spawn)
+		position_started = Time.get_ticks_usec()
 		enemy_spawn.global_position = get_nearby_position(random_position_center)
+		_spawn_performance_metrics.record_position_usec(Time.get_ticks_usec() - position_started)
 		self.call_deferred("add_child", enemy_spawn)
 		_spawn_performance_metrics.record_scheduled_for_activation()
 		_add_enemy_with_state_signal(state, enemy_spawn)
+		var signal_started := Time.get_ticks_usec()
 		enemy_spawned.emit(enemy_spawn)
+		_spawn_performance_metrics.record_signal_usec(Time.get_ticks_usec() - signal_started)
 		counter += 1
+	_spawn_performance_metrics.record_spawn_call_usec(Time.get_ticks_usec() - spawn_call_started)
 	return spawned_hp
 
 func reset_spawn_performance_metrics() -> void:
@@ -1430,6 +1551,8 @@ func _build_runtime_states(entries: Array) -> Array[Dictionary]:
 		var entry := entry_variant as EnemySpawnEntry
 		if entry == null:
 			continue
+		if _prewarmed_spawn_scenes.has(entry.enemy_scene_path):
+			entry.enemy = _prewarmed_spawn_scenes[entry.enemy_scene_path]
 		states.append({
 			"id": idx,
 			"entry": entry,

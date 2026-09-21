@@ -4,15 +4,15 @@
 
 [resource]
 script = ExtResource("1_script")
-produces_tags = Array[StringName]([&"energy", &"on_energy_cycle"])
+produces_tags = Array[StringName]([&"energy", &"on_empowered_attack"])
 requires_any_tags = Array[StringName]([&"energy"])
 requires_all_tags = Array[StringName]([])
-amplifies_tags = Array[StringName]([&"on_energy_cycle"])
+amplifies_tags = Array[StringName]([&"on_empowered_attack"])
 conflicts_with_tags = Array[StringName]([])
 passive_id = "cannon_zero_energy_cycle"
 display_name = "Zero Burst"
-description = "Stored burst cycle. Each valid damage event grants 10 global energy. Full-energy fire deals 2x direct damage, then releases a 90-radius secondary pulse with stronger execute payoff."
-condition_type = "global_energy_full_before_fire"
-refresh_type = "automatic_after_full_energy_attack"
+description = "Stored burst cycle. When ready, the next shell deals 2x direct damage and releases a 90-radius secondary pulse; then it goes on cooldown."
+condition_type = "weapon_release_cooldown_ready"
+refresh_type = "cooldown_after_empowered_attack"
 ui_mode = "progress"
 hud_mode = "bean_with_condition"

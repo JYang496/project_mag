@@ -8,6 +8,7 @@
 [node name="Laser" unique_id=979500994 instance=ExtResource("1_8p4js")]
 active_skill_effect_id = &"laser_refraction_matrix"
 base_trait_flags = 2
+energy_release_cooldown_sec = 12.0
 script = ExtResource("1_gbvh7")
 skill_unlock_condition = &"weapon_kill"
 skill_unlock_hint = "Kill an enemy with this weapon"

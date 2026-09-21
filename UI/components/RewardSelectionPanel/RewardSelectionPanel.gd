@@ -156,11 +156,11 @@ func _reset_supply_card(button: Button) -> void:
 	(button.get_node("CardContentMargin/Body/HoldProgress") as ProgressBar).value = 0.0
 	var body := button.get_node("CardContentMargin/Body")
 	for child in body.get_children():
-		if child.name not in ["TopRow", "HoldProgress"]:
+		if child.name != "HoldProgress":
 			body.remove_child(child)
 			child.queue_free()
 	for child in button.get_children():
-		if child.name not in ["CardContentMargin", "SelectionIndicatorBar"]:
+		if child.name not in ["CardWellArt", "CardFrameArt", "CardHeaderMargin", "CardContentMargin", "SelectionIndicatorBar", "SelectedStripArt"]:
 			button.remove_child(child)
 			child.queue_free()
 
@@ -919,24 +919,24 @@ func _build_reward_display_data(reward: RewardInfo) -> Dictionary:
 func _apply_reward_card_style(button: Button, reward: RewardInfo, selected: bool, holding: bool = false) -> void:
 	if button == null or reward == null:
 		return
-	var card_background := TOKENS.COLOR_SURFACE_ELEVATED
 	var selected_badge := button.find_child("SelectedBadge", true, false) as Control
 	if selected_badge != null:
 		selected_badge.visible = selected
 	var selection_bar := button.find_child("SelectionIndicatorBar", true, false) as ColorRect
 	if selection_bar != null:
 		selection_bar.visible = selected
-	for state in ["normal", "hover", "pressed", "focus"]:
-		var border_color := TOKENS.COLOR_ACCENT_SYSTEM if selected else Color(0.12, 0.24, 0.31, 0.58)
-		if not selected and state in ["hover", "pressed", "focus"]:
-			border_color = Color(TOKENS.COLOR_ACCENT_SYSTEM.r, TOKENS.COLOR_ACCENT_SYSTEM.g, TOKENS.COLOR_ACCENT_SYSTEM.b, 0.68)
-		var style := TOKENS.make_panel_style(true, border_color)
-		style.shadow_size = 0
-		style.bg_color = card_background
-		style.border_color = border_color
-		style.set_border_width_all(TOKENS.BORDER_STRONG if selected else TOKENS.BORDER_THIN)
-		style.set_corner_radius_all(TOKENS.RADIUS_PANEL)
-		button.add_theme_stylebox_override(state, style)
+	var selected_art := button.find_child("SelectedStripArt", true, false) as TextureRect
+	if selected_art != null:
+		selected_art.visible = selected
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	var focus_style := StyleBoxFlat.new()
+	focus_style.bg_color = Color.TRANSPARENT
+	focus_style.draw_center = false
+	focus_style.border_color = Color(TOKENS.COLOR_ACCENT_SYSTEM, 0.9)
+	focus_style.set_border_width_all(2)
+	focus_style.set_expand_margin_all(2)
+	button.add_theme_stylebox_override("focus", focus_style)
 	_animate_reward_card(button, selected, holding, _hover_index >= 0 and options_box.get_child(_hover_index) == button)
 
 func _animate_reward_card(button: Button, selected: bool, _holding: bool, _hovered: bool) -> void:

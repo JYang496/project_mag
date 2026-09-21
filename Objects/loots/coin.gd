@@ -6,6 +6,8 @@ const BASE_SPRITE_SCALE := Vector2(0.625, 0.625)
 const VALUE_5_SCALE := 1.25
 const VALUE_10_SCALE := 1.5
 const DROP_VISUAL_HEIGHT := 24.0
+const VALUE_2_COLOR := Color("#6be884")
+const VALUE_3_COLOR := Color("#ff6868")
 
 @export var default_value: int = 1
 @export var contract_reward: bool = false
@@ -70,15 +72,18 @@ func collect():
 	sprite.set_process(false)
 	ground_shadow.visible = false
 	ground_shadow.set_process(false)
-	var denomination_label := get_node_or_null("Denomination") as Label
-	if denomination_label != null:
-		denomination_label.visible = false
 	sound.play()
 	return value
 
 func set_value():
 	if sprite == null or sound == null:
 		return
+	if value >= 3:
+		sprite.self_modulate = VALUE_3_COLOR
+	elif value == 2:
+		sprite.self_modulate = VALUE_2_COLOR
+	else:
+		sprite.self_modulate = Color.WHITE
 	var visual_scale := 1.0
 	if value >= 10:
 		visual_scale = VALUE_10_SCALE
@@ -94,16 +99,6 @@ func set_value():
 	_value_visual_scale = visual_scale
 	if contract_reward and value > 1:
 		_value_visual_scale = maxf(_value_visual_scale, 1.15)
-		var denomination_label := get_node_or_null("Denomination") as Label
-		if denomination_label == null:
-			denomination_label = Label.new()
-			denomination_label.name = "Denomination"
-			denomination_label.position = Vector2(-16.0, -24.0)
-			denomination_label.add_theme_font_size_override("font_size", 12)
-			denomination_label.add_theme_color_override("font_outline_color", Color.BLACK)
-			denomination_label.add_theme_constant_override("outline_size", 3)
-			add_child(denomination_label)
-		denomination_label.text = "×%d" % value
 	visual_scale = _value_visual_scale
 	sprite.set("extra_scale", BASE_SPRITE_SCALE * visual_scale)
 	_update_shadow()

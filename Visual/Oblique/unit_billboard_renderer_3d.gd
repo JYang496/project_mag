@@ -14,6 +14,8 @@ var _root: Node3D
 var _camera: Camera3D
 var _quad: QuadMesh
 var _entries: Dictionary = {}
+var _enemy_entry_ids: Array[int] = []
+var _non_enemy_entry_ids: Array[int] = []
 var _material_cache: Dictionary = {}
 var _available_meshes: Array[MeshInstance3D] = []
 var max_visible_billboards := 320
@@ -29,6 +31,8 @@ var _camera_up := Vector3.UP
 var _camera_position := Vector3.ZERO
 var _pixels_to_world_factor := 0.0
 var _dense_enemy_sync_accumulator := DENSE_ENEMY_SYNC_INTERVAL_SEC
+var _last_enemy_visible_count := 0
+var _last_enemy_culled_count := 0
 
 
 func setup(view: Node, root: Node3D, camera: Camera3D) -> void:
@@ -50,11 +54,16 @@ func register(source: Node2D) -> void:
 		return
 	var mesh := _acquire_mesh()
 	mesh.name = "%s%sBillboard3D" % [unit_owner.name, source.name]
-	_entries[source.get_instance_id()] = {
+	var source_id := source.get_instance_id()
+	_entries[source_id] = {
 		"source": weakref(source),
 		"owner": weakref(unit_owner),
 		"mesh": mesh,
 	}
+	if unit_owner.is_in_group(&"enemies"):
+		_enemy_entry_ids.append(source_id)
+	else:
+		_non_enemy_entry_ids.append(source_id)
 	if source.has_method("mark_hybrid_billboard_registered"):
 		source.call("mark_hybrid_billboard_registered")
 	source.set_meta(&"hybrid_unit_billboard_registered", true)
@@ -69,6 +78,8 @@ func unregister(source: Node) -> void:
 	var entry := _entries[source_id] as Dictionary
 	_release_mesh(entry.get("mesh") as MeshInstance3D)
 	_entries.erase(source_id)
+	_enemy_entry_ids.erase(source_id)
+	_non_enemy_entry_ids.erase(source_id)
 	source.set_meta(&"hybrid_unit_billboard_registered", false)
 
 
@@ -88,7 +99,23 @@ func sync_late(delta: float) -> void:
 	_camera_up = camera_transform.basis.y.normalized()
 	_camera_position = camera_transform.origin
 	_pixels_to_world_factor = 2.0 * tan(deg_to_rad(_camera.fov) * 0.5) / maxf(_view.get_viewport().get_visible_rect().size.y, 1.0)
-	for source_id in _entries.keys():
+	_sync_entries(_non_enemy_entry_ids)
+	if sync_dense_enemies:
+		var non_enemy_visible := _visible_count
+		var non_enemy_culled := _culled_count
+		_sync_entries(_enemy_entry_ids)
+		_last_enemy_visible_count = _visible_count - non_enemy_visible
+		_last_enemy_culled_count = _culled_count - non_enemy_culled
+	else:
+		_visible_count += _last_enemy_visible_count
+		_culled_count += _last_enemy_culled_count
+
+func _sync_entries(ids: Array[int]) -> void:
+	for index in range(ids.size() - 1, -1, -1):
+		var source_id := ids[index]
+		if not _entries.has(source_id):
+			ids.remove_at(index)
+			continue
 		var entry := _entries[source_id] as Dictionary
 		var source_ref := entry.get("source") as WeakRef
 		var owner_ref := entry.get("owner") as WeakRef
@@ -98,12 +125,7 @@ func sync_late(delta: float) -> void:
 		if source == null or unit_owner == null or mesh == null or not is_instance_valid(mesh):
 			_release_mesh(mesh)
 			_entries.erase(source_id)
-			continue
-		if not sync_dense_enemies and unit_owner.is_in_group(&"enemies"):
-			if mesh.visible:
-				_visible_count += 1
-			else:
-				_culled_count += 1
+			ids.remove_at(index)
 			continue
 		var started := Time.get_ticks_usec()
 		var config := source.call("get_unit_billboard_config") as Dictionary
@@ -242,6 +264,10 @@ func _release_mesh(mesh: MeshInstance3D) -> void:
 
 func clear() -> void:
 	_entries.clear()
+	_enemy_entry_ids.clear()
+	_non_enemy_entry_ids.clear()
+	_last_enemy_visible_count = 0
+	_last_enemy_culled_count = 0
 	_available_meshes.clear()
 	_material_cache.clear()
 	if _root != null and is_instance_valid(_root):

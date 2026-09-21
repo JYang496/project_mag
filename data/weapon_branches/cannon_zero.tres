@@ -5,15 +5,15 @@
 
 [resource]
 script = ExtResource("4_script")
-fusion_required_tags = Array[StringName]([&"energy", &"on_energy_cycle"])
-produces_tags = Array[StringName]([&"energy", &"on_energy_cycle"])
+fusion_required_tags = Array[StringName]([&"energy", &"on_empowered_attack"])
+produces_tags = Array[StringName]([&"energy", &"on_empowered_attack"])
 requires_any_tags = Array[StringName]([&"projectile"])
 requires_all_tags = Array[StringName]([])
 amplifies_tags = Array[StringName]([&"energy"])
 conflicts_with_tags = Array[StringName]([])
 branch_id = "zero_cannon_branch"
 display_name = "Zero Mortar"
-description = "At full Energy, the next mortar shell deals double damage and creates an energy blast."
+description = "When ready, the next mortar shell deals double damage and creates an energy blast."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 20

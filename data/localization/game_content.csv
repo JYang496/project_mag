@@ -7,7 +7,7 @@ weapon.10.role_summary,Mid-close sustained cutting,中近距离持续切割
 weapon.10.desc,"Close-range projectile saw that ricochets inside its spawn cell. Boundary contact arms slowing vulnerability hits and extends that projectile's lifetime.","近距离投射锯刃，会在出生 cell 内弹射；接触边界后，命中会施加减速和易伤，并延长该投射物的生命周期。"
 weapon.2.name,Charged Blaster,蓄能爆破枪
 weapon.2.role_summary,Tether chain network,连锁牵引网络
-weapon.2.desc,"Mid-range Energy tether network. Lock a forward target, then arc through nearby unique enemies; full-energy release strengthens and expands the resonance chain.","中距离能量牵引网络。锁定前方目标，再向附近不同敌人逐段跳转；满能量释放会强化并扩展共振链。"
+weapon.2.desc,"Mid-range Energy tether network. Lock a forward target, then arc through nearby unique enemies; empowered attack strengthens and expands the resonance chain.","中距离能量牵引网络。锁定前方目标，再向附近不同敌人逐段跳转；强化释放会强化并扩展共振链。"
 weapon.27.name,Homing Energy Bolts,追踪能量弹
 weapon.27.role_summary,Mid-range homing volley,中距离追踪齐射
 weapon.27.desc,"Mid-range Energy projectile weapon. Fires a growing fan of agile bolts that curve toward enemies near their flight path.","中距离能量投射物武器。随等级提升，每次扇形发射更多灵活的能量弹，并自动转向飞行路线附近的敌人。"
@@ -22,7 +22,7 @@ weapon.21.role_summary,Persistent ground control,持续地面控制
 weapon.21.desc,"Persistent Freeze trail projector. Draw icy ground hazards that damage enemies over time; Cold Snap empowers the next trail to freeze or heavily slow targets.","持续冰径投射器。在地面铺设会持续伤害敌人的冰冻危险区；寒潮强化下一条冰径，使目标冻结或大幅减速。"
 weapon.9.name,Laser,激光
 weapon.9.role_summary,Mid-range precision beam,中距离精准光束
-weapon.9.desc,"Mid-range Energy focus beam. Each damage event grants 6 global energy; firing at full energy begins a 2.5-second channel that drains the pool for wider, +30% damage beams.","中距离能量聚焦光束。每次伤害获得 6 点全局能量；满能量开火进入 2.5 秒聚焦，逐步消耗能量并获得更宽、额外 30% 伤害的光束。"
+weapon.9.desc,"Mid-range Energy focus beam. A ready shot starts a 2.5-second focus channel with wider beams and +30% damage, then enters cooldown.","中距离能量聚焦光束。武器就绪时开火进入 2.5 秒聚焦，光束更宽且伤害提高 30%，随后进入冷却。"
 weapon.1.name,Machine Gun,机枪
 weapon.1.role_summary,Mid-range sustained fire,中距离持续火力
 weapon.1.desc,"Sustained mid-range automatic fire. Core Heat and Projectile weapon: spending magazine ammo before reload expands shared heat capacity.","中距离持续自动火力。核心热量和投射物武器：换弹前消耗弹匣弹药可扩展共享热量容量。"
@@ -31,7 +31,7 @@ weapon.7.role_summary,Close automatic defense,近身自动防御
 weapon.7.desc,"Close support summon. Consumes magazine ammo to deploy slowing satellites, then rewards Defense and On Hit builds when the player is pressured.","近身支援召唤物。消耗弹匣弹药部署减速卫星，在玩家承压时为防御和命中流构筑提供收益。"
 weapon.17.name,Plasma Lance,等离子长枪
 weapon.17.role_summary,Moving cutting wall,移动切割墙
-weapon.17.desc,"Moving plasma wall launcher. Send a wide cutting plane through enemy groups; full-energy discharge enlarges the wall, deals 1.85x damage, and spends up to 35 Heat.","移动等离子墙发射器。用宽阔切割面穿过敌群；满能量释放会扩大墙体、造成 1.85 倍伤害并消耗最多 35 点热量。"
+weapon.17.desc,"Moving plasma wall launcher. Send a wide cutting plane through enemy groups; empowered discharge enlarges the wall, deals 1.85x damage, and spends up to 35 Heat.","移动等离子墙发射器。用宽阔切割面穿过敌群；强化释放会扩大墙体、造成 1.85 倍伤害并消耗最多 35 点热量。"
 weapon.8.name,Rocket Launcher,火箭发射器
 weapon.8.role_summary,Homing impact missile,追踪冲击导弹
 weapon.8.desc,"Long-range homing missile launcher. Limited-turn rockets track targets and detonate on impact, while Cluster Kill rewards grouped enemy cleanup.","远程追踪导弹发射器。有限转向的火箭会追踪目标并在命中时爆炸，集群击杀则奖励成群清场。"
@@ -49,11 +49,11 @@ passive.piercing_blade_dance.desc,"Repeated damage from the same spear builds ch
 passive.cannon_idle_fire_triggered.name,Breach Shot,破阵炮击
 passive.cannon_idle_fire_triggered.desc,"Keep the Mortar in support mode for 5 seconds to prime one 1.45x-damage impact that makes affected targets take 20% more damage for 4 seconds.","迫击炮处于支援模式 5 秒后，下一次落弹造成 1.45 倍伤害，并使受影响目标在 4 秒内受到的伤害提高 20%。"
 passive.cannon_zero_energy_cycle.name,Zero Burst,零点爆发
-passive.cannon_zero_energy_cycle.desc,"Stored burst cycle. Each valid damage event grants 10 global energy. A full-energy impact deals 2x damage, then releases one 90-radius secondary ring with stronger execute payoff.","蓄能爆发循环。每次有效伤害获得 10 点全局能量。满能量落弹造成 2 倍伤害，随后释放一次半径 90 的二次环，并获得更强的斩杀收益。"
+passive.cannon_zero_energy_cycle.desc,"Stored burst cycle. When ready, the next impact deals 2x damage and releases a 90-radius secondary ring, then enters cooldown.","蓄能爆发循环。武器就绪时，下一发落弹造成 2 倍伤害并释放半径 90 的二次环，随后进入冷却。"
 passive.chainsaw_wall_contact_triggered.name,Wall Contact,触壁回旋
 passive.chainsaw_wall_contact_triggered.desc,"Reach 3 uninterrupted Chainsaw hits to arm slow and vulnerability; boundary bounces still extend projectile lifetime.","链锯连续命中 3 次后，后续命中可施加减速与易伤；边界反弹仍会延长弹体寿命。"
 passive.charged_blaster_multi_hit_triggered.name,Network Resonance,网络共振
-passive.charged_blaster_multi_hit_triggered.desc,"Network resonance cycle. Each valid tether damage event grants 3 global energy. At full energy, repeated ticks strengthen the connected network and its secondary links.","网络共振循环。每次有效牵引伤害获得 3 点全局能量。满能量时，持续命中会强化整张连接网络及其次级链路。"
+passive.charged_blaster_multi_hit_triggered.desc,"Network resonance cycle. When ready, the next tether strengthens the connected network and its secondary links; then it goes on cooldown.","网络共振循环。武器就绪时，下一次牵引会强化连接网络及其次级链路，随后进入冷却。"
 passive.dash_blade_long_dash_hit_triggered.name,Long Dash Hit,长距突斩
 passive.dash_blade_long_dash_hit_triggered.desc,"Reach 3 uninterrupted Dash Blade hits to trigger its control payoff. Dash Blade remains outside the main-weapon swap cycle.","冲刺刃连续命中 3 次后触发控制收益；冲刺刃仍不参与主武器切换循环。"
 passive.flamethrower_heat_prepared.name,Heat Prepared,热能预备
@@ -61,15 +61,15 @@ passive.flamethrower_heat_prepared.desc,"Spend all four quarters of a Flamethrow
 passive.glacier_cold_snap_triggered.name,Cold Snap,寒潮骤袭
 passive.glacier_cold_snap_triggered.desc,"Keep Glacier Projector in support mode for 5 seconds: its next attack freezes non-bosses for 1 second and slows bosses to 50% for 1 second.","冰川投射器处于支援模式 5 秒后，下一次攻击冻结非首领 1 秒，并使首领在 1 秒内减速至 50%。"
 passive.laser_focus_channel_triggered.name,Focus Channel,聚焦引导
-passive.laser_focus_channel_triggered.desc,"Sustained focus cycle. Each valid damage event grants 6 global energy. Firing at full energy starts a 2.5-second channel that gradually drains the pool and grants +30% damage and wider beams.","持续聚焦循环。每次有效伤害获得 6 点全局能量。满能量时开火会开始 2.5 秒引导，逐步消耗能量，并使伤害提高 30%、光束变宽。"
+passive.laser_focus_channel_triggered.desc,"Sustained focus cycle. A ready shot starts a 2.5-second focus channel with +30% damage and wider beams; the channel then goes on cooldown.","持续聚焦循环。武器就绪时开火开始 2.5 秒聚焦，伤害提高 30%、光束变宽，随后进入冷却。"
 passive.machine_gun_heat_expansion.name,Thermal Amplification,热能增幅
 passive.machine_gun_heat_expansion.desc,"Each 25% of a magazine spent restores 1 of 4 charges. Starting reload consumes all charges and grants the Machine Gun +8% damage per charge for 8 seconds.","每消耗弹匣容量的 25% 获得 1 层，最多 4 层。开始装填会消耗全部层数，使机枪每层获得 8% 伤害，持续 8 秒。"
 passive.orbit_energy_cycle.name,Orbital Pulse,轨道脉冲
-passive.orbit_energy_cycle.desc,"Deployment energy cycle. Each valid satellite damage event grants 8 global energy. Full-energy deployment adds 2 satellites and extends their lifetime by 50% instead of multiplying direct damage.","部署能量循环。每次有效卫星伤害获得 8 点全局能量。满能量部署会额外增加 2 颗卫星并延长 50% 持续时间，而非提高直接伤害倍率。"
+passive.orbit_energy_cycle.desc,"Empowered deployment. When ready, the next deployment adds 2 satellites and extends their lifetime by 50%; then it goes on cooldown.","强化部署。武器就绪时部署额外增加 2 颗卫星并延长 50% 持续时间，随后进入冷却。"
 passive.orbit_player_damaged_triggered.name,Damage Reaction,受击反应
 passive.orbit_player_damaged_triggered.desc,"Switch Orbit into the main slot to empower its next deployment.","将轨道武器切入主武器栏位，强化下一次部署。"
 passive.plasma_lance_energy_discharge_triggered.name,Plasma Discharge,等离子释放
-passive.plasma_lance_energy_discharge_triggered.desc,"Heat-exchange release. Each valid damage event grants 10 global energy. Full-energy fire deals 1.85x damage, enlarges the next plasma wall, and spends up to 35 Heat.","热量交换释放。每次有效伤害获得 10 点全局能量；满能量射击造成 1.85 倍伤害、扩大下一面等离子墙，并消耗最多 35 点热量。"
+passive.plasma_lance_energy_discharge_triggered.desc,"Heat-exchange release. When ready, the next shot deals 1.85x damage, enlarges the plasma wall, and spends up to 35 Heat; then it goes on cooldown.","热量交换释放。武器就绪时，下一次射击造成 1.85 倍伤害、扩大等离子墙并消耗最多 35 点热量，随后进入冷却。"
 passive.rocket_cluster_kill_triggered.name,Cluster Kill,集群歼灭
 passive.rocket_cluster_kill_triggered.desc,"Every Rocket Launcher kill releases the cluster payoff, with a short internal cooldown.","火箭发射器每次击杀都会触发集群收益，并受短暂内部冷却限制。"
 passive.shotgun_close_hit_triggered.name,Close Hit,近距轰击
@@ -79,7 +79,7 @@ passive.sniper_far_hit_triggered.desc,"Charge in support mode for 5 seconds or t
 branch.thermal_cannon_branch.name,Thermal Mortar,热能迫击炮
 branch.thermal_cannon_branch.desc,"Above half Heat, mortar shells become Fire and deal 50% more damage.",热量超过一半时，迫击炮弹转为火焰伤害并提高 50% 伤害。
 branch.zero_cannon_branch.name,Zero Mortar,零式迫击炮
-branch.zero_cannon_branch.desc,"At full Energy, the next mortar shell deals double damage and creates an energy blast.",能量充满后，下一发迫击炮弹造成双倍伤害并产生能量爆炸。
+branch.zero_cannon_branch.desc,"When ready, the next mortar shell deals double damage and creates an energy blast.",武器就绪后，下一发迫击炮弹造成双倍伤害并产生能量爆炸。
 branch.explosive_saw.name,Explosive Saw,爆裂链锯
 branch.explosive_saw.desc,A chainsaw explodes after hitting enemies five times.,链锯命中敌人五次后爆炸。
 branch.ricochet_saw.name,Ricochet Saw,弹射链锯
@@ -109,11 +109,11 @@ branch.shield_mg.desc,"A frontal shield blocks one attack, then recharges after 
 branch.gatling_mg.name,Gatling Thermal,热能加特林
 branch.gatling_mg.desc,Each attack fires two weaker bullets.,每次攻击发射两枚较弱的子弹。
 branch.energy_orbit.name,Energy Orbit,能量轨道
-branch.energy_orbit.desc,Deploying at full Energy adds two satellites.,能量充满时部署会额外增加两枚卫星。
+branch.energy_orbit.desc,Deploying when ready adds two satellites.,武器就绪时部署会额外增加两枚卫星。
 branch.frost_orbit.name,Frost Orbit,霜冻轨道
 branch.frost_orbit.desc,Satellite hits freeze enemies and push them away from the mech.,卫星命中会冻结敌人并将其推离机甲。
 branch.arc_coil.name,Arc Coil,电弧线圈
-branch.arc_coil.desc,"Energy propagation branch: shots grant 12 global energy per event; full-energy fire gains +15% direct damage and chains 45% damage to 3 nearby enemies.","能量传播分支：每次命中获得 12 点全局能量；满能量射击获得 15% 直接增伤，并向附近最多 3 个敌人连锁 45% 伤害。"
+branch.arc_coil.desc,"Energy propagation branch: empowered fire gains +15% direct damage and chains 45% damage to 3 nearby enemies.","能量传播分支：强化射击获得 15% 直接增伤，并向附近最多 3 个敌人连锁 45% 伤害。"
 branch.cryo_carbine.name,Cryo Carbine,低温卡宾枪
 branch.cryo_carbine.desc,Freeze branch: shots apply freeze and every third hit releases a shard to nearby enemies.,冻结分支：射击施加冻结，每第三次命中会向附近敌人释放一枚冰片。
 branch.plasma_overcharge_lance.name,Overcharge Lance,过载长枪

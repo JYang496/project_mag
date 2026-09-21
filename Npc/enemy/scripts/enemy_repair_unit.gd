@@ -5,6 +5,7 @@ const AURA_VISUAL := preload("res://Visual/Oblique/aura_renderer.gd")
 
 const PALETTE := preload("res://Combat/visual/combat_visual_palette.gd")
 const EMPTY_TARGET_RETRY_SEC := 0.25
+const DENSE_EMPTY_TARGET_RETRY_SEC := 0.5
 
 @export var heal_radius: float = 240.0
 @export var preferred_range: float = 280.0
@@ -58,7 +59,9 @@ func _process_healing(delta: float) -> void:
 		return
 	var target := _find_lowest_health_target()
 	if target == null:
-		_cooldown_remaining = EMPTY_TARGET_RETRY_SEC
+		_cooldown_remaining = DENSE_EMPTY_TARGET_RETRY_SEC \
+			if EnemySimulationSystem.get_registered_enemy_count() >= EnemySimulationSystem.DENSE_CROWD_THRESHOLD \
+			else EMPTY_TARGET_RETRY_SEC
 		return
 	_heal_target = target
 	_cast_remaining = maxf(cast_duration, 0.05)

@@ -5,7 +5,6 @@ const BATTLE_TIME_SCENE := preload("res://UI/components/BattleTimeMeter/BattleTi
 const GOLD_SCENE := preload("res://UI/components/GoldHudDisplay/GoldHudDisplay.tscn")
 const TOAST_SCENE := preload("res://UI/components/ToastDock/ToastDock.tscn")
 const PHASE_DOCK_SCENE := preload("res://UI/components/PhaseDock/PhaseDock.tscn")
-const REWARD_CARD_SCENE := preload("res://UI/components/RewardCard/RewardCard.tscn")
 const TEST_TEARDOWN := preload("res://tests/infrastructure/test_teardown.gd")
 
 const ACCENT := Color("45d6c7")
@@ -59,6 +58,18 @@ func _capture_review_frame() -> void:
 		if error != OK:
 			final_error = error
 		print("UI_GALLERY_CAPTURE=", capture_path, " ERROR=", error)
+		if index == 4:
+			for state in range(1, (_pages[index].states as Array).size()):
+				_state_index = state
+				_render_current_page()
+				await get_tree().process_frame
+				await get_tree().process_frame
+				await RenderingServer.frame_post_draw
+				var state_path := capture_root.path_join("page_05_state_%02d.png" % [state + 1])
+				var state_error := get_viewport().get_texture().get_image().save_png(state_path)
+				if state_error != OK:
+					final_error = state_error
+				print("UI_GALLERY_CAPTURE=", state_path, " ERROR=", state_error)
 	_show_page(0)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -74,8 +85,6 @@ func _build_page_registry() -> void:
 			"notes": "真实 PhaseDock 与 BattleTimeMeter。观察阶段优先级和紧急计时状态。"},
 		{"category": "战斗 HUD", "title": "经济与提示", "states": ["默认", "获得金币", "消费金币", "长文本"], "builder": _build_feedback,
 			"notes": "真实 GoldHudDisplay 与 ToastDock。检查数字跳变、长文本和背景对比度。"},
-		{"category": "奖励", "title": "奖励卡片", "states": ["默认", "选中", "长文本", "不可用"], "builder": _build_rewards,
-			"notes": "真实 RewardCard 容器配展示数据。检查三卡密度、选择层级及双语长度。"},
 		{"category": "系统", "title": "模态与输入", "states": ["键鼠", "手柄", "危险确认", "禁用"], "builder": _build_modal_and_input,
 			"notes": "检查焦点顺序、主次按钮、危险操作与输入提示是否只依赖颜色。"},
 		{"category": "奖励", "title": "奖励草案统一", "states": ["交互式"], "builder": _build_embedded_showcase.bind("res://tests/showcases/ui/reward_draft_unification_showcase.tscn"),
@@ -90,8 +99,6 @@ func _build_page_registry() -> void:
 			"notes": "技能触发型模块卡片、条件和操作反馈。"},
 		{"category": "合约", "title": "合约选择", "states": ["交互式"], "builder": _build_embedded_showcase.bind("res://tests/showcases/ui/battle_contract_selection_expanded_showcase.tscn"),
 			"notes": "生产协议选择器的双卡、三卡密度与增强合约状态。"},
-		{"category": "合约", "title": "合约难度比较", "states": ["交互式"], "builder": _build_embedded_showcase.bind("res://tests/showcases/ui/contract_difficulty_comparison_showcase.tscn"),
-			"notes": "标准合约和增强风险合约的并列比较。"},
 		{"category": "合约", "title": "协议图像", "states": ["交互式"], "builder": _build_embedded_showcase.bind("res://tests/showcases/ui/protocol_image_showcase.tscn"),
 			"notes": "协议插画、标题、规则和双语排版。页面内使用方向键与 L。"},
 		{"category": "战斗 HUD", "title": "金币补给 HUD", "states": ["交互式"], "builder": _build_embedded_showcase.bind("res://tests/showcases/ui/gold_supply_hud_showcase.tscn"),
@@ -299,42 +306,6 @@ func _build_feedback() -> void:
 	toast.visible = true
 	toast.modulate.a = 1.0
 	stack.add_child(_state_checklist(["增长与减少使用不同语义", "提示在复杂背景上仍可读", "长文本不会越过安全区", "动画停止时信息仍然完整"]))
-
-func _build_rewards() -> void:
-	var root := _page_margin()
-	var stack := VBoxContainer.new()
-	stack.add_theme_constant_override("separation", 14)
-	root.add_child(stack)
-	stack.add_child(_section_heading("奖励选择", "真实 RewardCard 容器 · 三卡密度"))
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	stack.add_child(row)
-	var titles := ["脉冲核心", "寒霜协议", "超载弹仓"]
-	var bodies := ["提升射速并保留稳定性", "冻结范围内的普通敌人", "弹药耗尽时获得短暂强化"]
-	for index in 3:
-		var card = REWARD_CARD_SCENE.instantiate()
-		card.custom_minimum_size = Vector2(250, 300)
-		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(card)
-		var long_suffix := "；该说明用于检查中文长行在窄卡片中的换行、层级和底部安全间距" if _state_index == 2 else ""
-		card.set_data({"reward_index": index, "key_text": str(index + 1), "type_label": "推荐" if index == 1 else "武器", "selected_text": "已选择", "accent_color": ACCENT_HOT if index == 1 else ACCENT, "minimum_height": 300.0})
-		var card_body: VBoxContainer = card.get_content_root()
-		var hero := _label(titles[index], 21, INK)
-		hero.custom_minimum_size.y = 72
-		hero.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		hero.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		card_body.add_child(hero)
-		var rule := HSeparator.new()
-		card_body.add_child(rule)
-		var description := _label(bodies[index] + long_suffix, 13, MUTED)
-		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		description.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		card_body.add_child(description)
-		var action := _label("按住确认" if index == 1 else "查看详情", 12, ACCENT_HOT if index == 1 else ACCENT)
-		action.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		card_body.add_child(action)
-		card.set_selected(_state_index == 1 and index == 1)
-		card.modulate = Color(0.55, 0.6, 0.62) if _state_index == 3 and index == 2 else Color.WHITE
 
 func _build_modal_and_input() -> void:
 	var root := _page_margin()

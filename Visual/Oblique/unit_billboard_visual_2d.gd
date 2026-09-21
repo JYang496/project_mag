@@ -171,7 +171,7 @@ func get_unit_billboard_config() -> Dictionary:
 	_billboard_config["local_ground_anchor"] = ground_anchor
 	_billboard_config["depth_anchor_world"] = depth_anchor_world
 	_billboard_config["screen_feedback_offset"] = projected_position_offset + screen_feedback_offset
-	var next_visible := visible and unit_owner != null and unit_owner.visible
+	var next_visible := is_visible_in_tree()
 	if _billboard_config.get("visible") != next_visible:
 		_billboard_config["visible"] = next_visible
 		_billboard_visibility_version += 1

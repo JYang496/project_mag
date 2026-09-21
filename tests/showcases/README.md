@@ -17,7 +17,7 @@ regression manifest so a reviewer can open only the area they want to inspect.
   flow. Embedded pages isolate their 1280 x 720 presentation in a SubViewport;
   the production game remains authoritative for complete runtime interactions.
 - Internal pages include reward draft, reward-card gallery, weapon-core card,
-  module equip selection, trigger-module cards, contract selection and difficulty,
+  module equip selection, trigger-module cards, contract selection,
   protocol imagery, gold-supply HUD, passive-action badges, and heat accessibility.
 - On embedded pages, `Q`/`E` remain gallery navigation; all other keys are owned
   by the current page and its on-screen instructions.

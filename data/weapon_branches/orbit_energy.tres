@@ -6,14 +6,14 @@
 [resource]
 script = ExtResource("4_script")
 fusion_required_tags = Array[StringName]([&"energy", &"summon"])
-produces_tags = Array[StringName]([&"energy", &"on_energy_cycle"])
+produces_tags = Array[StringName]([&"energy", &"on_empowered_attack"])
 requires_any_tags = Array[StringName]([&"summon"])
 requires_all_tags = Array[StringName]([])
 amplifies_tags = Array[StringName]([&"energy"])
 conflicts_with_tags = Array[StringName]([])
 branch_id = "energy_orbit"
 display_name = "Energy Orbit"
-description = "Deploying at full Energy adds two satellites."
+description = "Deploying when ready adds two satellites."
 icon = ExtResource("1_icon")
 unlock_fuse = 2
 sort_order = 10

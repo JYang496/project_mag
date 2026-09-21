@@ -16,7 +16,7 @@ const WEAPON_ENTERED_SUPPORT := &"weapon_entered_support"
 const MAGAZINE_QUARTER_SPENT := &"magazine_quarter_spent"
 const SUPPORT_CHARGE_READY := &"support_charge_ready"
 const CROSS_WEAPON_HIT := &"cross_weapon_hit"
-const SHARED_RESOURCE_RELEASE := &"shared_resource_release"
+const EMPOWERED_ATTACK_RELEASE := &"empowered_attack_release"
 
 const ALL: Array[StringName] = [
 	SKILL_CAST_COMMITTED,
@@ -34,7 +34,7 @@ const ALL: Array[StringName] = [
 	MAGAZINE_QUARTER_SPENT,
 	SUPPORT_CHARGE_READY,
 	CROSS_WEAPON_HIT,
-	SHARED_RESOURCE_RELEASE,
+	EMPOWERED_ATTACK_RELEASE,
 ]
 
 var type: StringName

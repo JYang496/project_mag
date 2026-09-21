@@ -161,21 +161,18 @@ func _clear_overcharge_lance_stacks() -> void:
 func _get_level_data(lv: String) -> Dictionary:
 	return get_weapon_level_data(lv, weapon_data)
 
-func get_energy_full_fire_passive_id() -> StringName:
+func get_empowered_attack_passive_id() -> StringName:
 	return &"plasma_lance_energy_discharge_triggered"
 
-func get_energy_full_fire_display_name() -> String:
+func get_empowered_attack_display_name() -> String:
 	return "Plasma Discharge"
 
-func get_energy_gain_per_damage_event() -> float:
-	return 10.0
-
-func get_energy_release_bonus_at_full() -> float:
+func get_empowered_attack_bonus() -> float:
 	return maxf(discharge_damage_multiplier - 1.0, 0.0)
 
 func prepare_energy_release_attack() -> Dictionary:
 	_plasma_discharge_heat_spent = 0.0
-	var player := _resolve_energy_pool_player()
+	var player := _resolve_owner_player()
 	var state := super.prepare_energy_release_attack()
 	if not bool(state.get("triggered", false)):
 		return state
@@ -186,7 +183,7 @@ func prepare_energy_release_attack() -> Dictionary:
 	state["release_mode"] = &"heat_exchange"
 	state["heat_spent"] = _plasma_discharge_heat_spent
 	emit_passive_trigger(&"plasma_discharge_heat_exchange", {
-		"trigger": "full_energy_attack_fired",
+		"trigger": "empowered_attack_fired",
 		"release_mode": &"heat_exchange",
 		"heat_spent": _plasma_discharge_heat_spent,
 		"damage_multiplier": _energy_release_damage_multiplier,
@@ -198,7 +195,7 @@ func finish_energy_release_attack() -> void:
 	_plasma_discharge_heat_spent = 0.0
 
 func get_passive_status() -> Dictionary:
-	return get_energy_full_fire_status()
+	return get_empowered_attack_status()
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()

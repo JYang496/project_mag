@@ -147,8 +147,8 @@ func format_trigger_hint(hint: String) -> String:
 		"crossfire": "Crossfire",
 		"weapon_kill": "Kill Reward",
 		"kill": "Kill Reward",
-		"fire_at_full_global_energy": "Shared Resource Release",
-		"automatic_after_full_energy_attack": "Shared Resource Release",
+		"fire_when_ready": "Empowered Attack",
+		"cooldown_after_empowered_attack": "Attack Cooldown",
 	}
 	return str(labels.get(normalized, normalized.replace("_", " ").capitalize()))
 

@@ -8,10 +8,11 @@ const DEATH_PROFILE := preload("res://Combat/Vfx/enemy_death_vfx_profile.gd")
 var _entries: Array[Dictionary] = []
 var _texture_cache: Dictionary = {}
 var _serial := 0
+var _preparing_pool := false
 
 
 static func ensure(tree: SceneTree) -> Node:
-	if tree == null or tree.root == null or PhaseManager.current_state() != PhaseManager.BATTLE:
+	if tree == null or tree.root == null or PhaseManager.current_state() not in [PhaseManager.BATTLE_STARTING, PhaseManager.BATTLE]:
 		return null
 	var existing := tree.get_first_node_in_group(&"enemy_death_vfx_service")
 	if existing != null and not existing.is_queued_for_deletion():
@@ -22,6 +23,23 @@ static func ensure(tree: SceneTree) -> Node:
 	service.add_to_group(PhaseManager.BATTLE_RUNTIME_TRANSIENT_GROUP)
 	tree.root.add_child(service)
 	return service
+
+
+func prepare_pool() -> void:
+	if _preparing_pool:
+		return
+	_preparing_pool = true
+	# Spread node and procedural texture creation across deployment frames so the
+	# first large kill does not pay the complete VFX pool setup synchronously.
+	while _entries.size() < MAX_ACTIVE_EFFECTS and is_inside_tree():
+		_create_entry()
+		await get_tree().process_frame
+	for size in [32, 64, 128]:
+		for death_type in DEATH_PROFILE.DeathType.values():
+			for layer in 3:
+				_texture_for(size, layer, int(death_type))
+			await get_tree().process_frame
+	_preparing_pool = false
 
 
 func play(world_position: Vector2, profile: Resource) -> void:

@@ -34,6 +34,8 @@ func _test_profile_semantics() -> void:
 
 
 func _test_runtime_signal_and_detached_visual_lifecycle() -> void:
+	var previous_phase := PhaseManager.current_state()
+	PhaseManager.phase = PhaseManager.BATTLE
 	var enemy := BASE_ENEMY_SCENE.instantiate() as BaseEnemy
 	enemy.process_mode = Node.PROCESS_MODE_DISABLED
 	enemy.position = Vector2(80.0, 120.0)
@@ -66,6 +68,7 @@ func _test_runtime_signal_and_detached_visual_lifecycle() -> void:
 		_expect(int(saturated.get("ground_effects", -1)) == 0, "saturated death effects must still create no ground residue")
 		service.queue_free()
 		await get_tree().process_frame
+	PhaseManager.phase = previous_phase
 
 
 func _expect(condition: bool, message: String) -> void:

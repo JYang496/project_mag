@@ -8,10 +8,11 @@
 
 [node name="ChargedBlaster" unique_id=1610258449 instance=ExtResource("1_thakn")]
 active_skill_effect_id = &"charged_blaster_phase_echo"
-skill_unlock_condition = &"global_energy_full"
-skill_unlock_hint = "Fill global weapon energy"
-skill_unlock_required = 1.0
+skill_unlock_condition = &"primary_attack_count"
+skill_unlock_hint = "Fire 3 charged attacks"
+skill_unlock_required = 3.0
 base_trait_flags = 34
+energy_release_cooldown_sec = 16.0
 script = ExtResource("1_48de6")
 turn_speed_degrees_per_second = 180.0
 fire_feedback_profile = ExtResource("4_feedback")

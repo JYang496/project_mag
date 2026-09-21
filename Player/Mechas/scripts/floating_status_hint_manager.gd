@@ -189,6 +189,10 @@ func _spawn_player_floating_hint(text: String, feedback_kind: int) -> void:
 	if _host.is_queued_for_deletion() or not _host.is_inside_tree():
 		_on_status_hint_playback_finished()
 		return
+	var layer := ProjectedUi.ensure_layer(_host.get_tree())
+	if layer == null:
+		_on_status_hint_playback_finished()
+		return
 	var label := Label.new()
 	label.text = message
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -203,7 +207,6 @@ func _spawn_player_floating_hint(text: String, feedback_kind: int) -> void:
 	)
 	label.add_theme_color_override("font_outline_color", FEEDBACK_SPEC.COLOR_OUTLINE)
 	label.add_theme_constant_override("outline_size", 3)
-	var layer := ProjectedUi.ensure_layer(_host.get_tree())
 	layer.add_child(label)
 	_active_hint_labels.append(label)
 	var min_size := label.get_combined_minimum_size()

@@ -15,7 +15,6 @@ const PASSIVE_ID: StringName = &"laser_focus_channel_triggered"
 @export var focus_channel_damage_multiplier: float = 1.30
 @export var focus_channel_width_multiplier: float = 1.35
 var _focus_channel_remaining_sec: float = 0.0
-var _focus_channel_energy_per_sec: float = 0.0
 var _refraction_matrix_active := false
 var _refraction_last_hit_msec: Dictionary = {}
 
@@ -182,14 +181,14 @@ func _draw_refraction_line(from_position: Vector2, to_position: Vector2) -> void
 	tween.tween_property(line, "modulate:a", 0.0, 0.16)
 	tween.tween_callback(line.queue_free)
 
-func get_energy_full_fire_passive_id() -> StringName:
+func get_empowered_attack_passive_id() -> StringName:
 	return PASSIVE_ID
 
-func get_energy_full_fire_display_name() -> String:
+func get_empowered_attack_display_name() -> String:
 	return "Focus Channel"
 
 func get_passive_status() -> Dictionary:
-	var status := get_energy_full_fire_status()
+	var status := get_empowered_attack_status()
 	if _is_focus_channel_active():
 		status["state"] = "active"
 		status["ready"] = false
@@ -198,24 +197,19 @@ func get_passive_status() -> Dictionary:
 		status["release_mode"] = &"focus_channel"
 	return status
 
-func get_energy_release_bonus_at_full() -> float:
+func get_empowered_attack_bonus() -> float:
 	return maxf(focus_channel_damage_multiplier - 1.0, 0.0)
 
-func _prepare_special_energy_release_attack(
-	_player: Node,
-	current_energy: float,
-	max_energy: float
-) -> Dictionary:
-	if _is_focus_channel_active() and current_energy > 0.001:
-		return activate_energy_release_attack(0.0, focus_channel_damage_multiplier, {
+func _prepare_special_energy_release_attack() -> Dictionary:
+	if _is_focus_channel_active():
+		return activate_energy_release_attack(focus_channel_damage_multiplier, {
 			"release_mode": &"focus_channel",
 			"focus_remaining_sec": _focus_channel_remaining_sec,
 		})
-	if current_energy < max_energy - 0.001:
+	if Time.get_ticks_msec() < _energy_release_ready_at_msec:
 		return {}
 	_focus_channel_remaining_sec = maxf(focus_channel_duration_sec, 0.1)
-	_focus_channel_energy_per_sec = max_energy / _focus_channel_remaining_sec
-	return activate_energy_release_attack(0.0, focus_channel_damage_multiplier, {
+	return activate_energy_release_attack(focus_channel_damage_multiplier, {
 		"release_mode": &"focus_channel",
 		"focus_duration_sec": _focus_channel_remaining_sec,
 	})
@@ -223,30 +217,18 @@ func _prepare_special_energy_release_attack(
 func _update_focus_channel(delta: float) -> void:
 	if not _is_focus_channel_active():
 		return
-	var player := _resolve_energy_pool_player()
-	if player == null or not is_instance_valid(player) \
-			or not player.has_method("consume_global_weapon_energy") \
-			or not player.has_method("get_global_weapon_energy"):
-		_end_focus_channel()
-		return
-	var safe_delta := maxf(delta, 0.0)
-	var remaining_before := maxf(float(player.call("get_global_weapon_energy")), 0.0)
-	var requested := minf(_focus_channel_energy_per_sec * safe_delta, remaining_before)
-	if requested > 0.0:
-		player.call("consume_global_weapon_energy", requested)
-	_focus_channel_remaining_sec = maxf(_focus_channel_remaining_sec - safe_delta, 0.0)
-	var remaining_energy := maxf(float(player.call("get_global_weapon_energy")), 0.0)
-	if _focus_channel_remaining_sec <= 0.0 or remaining_energy <= 0.001:
+	_focus_channel_remaining_sec = maxf(_focus_channel_remaining_sec - maxf(delta, 0.0), 0.0)
+	if _focus_channel_remaining_sec <= 0.0:
 		_end_focus_channel()
 
 func _is_focus_channel_active() -> bool:
 	return _focus_channel_remaining_sec > 0.0
 
 func _end_focus_channel() -> void:
+	_energy_release_ready_at_msec = Time.get_ticks_msec() + int(maxf(energy_release_cooldown_sec, 0.0) * 1000.0)
 	_focus_channel_remaining_sec = 0.0
-	_focus_channel_energy_per_sec = 0.0
 
 func clear_timed_effects_for_prepare() -> void:
 	super.clear_timed_effects_for_prepare()
-	_end_focus_channel()
+	_focus_channel_remaining_sec = 0.0
 	finish_weapon_skill_effect()

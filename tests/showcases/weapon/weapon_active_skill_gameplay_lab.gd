@@ -387,7 +387,10 @@ func performance_cleanup_scenario() -> void:
 	Input.action_release("ATTACK")
 	for action in ["UP", "DOWN", "LEFT", "RIGHT"]:
 		Input.action_release(action)
-	for target in get_tree().get_nodes_in_group(&"weapon_performance_lab_target"):
+	if not is_inside_tree():
+		return
+	var scene_tree := get_tree()
+	for target in scene_tree.get_nodes_in_group(&"weapon_performance_lab_target"):
 		if target != null and is_instance_valid(target):
 			var enemy := target as BaseEnemy
 			if enemy != null:
@@ -396,15 +399,21 @@ func performance_cleanup_scenario() -> void:
 				target.queue_free()
 	_target_count = 0
 	for group_name in [&"runtime_projectiles", &"runtime_area_effects"]:
-		for transient in get_tree().get_nodes_in_group(group_name):
+		for transient in scene_tree.get_nodes_in_group(group_name):
 			if transient != null and is_instance_valid(transient):
 				if transient.has_method("despawn"):
 					transient.call("despawn")
 				else:
 					transient.queue_free()
-	await get_tree().process_frame
-	await get_tree().physics_frame
-	await get_tree().process_frame
+	await scene_tree.process_frame
+	if not is_inside_tree():
+		return
+	await scene_tree.physics_frame
+	if not is_inside_tree():
+		return
+	await scene_tree.process_frame
+	if not is_inside_tree():
+		return
 	if _player != null and is_instance_valid(_player):
 		_place_player_at_board_center()
 		_set_player_damage_targeting_enabled(true)

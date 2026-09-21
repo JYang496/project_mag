@@ -118,6 +118,11 @@ func finish(extra: Dictionary = {}) -> Dictionary:
 				"sync_ms": final_enemy_metrics.get("movement_sync_ms", 0.0),
 				"calls": final_enemy_metrics.get("movement_calls", 0),
 			},
+			"enemy_constraint_profile": {
+				"total_ms": final_enemy_metrics.get("constraint_total_ms", 0.0),
+				"calls": final_enemy_metrics.get("constraint_calls", 0),
+				"full_refreshes": final_enemy_metrics.get("constraint_full_refreshes", 0),
+			},
 			"visual_sync_profile": visual_metrics,
 			"enemy_registry_query_profile": EnemyRegistry.get_query_metrics(),
 			"projectile_step_summary": PERFORMANCE_RESULT.summarize(_projectile_step_samples),

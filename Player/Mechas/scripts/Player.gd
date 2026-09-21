@@ -8,7 +8,6 @@ const PLAYER_ACTIVE_SKILL_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts
 const PLAYER_WEAPON_COMMAND_CONTROLLER_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_command_controller.gd")
 const PLAYER_WEAPON_INVENTORY_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_inventory_runtime.gd")
 const PLAYER_WEAPON_PASSIVE_RUNTIME_SCRIPT := preload("res://Player/Mechas/scripts/player_weapon_passive_runtime.gd")
-const PLAYER_GLOBAL_WEAPON_ENERGY_POOL_SCRIPT := preload("res://Player/Mechas/scripts/player_global_weapon_energy_pool.gd")
 const MovementFrameInputType := preload("res://Player/Mechas/scripts/movement_frame_input.gd")
 const MovementFrameResultType := preload("res://Player/Mechas/scripts/movement_frame_result.gd")
 const PlayerCameraConfigType := preload("res://Player/Mechas/scripts/player_camera_config.gd")
@@ -138,9 +137,6 @@ const PixelArtPolicyType := preload("res://Visual/pixel_art_policy.gd")
 @export var default_active_skill_path: String = "res://Player/Skills/bullet_time"
 @export var player_max_energy: float = 100.0
 @export var player_energy_regen_per_sec: float = 10.0
-@export var global_weapon_energy_max: float = 100.0
-@export_range(0.0, 1.0, 0.01) var global_weapon_energy_attack_gain_cap_ratio: float = 0.50
-@export_range(0.0, 10.0, 0.01) var global_weapon_energy_second_gain_cap_ratio: float = 0.75
 @export var debug_weapon_passive_trigger_prints: bool = false
 @export var debug_weapon_passive_trigger_event_prints: bool = false
 var _last_phase: String = ""
@@ -177,7 +173,6 @@ var _movement_frame_result: MovementFrameResultType
 var _camera_system: PlayerCameraSystem
 var _camera_config
 var _shared_heat_system: PlayerSharedHeatSystem
-var _global_weapon_energy_pool
 var _loot_system: PlayerLootSystem
 var _damage_reaction_system: PlayerDamageReactionSystem
 var _active_skill_runtime: RefCounted
@@ -245,7 +240,6 @@ func _ready():
 	_setup_incoming_damage_profile()
 	_ensure_active_skill_runtime()
 	_ensure_weapon_command_controller()
-	_ensure_global_weapon_energy_pool()
 	_setup_default_active_skill()
 	_ensure_input_actions()
 	LoadingPerformance.end_segment("player_ready_runtime_core")
@@ -1718,7 +1712,6 @@ func _profile_on_death(_attack: Attack) -> void:
 		return
 	if _status_hint_manager != null and is_instance_valid(_status_hint_manager):
 		_status_hint_manager.clear_all()
-	clear_global_weapon_energy()
 	PhaseManager.enter_gameover()
 
 func _profile_on_trigger_invuln() -> void:
@@ -1788,7 +1781,6 @@ func _on_phase_changed(new_phase: String) -> void:
 	_last_phase = new_phase
 	cancel_transient_input_state()
 	if new_phase == PhaseManager.BATTLE:
-		clear_global_weapon_energy()
 		var main_weapon := get_main_weapon()
 		var allows_held_attack := main_weapon != null \
 			and main_weapon.has_method("allows_held_attack_on_battle_entry") \
@@ -1805,7 +1797,6 @@ func _on_phase_changed(new_phase: String) -> void:
 		return
 	_camera_system.on_phase_changed()
 	if new_phase == PhaseManager.SETTLEMENT:
-		clear_global_weapon_energy()
 		clear_timed_statuses_for_prepare()
 		reset_shared_heat_to_neutral()
 		_instant_reload_all_weapons()
@@ -2106,78 +2097,6 @@ func get_last_heat_decay_source_name() -> String:
 		return "None"
 	return _shared_heat_system.get_last_heat_decay_source_name()
 
-
-func _ensure_global_weapon_energy_pool() -> void:
-	if _global_weapon_energy_pool == null:
-		_global_weapon_energy_pool = PLAYER_GLOBAL_WEAPON_ENERGY_POOL_SCRIPT.new()
-	if _global_weapon_energy_pool != null:
-		_global_weapon_energy_pool.configure(
-			maxf(global_weapon_energy_max, 1.0),
-			global_weapon_energy_attack_gain_cap_ratio,
-			global_weapon_energy_second_gain_cap_ratio
-		)
-
-
-func add_global_weapon_energy(raw_gain: float, source_attack: Node = null) -> float:
-	_ensure_global_weapon_energy_pool()
-	if _global_weapon_energy_pool == null:
-		return 0.0
-	return _global_weapon_energy_pool.add_from_damage(raw_gain, source_attack)
-
-
-func consume_all_global_weapon_energy() -> float:
-	_ensure_global_weapon_energy_pool()
-	if _global_weapon_energy_pool == null:
-		return 0.0
-	return _global_weapon_energy_pool.consume_all()
-
-
-func consume_global_weapon_energy(amount: float) -> float:
-	_ensure_global_weapon_energy_pool()
-	if _global_weapon_energy_pool == null:
-		return 0.0
-	return _global_weapon_energy_pool.consume(amount)
-
-
-func clear_global_weapon_energy() -> void:
-	_ensure_global_weapon_energy_pool()
-	if _global_weapon_energy_pool != null:
-		_global_weapon_energy_pool.clear()
-
-
-func get_global_weapon_energy() -> float:
-	_ensure_global_weapon_energy_pool()
-	if _global_weapon_energy_pool == null:
-		return 0.0
-	return _global_weapon_energy_pool.energy_value
-
-
-func get_global_weapon_energy_max() -> float:
-	_ensure_global_weapon_energy_pool()
-	if _global_weapon_energy_pool == null:
-		return maxf(global_weapon_energy_max, 1.0)
-	return _global_weapon_energy_pool.max_energy
-
-
-func get_global_weapon_energy_ratio() -> float:
-	_ensure_global_weapon_energy_pool()
-	if _global_weapon_energy_pool == null:
-		return 0.0
-	return _global_weapon_energy_pool.get_ratio()
-
-
-func has_equipped_energy_weapon() -> bool:
-	if PlayerData == null:
-		return false
-	for weapon_ref in PlayerData.player_weapon_list:
-		var weapon := weapon_ref as Weapon
-		if weapon != null and is_instance_valid(weapon) and weapon.has_weapon_trait(WeaponTrait.ENERGY):
-			return true
-	return false
-
-
-func is_global_weapon_energy_ready() -> bool:
-	return get_global_weapon_energy() >= get_global_weapon_energy_max() - 0.001
 
 func _get_weapon_orbit_system() -> PlayerWeaponOrbitSystem:
 	if _weapon_orbit_system == null:

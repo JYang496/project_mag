@@ -71,6 +71,8 @@ var _ai_cached_movement_ticks := 0
 var _far_movement_accumulator := 0.0
 var _far_physics_simplified := false
 var _dense_crowd_lod_active := false
+var _last_depth_sort_position := Vector2(INF, INF)
+var _last_projected_z_index := -2147483648
 var _far_area_monitoring_state: Array[Dictionary] = []
 var _far_body_collision_mask := 0
 var movement_runtime: EnemyMovementRuntime = EnemyMovementRuntime.new()
@@ -118,10 +120,19 @@ func simulation_physics_step(delta: float) -> void:
 	# Specialized enemy scripts retain their authoritative behavior; only the
 	# scheduling owner moves from N callbacks to this single system callback.
 	call("_physics_process", delta)
+	var profile_constraint := EnemySimulationSystem.detailed_profiling_enabled
+	var constraint_started := Time.get_ticks_usec() if profile_constraint else 0
+	var refreshes_before := _constraint_full_refreshes
 	if _constraint_pending_physics_tick:
 		_constraint_pending_physics_tick = false
 	else:
 		_constrain_to_board_traversable_area()
+	if profile_constraint:
+		EnemySimulationSystem.record_constraint_timing(
+			Time.get_ticks_usec() - constraint_started,
+			_constraint_full_refreshes > refreshes_before
+		)
+	_sync_projected_depth_if_needed()
 
 func _ready() -> void:
 	_incoming_damage_max_hp = max(1, int(hp))
@@ -344,9 +355,21 @@ func _restore_spawn_collisions() -> void:
 			area.monitorable = bool(state.get("monitorable", false))
 	_spawn_collision_state.clear()
 
-func _process(delta: float) -> void:
-	if FixedObliqueProjectionType.is_enabled():
-		z_index = int(round(FixedObliqueProjectionType.get_projected_depth(global_position) / 16.0))
+func _process(_delta: float) -> void:
+	_sync_projected_depth_if_needed()
+
+
+func _sync_projected_depth_if_needed() -> void:
+	if not FixedObliqueProjectionType.is_enabled():
+		return
+	if global_position.is_equal_approx(_last_depth_sort_position):
+		return
+	_last_depth_sort_position = global_position
+	var next_z_index := int(round(FixedObliqueProjectionType.get_projected_depth(global_position) / 16.0))
+	if next_z_index == _last_projected_z_index:
+		return
+	_last_projected_z_index = next_z_index
+	z_index = next_z_index
 
 func _notification(what: int) -> void:
 	if what != NOTIFICATION_PHYSICS_PROCESS:

@@ -31,16 +31,13 @@ func on_weapon_shot(_base_direction: Vector2) -> void:
 func on_target_hit(_target: Node) -> void:
 	pass
 
-func get_energy_full_fire_passive_id() -> StringName:
+func get_empowered_attack_passive_id() -> StringName:
 	return StringName()
 
-func get_energy_full_fire_display_name() -> String:
+func get_empowered_attack_display_name() -> String:
 	return ""
 
-func get_energy_gain_per_damage_event() -> float:
-	return -1.0
-
-func get_energy_release_bonus_at_full() -> float:
+func get_empowered_attack_bonus() -> float:
 	return -1.0
 
 func on_removed() -> void:

@@ -164,30 +164,23 @@ func notify_branch_target_hit(target: Node) -> void:
 	for behavior in get_branch_behaviors():
 		behavior.on_target_hit(target)
 
-func get_energy_full_fire_passive_id() -> StringName:
+func get_empowered_attack_passive_id() -> StringName:
 	for behavior in get_branch_behaviors():
-		var passive_id := behavior.get_energy_full_fire_passive_id()
+		var passive_id := behavior.get_empowered_attack_passive_id()
 		if passive_id != StringName():
 			return passive_id
 	return StringName()
 
-func get_energy_full_fire_display_name() -> String:
+func get_empowered_attack_display_name() -> String:
 	for behavior in get_branch_behaviors():
-		var display_name := behavior.get_energy_full_fire_display_name()
+		var display_name := behavior.get_empowered_attack_display_name()
 		if not display_name.is_empty():
 			return display_name
 	return ""
 
-func get_energy_gain_per_damage_event() -> float:
+func get_empowered_attack_bonus() -> float:
 	for behavior in get_branch_behaviors():
-		var value := behavior.get_energy_gain_per_damage_event()
-		if value >= 0.0:
-			return value
-	return -1.0
-
-func get_energy_release_bonus_at_full() -> float:
-	for behavior in get_branch_behaviors():
-		var value := behavior.get_energy_release_bonus_at_full()
+		var value := behavior.get_empowered_attack_bonus()
 		if value >= 0.0:
 			return value
 	return -1.0

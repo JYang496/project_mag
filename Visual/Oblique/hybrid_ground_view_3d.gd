@@ -120,6 +120,11 @@ var _affiliation_marker_material: ShaderMaterial
 var _shared_shadow_mesh: CylinderMesh
 var _enemy_shadow_batch: MultiMeshInstance3D
 var _enemy_shadow_multimesh: MultiMesh
+var _enemy_shadow_ids: Array[int] = []
+var _non_enemy_shadow_ids: Array[int] = []
+var _enemy_marker_ids: Array[int] = []
+var _non_enemy_marker_ids: Array[int] = []
+var _dense_enemy_markers_hidden := false
 
 
 func is_ready_for_world_entry() -> bool:
@@ -822,6 +827,10 @@ func _register_shadow(shadow: CanvasItem) -> void:
 		"size_2d": size_2d,
 		"batched_enemy": is_enemy_shadow,
 	}
+	if is_enemy_shadow:
+		_enemy_shadow_ids.append(source_id)
+	else:
+		_non_enemy_shadow_ids.append(source_id)
 	shadow.set_meta(&"hybrid_ground_registered", true)
 
 func _ensure_shared_shadow_mesh() -> void:
@@ -882,6 +891,11 @@ func _register_affiliation_marker(marker: Node2D) -> void:
 		"owner": weakref(owner_2d),
 		"mesh": mesh,
 	}
+	var marker_id := marker.get_instance_id()
+	if owner_2d.is_in_group(&"enemies"):
+		_enemy_marker_ids.append(marker_id)
+	else:
+		_non_enemy_marker_ids.append(marker_id)
 	marker.visible = false
 	marker.set_meta(&"hybrid_ground_registered", true)
 
@@ -1214,6 +1228,10 @@ func unregister_ground_visual(source: Node) -> void:
 	if source == null:
 		return
 	var source_id := source.get_instance_id()
+	_enemy_shadow_ids.erase(source_id)
+	_non_enemy_shadow_ids.erase(source_id)
+	_enemy_marker_ids.erase(source_id)
+	_non_enemy_marker_ids.erase(source_id)
 	if _unit_billboard_renderer != null:
 		_unit_billboard_renderer.unregister(source)
 	source.set_meta(&"hybrid_ground_registered", false)
@@ -1470,7 +1488,23 @@ func _sync_rest_zone_meshes() -> void:
 
 func _sync_shadow_meshes(sync_dense_enemies := true) -> void:
 	var batched_transforms: Array[Transform3D] = []
-	for id in _shadow_meshes.keys():
+	_sync_shadow_entries(_non_enemy_shadow_ids, batched_transforms)
+	if sync_dense_enemies:
+		_sync_shadow_entries(_enemy_shadow_ids, batched_transforms)
+	if sync_dense_enemies and _enemy_shadow_multimesh != null:
+		var count := batched_transforms.size()
+		if _enemy_shadow_multimesh.instance_count != count:
+			_enemy_shadow_multimesh.instance_count = count
+		for index in count:
+			_enemy_shadow_multimesh.set_instance_transform(index, batched_transforms[index])
+		_enemy_shadow_batch.visible = count > 0
+
+func _sync_shadow_entries(ids: Array[int], batched_transforms: Array[Transform3D]) -> void:
+	for index in range(ids.size() - 1, -1, -1):
+		var id := ids[index]
+		if not _shadow_meshes.has(id):
+			ids.remove_at(index)
+			continue
 		var entry := _shadow_meshes[id] as Dictionary
 		var source := (entry.source as WeakRef).get_ref() as CanvasItem
 		var owner_2d := (entry.owner as WeakRef).get_ref() as Node2D
@@ -1480,8 +1514,7 @@ func _sync_shadow_meshes(sync_dense_enemies := true) -> void:
 			if mesh != null:
 				mesh.queue_free()
 			_shadow_meshes.erase(id)
-			continue
-		if not sync_dense_enemies and owner_2d.is_in_group(&"enemies"):
+			ids.remove_at(index)
 			continue
 		var local_anchor := entry.get("local_anchor", Vector2.ZERO) as Vector2
 		var size_2d := entry.get("size_2d", Vector2(36.0, 18.0)) as Vector2
@@ -1495,16 +1528,37 @@ func _sync_shadow_meshes(sync_dense_enemies := true) -> void:
 			mesh.position = position_3d
 			mesh.scale = scale_3d
 			mesh.visible = owner_2d.is_visible_in_tree()
-	if sync_dense_enemies and _enemy_shadow_multimesh != null:
-		var count := batched_transforms.size()
-		if _enemy_shadow_multimesh.instance_count != count:
-			_enemy_shadow_multimesh.instance_count = count
-		for index in count:
-			_enemy_shadow_multimesh.set_instance_transform(index, batched_transforms[index])
-		_enemy_shadow_batch.visible = count > 0
-
 func _sync_affiliation_marker_meshes(sync_dense_enemies := true, hide_dense_enemy_markers := false) -> void:
-	for id in _affiliation_marker_meshes.keys():
+	_sync_affiliation_marker_entries(_non_enemy_marker_ids)
+	if hide_dense_enemy_markers:
+		if not _dense_enemy_markers_hidden:
+			_hide_dense_enemy_markers()
+			_dense_enemy_markers_hidden = true
+		return
+	_dense_enemy_markers_hidden = false
+	if sync_dense_enemies:
+		_sync_affiliation_marker_entries(_enemy_marker_ids)
+
+func _hide_dense_enemy_markers() -> void:
+	for index in range(_enemy_marker_ids.size() - 1, -1, -1):
+		var id := _enemy_marker_ids[index]
+		var entry := _affiliation_marker_meshes.get(id) as Dictionary
+		if entry == null:
+			_enemy_marker_ids.remove_at(index)
+			continue
+		var mesh := entry.get("mesh") as MeshInstance3D
+		if mesh == null or not is_instance_valid(mesh):
+			_affiliation_marker_meshes.erase(id)
+			_enemy_marker_ids.remove_at(index)
+			continue
+		mesh.visible = false
+
+func _sync_affiliation_marker_entries(ids: Array[int]) -> void:
+	for index in range(ids.size() - 1, -1, -1):
+		var id := ids[index]
+		if not _affiliation_marker_meshes.has(id):
+			ids.remove_at(index)
+			continue
 		var entry := _affiliation_marker_meshes[id] as Dictionary
 		var source := (entry.source as WeakRef).get_ref() as Node2D
 		var owner_2d := (entry.owner as WeakRef).get_ref() as Node2D
@@ -1513,11 +1567,7 @@ func _sync_affiliation_marker_meshes(sync_dense_enemies := true, hide_dense_enem
 			if mesh != null:
 				mesh.queue_free()
 			_affiliation_marker_meshes.erase(id)
-			continue
-		if hide_dense_enemy_markers and owner_2d.is_in_group(&"enemies"):
-			mesh.visible = false
-			continue
-		if not sync_dense_enemies and owner_2d.is_in_group(&"enemies"):
+			ids.remove_at(index)
 			continue
 		var config := source.call("get_hybrid_ground_marker_config") as Dictionary
 		var local_anchor := config.get("local_anchor", Vector2.ZERO) as Vector2

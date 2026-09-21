@@ -7,23 +7,20 @@ func get_added_weapon_traits() -> Array[StringName]:
 func get_damage_type_override() -> StringName:
 	return Attack.TYPE_ENERGY
 
-func get_energy_gain_per_damage_event() -> float:
-	return 8.0
-
-func get_energy_release_bonus_at_full() -> float:
+func get_empowered_attack_bonus() -> float:
 	return 0.0
 
 func get_energy_deployment_config() -> Dictionary:
 	return {
 		"extra_satellites": 2,
-		"lifetime_multiplier": 1.0,
+		"lifetime_multiplier": 1.5,
 	}
 
 func get_added_delivery_types() -> Array[StringName]:
 	return [DamageDeliveryType.AREA]
 
-func get_energy_full_fire_passive_id() -> StringName:
+func get_empowered_attack_passive_id() -> StringName:
 	return &"orbit_energy_cycle"
 
-func get_energy_full_fire_display_name() -> String:
+func get_empowered_attack_display_name() -> String:
 	return "Orbital Pulse"

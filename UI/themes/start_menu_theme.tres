@@ -1,11 +1,11 @@
 [gd_resource type="Theme" format=3 uid="uid://dmesct0ftrx2j"]
 
-[ext_resource type="FontFile" path="res://asset/fonts/fusion_pixel/fusion-pixel-12px-proportional-zh_hans.ttf" id="1_font"]
-[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/button_normal.png" id="2_button_normal"]
-[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/button_hover.png" id="3_button_hover"]
-[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/button_pressed.png" id="4_button_pressed"]
-[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/button_disabled.png" id="5_button_disabled"]
-[ext_resource type="Texture2D" path="res://UI/themes/modern/start_menu/panel.png" id="6_panel"]
+[ext_resource type="FontFile" uid="uid://e6sbvn6bbw8o" path="res://asset/fonts/fusion_pixel/fusion-pixel-12px-proportional-zh_hans.ttf" id="1_font"]
+[ext_resource type="Texture2D" uid="uid://cn0fi0614sdrw" path="res://UI/themes/modern/start_menu/button_normal.png" id="2_button_normal"]
+[ext_resource type="Texture2D" uid="uid://du3ngxxdyangn" path="res://UI/themes/modern/start_menu/button_hover.png" id="3_button_hover"]
+[ext_resource type="Texture2D" uid="uid://dbpt5ui488xd1" path="res://UI/themes/modern/start_menu/button_pressed.png" id="4_button_pressed"]
+[ext_resource type="Texture2D" uid="uid://b5q740cis3og2" path="res://UI/themes/modern/start_menu/button_disabled.png" id="5_button_disabled"]
+[ext_resource type="Texture2D" uid="uid://bp2c057a5kmq5" path="res://UI/themes/modern/start_menu/panel.png" id="6_panel"]
 
 [sub_resource type="StyleBoxTexture" id="ButtonDisabled"]
 content_margin_left = 52.0
@@ -230,7 +230,7 @@ PrimaryButton/base_type = &"Button"
 PrimaryButton/colors/font_color = Color(0.78, 0.87, 0.91, 1)
 PrimaryButton/colors/font_focus_color = Color(0.96, 0.99, 1, 1)
 PrimaryButton/colors/font_hover_color = Color(0.96, 0.99, 1, 1)
-PrimaryButton/colors/font_pressed_color = Color(0.09, 0.16, 0.20, 1)
+PrimaryButton/colors/font_pressed_color = Color(0.09, 0.16, 0.2, 1)
 PrimaryButton/font_sizes/font_size = 24
 PrimaryButton/fonts/font = ExtResource("1_font")
 PrimaryButton/styles/disabled = SubResource("ButtonDisabled")

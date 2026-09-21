@@ -59,7 +59,7 @@ func _format_detail(data: Dictionary) -> String:
 
 func _format_trigger_hint(hint: String) -> String:
 	var normalized := hint.strip_edges().to_lower()
-	var labels := {"weapon_entered_main": "Weapon Entry", "weapon_entry": "Weapon Entry", "magazine_quarter_spent": "Magazine Quarters", "magazine_cycle": "Magazine Quarters", "reload_started": "Reload Start", "support_charge": "Support Charge", "support": "Support Charge", "cross_weapon_hit": "Crossfire", "crossfire": "Crossfire", "weapon_kill": "Kill Reward", "kill": "Kill Reward", "fire_at_full_global_energy": "Shared Resource Release", "automatic_after_full_energy_attack": "Shared Resource Release"}
+	var labels := {"weapon_entered_main": "Weapon Entry", "weapon_entry": "Weapon Entry", "magazine_quarter_spent": "Magazine Quarters", "magazine_cycle": "Magazine Quarters", "reload_started": "Reload Start", "support_charge": "Support Charge", "support": "Support Charge", "cross_weapon_hit": "Crossfire", "crossfire": "Crossfire", "weapon_kill": "Kill Reward", "kill": "Kill Reward", "fire_when_ready": "Empowered Attack", "cooldown_after_empowered_attack": "Attack Cooldown"}
 	return str(labels.get(normalized, normalized.replace("_", " ").capitalize()))
 
 

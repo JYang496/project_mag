@@ -1,0 +1,193 @@
+{
+  "status": "concept_source_for_replacement",
+  "reference": "output/showcases/ui_gallery_review/reward_cards_after_imagegen_preview.png",
+  "parts": [
+    {
+      "file": "source/card_frame_cyan.png",
+      "source_size": [
+        1126,
+        1397
+      ],
+      "visible_region_xywh": [
+        33,
+        37,
+        1071,
+        1280
+      ],
+      "proposed_logical_size": [
+        300,
+        372
+      ]
+    },
+    {
+      "file": "source/content_well.png",
+      "source_size": [
+        1168,
+        1347
+      ],
+      "visible_region_xywh": [
+        156,
+        78,
+        894,
+        1245
+      ],
+      "proposed_logical_size": [
+        260,
+        300
+      ]
+    },
+    {
+      "file": "source/key_badge_cyan.png",
+      "source_size": [
+        1415,
+        1112
+      ],
+      "visible_region_xywh": [
+        57,
+        21,
+        1302,
+        1035
+      ],
+      "proposed_logical_size": [
+        28,
+        22
+      ]
+    },
+    {
+      "file": "source/key_badge_amber.png",
+      "source_size": [
+        1415,
+        1112
+      ],
+      "visible_region_xywh": [
+        218,
+        140,
+        960,
+        932
+      ],
+      "proposed_logical_size": [
+        28,
+        22
+      ]
+    },
+    {
+      "file": "source/type_plate_cyan.png",
+      "source_size": [
+        1838,
+        856
+      ],
+      "visible_region_xywh": [
+        0,
+        201,
+        1764,
+        613
+      ],
+      "proposed_logical_size": [
+        220,
+        22
+      ]
+    },
+    {
+      "file": "source/type_plate_amber.png",
+      "source_size": [
+        1838,
+        856
+      ],
+      "visible_region_xywh": [
+        0,
+        165,
+        1765,
+        528
+      ],
+      "proposed_logical_size": [
+        220,
+        22
+      ]
+    },
+    {
+      "file": "source/action_plate_cyan.png",
+      "source_size": [
+        1983,
+        793
+      ],
+      "visible_region_xywh": [
+        79,
+        77,
+        1823,
+        626
+      ],
+      "proposed_logical_size": [
+        170,
+        34
+      ]
+    },
+    {
+      "file": "source/action_plate_amber.png",
+      "source_size": [
+        1984,
+        793
+      ],
+      "visible_region_xywh": [
+        0,
+        56,
+        1906,
+        713
+      ],
+      "proposed_logical_size": [
+        170,
+        34
+      ]
+    },
+    {
+      "file": "source/section_divider.png",
+      "source_size": [
+        1983,
+        793
+      ],
+      "visible_region_xywh": [
+        235,
+        201,
+        1502,
+        218
+      ],
+      "proposed_logical_size": [
+        250,
+        4
+      ]
+    },
+    {
+      "file": "source/hold_progress_track.png",
+      "source_size": [
+        1983,
+        793
+      ],
+      "visible_region_xywh": [
+        16,
+        189,
+        1951,
+        388
+      ],
+      "proposed_logical_size": [
+        250,
+        8
+      ]
+    },
+    {
+      "file": "source/selected_strip_amber.png",
+      "source_size": [
+        1983,
+        793
+      ],
+      "visible_region_xywh": [
+        63,
+        217,
+        1854,
+        382
+      ],
+      "proposed_logical_size": [
+        250,
+        5
+      ]
+    }
+  ]
+}

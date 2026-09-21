@@ -15,7 +15,6 @@ var augments_label: Label
 var health_meter
 var energy_meter
 var primary_resource_meter
-var global_weapon_energy_meter
 var ammo_resource_meter
 var combat_resource_slot_container: Control
 var special_resource_slot_container: Control
@@ -233,7 +232,6 @@ func refresh_hp() -> void:
 
 func refresh_heat() -> void:
 	_update_heat_label_text()
-	_sync_global_weapon_energy_meter()
 
 func refresh_ammo() -> void:
 	_sync_ammo_resource_slot(_find_resource_slot(_collect_primary_weapon_resource_slots(), &"ammo"))
@@ -454,54 +452,6 @@ func _ensure_primary_resource_meter() -> void:
 	primary_resource_meter.modulate.a = SPECIAL_RESOURCE_OPACITY
 	primary_resource_meter.visible = false
 	special_resource_slot_container.add_child(primary_resource_meter)
-
-func _sync_global_weapon_energy_meter() -> void:
-	var player: Node = PlayerData.player as Node
-	var should_show: bool = player != null and is_instance_valid(player) \
-		and player.has_method("has_equipped_energy_weapon") \
-		and bool(player.call("has_equipped_energy_weapon"))
-	if not should_show:
-		if global_weapon_energy_meter != null and is_instance_valid(global_weapon_energy_meter):
-			global_weapon_energy_meter.visible = false
-		return
-	_ensure_global_weapon_energy_meter()
-	if global_weapon_energy_meter == null or not is_instance_valid(global_weapon_energy_meter):
-		return
-	var current := maxf(float(player.call("get_global_weapon_energy")), 0.0)
-	var maximum := maxf(float(player.call("get_global_weapon_energy_max")), 1.0)
-	var ratio := clampf(current / maximum, 0.0, 1.0)
-	var release_ready: bool = player.has_method("is_global_weapon_energy_ready") \
-		and bool(player.call("is_global_weapon_energy_ready"))
-	# Readiness is already communicated by the READY label. Keep the global
-	# energy meter in a static state so it does not inherit the shared resource
-	# meter's warning/charging pulse.
-	var state := &"normal"
-	var short_text := "READY" if release_ready else "%d%%" % int(round(ratio * 100.0))
-	var tooltip := "Global weapon energy: %d/%d" % [int(round(current)), int(round(maximum))]
-	if release_ready:
-		tooltip += "\nThe next energy-weapon attack will release all stored energy."
-	global_weapon_energy_meter.call(
-		"set_resource",
-		&"energy",
-		ratio,
-		state,
-		short_text,
-		tooltip
-	)
-	global_weapon_energy_meter.visible = true
-
-func _ensure_global_weapon_energy_meter() -> void:
-	_ensure_special_resource_slot_container()
-	if special_resource_slot_container == null or not is_instance_valid(special_resource_slot_container):
-		return
-	if global_weapon_energy_meter != null and is_instance_valid(global_weapon_energy_meter):
-		return
-	global_weapon_energy_meter = COMBAT_RESOURCE_METER_SCENE.instantiate()
-	global_weapon_energy_meter.name = "GlobalWeaponEnergyMeter"
-	global_weapon_energy_meter.position = Vector2(0.0, -28.0)
-	global_weapon_energy_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	global_weapon_energy_meter.modulate.a = SPECIAL_RESOURCE_OPACITY
-	special_resource_slot_container.add_child(global_weapon_energy_meter)
 
 func _ensure_special_resource_slot_container() -> void:
 	if special_resource_slot_container != null and is_instance_valid(special_resource_slot_container):

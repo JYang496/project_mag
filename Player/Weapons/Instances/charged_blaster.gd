@@ -171,20 +171,17 @@ func on_beam_hit_target(target: Node, beam_profile: Dictionary = {}, hit_damage:
 	for behavior in branch_runtime.get_branch_behaviors():
 		behavior.on_charged_beam_hit(target, beam_profile, hit_damage)
 
-func get_energy_full_fire_passive_id() -> StringName:
+func get_empowered_attack_passive_id() -> StringName:
 	return &"charged_blaster_multi_hit_triggered"
 
-func get_energy_full_fire_display_name() -> String:
+func get_empowered_attack_display_name() -> String:
 	return "Network Resonance"
 
-func get_energy_gain_per_damage_event() -> float:
-	return 3.0
-
-func get_energy_release_bonus_at_full() -> float:
+func get_empowered_attack_bonus() -> float:
 	return maxf(resonance_initial_damage_multiplier - 1.0, 0.0)
 
 func get_passive_status() -> Dictionary:
-	return get_energy_full_fire_status()
+	return get_empowered_attack_status()
 
 func get_passive_max_charges() -> int:
 	return 3

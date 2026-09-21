@@ -212,7 +212,9 @@ func get_repair_target(requester: Node, radius: float) -> Node2D:
 	var best: BaseEnemy
 	var best_health := 1.0
 	var best_distance_sq := INF
-	for candidate_value in get_enemies_in_radius(requester2d.global_position, radius, requester):
+	# Repair selection evaluates every candidate and applies its own stable
+	# health/distance ordering, so sorting the temporary radius result is wasted.
+	for candidate_value in get_enemies_in_radius(requester2d.global_position, radius, requester, false):
 		var candidate := candidate_value as BaseEnemy
 		if candidate == null or candidate.is_dead or not candidate.can_receive_support_from(requester as BaseEnemy):
 			continue
@@ -239,7 +241,7 @@ func get_nearest_support(requester: Node, max_radius: float) -> Node2D:
 			best_distance_sq = distance_sq
 	return best
 
-func get_enemies_in_radius(origin: Vector2, radius: float, excluded: Node = null) -> Array[Node2D]:
+func get_enemies_in_radius(origin: Vector2, radius: float, excluded: Node = null, sort_results: bool = true) -> Array[Node2D]:
 	var started := Time.get_ticks_usec() if _query_profiling_enabled else 0
 	_radius_query_count += 1
 	var output: Array[Node2D] = []
@@ -281,7 +283,8 @@ func get_enemies_in_radius(origin: Vector2, radius: float, excluded: Node = null
 						continue
 					if enemy.global_position.distance_squared_to(origin) <= max_radius_sq:
 						output.append(enemy)
-	_sort_by_registration_order(output)
+	if sort_results:
+		_sort_by_registration_order(output)
 	if started > 0:
 		_record_query_time(started, &"radius")
 	return output

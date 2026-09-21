@@ -7,10 +7,11 @@
 
 [node name="PlasmaLance" unique_id=1138617759 instance=ExtResource("1_ranger")]
 active_skill_effect_id = &"plasma_storm"
-skill_unlock_condition = &"global_energy_and_heat"
-skill_unlock_hint = "Fill global weapon energy with shared Heat at 50%"
+skill_unlock_condition = &"weapon_attack_and_heat"
+skill_unlock_hint = "Fire Plasma Lance and reach 50% shared Heat"
 skill_unlock_required = 0.5
 base_trait_flags = 18
+energy_release_cooldown_sec = 14.0
 script = ExtResource("2_script")
 turn_speed_degrees_per_second = 300.0
 heat_accumulation = 10.0

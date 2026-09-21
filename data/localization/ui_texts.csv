@@ -555,7 +555,7 @@ ui.module.term.on_reload,On Reload,换弹触发
 ui.module.term.on_move,On Move,移动触发
 ui.module.term.on_damage_taken,On Damage Taken,受伤触发
 ui.module.term.on_overheat,On Overheat,过热触发
-ui.module.term.on_energy_cycle,On Energy Cycle,能量循环触发
+ui.module.term.on_empowered_attack,On Empowered Attack,强化攻击触发
 ui.module.term.close_range,Close Range,近距离
 ui.module.term.long_range,Long Range,远距离
 ui.module.term.control,Control,控制
@@ -775,10 +775,10 @@ ui.hud.weapon_skill.condition.far_hit,Hit an enemy from at least 400 distance,�
 ui.hud.weapon_skill.condition.player_damaged,Lose health from an enemy attack,因敌人攻击损失生命值
 ui.hud.weapon_skill.condition.explosion_distinct_targets,Hit 3 different enemies with one explosion,同一次爆炸命中3个不同敌人
 ui.hud.weapon_skill.condition.freeze_buildup,Deal damage with 75 Glacier trail ticks,用冰川投射器的冰径造成75次有效伤害
-ui.hud.weapon_skill.condition.global_energy_full,Fill global weapon energy,充满全局武器能量
+ui.hud.weapon_skill.condition.primary_attack_count,Fire 3 charged attacks,发射 3 次蓄力攻击
 ui.hud.weapon_skill.condition.weapon_kill,Kill an enemy with this weapon,使用该武器击杀1个敌人
 ui.hud.weapon_skill.condition.shared_heat_hot,Raise shared Heat to 75%,将玩家共享热量提高至75%
-ui.hud.weapon_skill.condition.global_energy_and_heat,Fill global weapon energy and reach 50% shared Heat,充满全局武器能量并达到50%共享热量
+ui.hud.weapon_skill.condition.weapon_attack_and_heat,Fire Plasma Lance and reach 50% shared Heat,发射等离子长枪并达到 50% 共享热量
 ui.management.menu.title,Warehouse Management,仓库管理
 ui.management.menu.subtitle,Open weapon and module warehouses,打开武器仓库与模组仓库
 ui.warehouse.instruction,Manage the selected warehouse.,管理所选仓库。

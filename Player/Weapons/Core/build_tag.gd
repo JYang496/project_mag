@@ -21,7 +21,7 @@ const SPECS := {
 	&"on_move": {"label": "Movement", "color": Color(0.52, 0.88, 0.80), "icon_key": "movement", "sort_weight": 230},
 	&"on_damage_taken": {"label": "On Damage", "color": Color(1.0, 0.46, 0.42), "icon_key": "on_damage", "sort_weight": 240},
 	&"on_overheat": {"label": "Overheat", "color": Color(1.0, 0.34, 0.16), "icon_key": "overheat", "sort_weight": 250},
-	&"on_energy_cycle": {"label": "Energy Cycle", "color": Color(0.44, 0.72, 1.0), "icon_key": "energy_cycle", "sort_weight": 260},
+	&"on_empowered_attack": {"label": "Empowered Attack", "color": Color(0.44, 0.72, 1.0), "icon_key": "energy_cycle", "sort_weight": 260},
 	&"close_range": {"label": "Close", "color": Color(0.92, 0.58, 0.42), "icon_key": "close", "sort_weight": 270},
 	&"long_range": {"label": "Long Range", "color": Color(0.64, 0.76, 1.0), "icon_key": "long_range", "sort_weight": 280},
 	&"heat": {"label": "Heat", "color": Color(1.0, 0.42, 0.18), "icon_key": "heat", "sort_weight": 300},
@@ -84,4 +84,3 @@ static func unknown_values(values: Variant) -> PackedStringArray:
 static func get_spec(value: Variant) -> Dictionary:
 	var key := normalize(value)
 	return SPECS.get(key, {})
-

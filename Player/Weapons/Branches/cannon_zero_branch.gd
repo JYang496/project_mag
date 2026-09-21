@@ -28,10 +28,7 @@ func get_suppressed_weapon_traits() -> Array[StringName]:
 func get_damage_type_override() -> StringName:
 	return Attack.TYPE_ENERGY
 
-func get_energy_gain_per_damage_event() -> float:
-	return 10.0
-
-func get_energy_release_bonus_at_full() -> float:
+func get_empowered_attack_bonus() -> float:
 	return 1.0
 
 @export var zero_burst_radius: float = 90.0
@@ -95,8 +92,8 @@ func apply_zero_release_ground_impact(
 	}, Weapon.PASSIVE_SCOPE_GLOBAL)
 	return applied
 
-func get_energy_full_fire_passive_id() -> StringName:
+func get_empowered_attack_passive_id() -> StringName:
 	return &"cannon_zero_energy_cycle"
 
-func get_energy_full_fire_display_name() -> String:
+func get_empowered_attack_display_name() -> String:
 	return "Zero Burst"

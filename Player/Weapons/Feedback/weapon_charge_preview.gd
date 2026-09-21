@@ -11,7 +11,7 @@ func _process(delta: float) -> void:
 	if _ready_now:
 		# Blade Dance consumes its own charge on reload, independently of the
 		# active weapon skill. Never advertise a ring from skill unlock alone.
-		_ready_now = bool(weapon.get_passive_status().get("ready", false)) if radial else bool(weapon.get_energy_full_fire_status().get("ready", false))
+		_ready_now = bool(weapon.get_passive_status().get("ready", false)) if radial else bool(weapon.get_empowered_attack_status().get("ready", false))
 	if _ready_now and not _was_ready:
 		_age = 0.0
 	_was_ready = _ready_now

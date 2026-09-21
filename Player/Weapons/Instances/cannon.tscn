@@ -11,6 +11,7 @@ skill_unlock_condition = &"support_time"
 skill_unlock_hint = "Keep Mortar in support for 15 seconds"
 skill_unlock_required = 15.0
 base_trait_flags = 1
+energy_release_cooldown_sec = 15.0
 script = ExtResource("2_script")
 turn_speed_degrees_per_second = 180.0
 fire_feedback_profile = ExtResource("5_feedback")

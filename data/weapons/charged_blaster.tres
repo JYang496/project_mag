@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="WeaponDefinition" format=3 uid="uid://cbhjt6jghwo5i"]
 
-[ext_resource type="Texture2D" path="res://asset/images/weapons/floating_modules/charged_blaster.png" id="1_rnx7b"]
+[ext_resource type="Texture2D" uid="uid://c7tmofvbf1s4c" path="res://asset/images/weapons/floating_modules/charged_blaster.png" id="1_rnx7b"]
 [ext_resource type="Script" uid="uid://cf8w6uadvmajn" path="res://data/WeaponDefinition.gd" id="3_bqdxw"]
 
 [resource]
@@ -9,6 +9,6 @@ weapon_id = "2"
 display_name = "Charged Blaster"
 icon = ExtResource("1_rnx7b")
 price = 45
-description = "Mid-range Energy tether network. Lock a forward target, then arc through nearby unique enemies; full-energy release strengthens and expands the resonance chain."
+description = "Mid-range Energy tether network. Lock a forward target, then arc through nearby unique enemies; empowered attack strengthens and expands the resonance chain."
 scene_path = "res://Player/Weapons/Instances/charged_blaster.tscn"
 core_tags = Array[StringName]([&"energy", &"beam", &"charge"])
